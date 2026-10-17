@@ -4,7 +4,9 @@ Ordered steps to finish the MVP. Each step lists the files to touch and the acce
 
 Legend: ✅ done and verified · 🟡 written, not compiled · ⬜ not started
 
-## Step 0: Make the existing code build 🟡
+## Step 0: Make the existing code build ✅
+
+Verified on Windows, .NET SDK 8.0.426 and 10.0.401 installed, PostgreSQL 16.15: build 0 warnings 0 errors; self-check 55/55; `double_booking.sh` 20/20; `tests/BarberBook.Web.ModelCheck` confirms the EF model matches the migrated schema and a booking round-trips through EF. The Data files needed no fixes. A placeholder `Program.cs` (with `/healthz`) was added so the project builds; Step 1 replaces it.
 
 Files: `BarberBook.sln`, `src/BarberBook.Web/*`
 

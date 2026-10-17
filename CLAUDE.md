@@ -50,7 +50,7 @@ Mark anything not compiled or not run as unverified, in the commit message and i
 ## Current state
 
 Verified: Core (55 self-checks) and the database schema (20 checks on PostgreSQL 16).
-**Not yet compiled:** `src/BarberBook.Web/Data/*` and `AppInfo.cs`. They were written where NuGet was unreachable. First job on a machine with internet: follow Step 0 of `docs/BUILD_PLAN.md`.
+Compiled and checked against PostgreSQL 16 (Step 0 done): `src/BarberBook.Web/Data/*`, `AppInfo.cs`; run `tests/BarberBook.Web.ModelCheck` (needs `ConnectionStrings__Default` pointing at a disposable database) to confirm the EF model matches the schema. `Program.cs` is a placeholder until Step 1.
 
 ## Working from two places (VS Code and mobile)
 

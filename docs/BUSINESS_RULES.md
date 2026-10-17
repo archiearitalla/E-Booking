@@ -287,7 +287,8 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 | Availability, DST, buffers, blackouts, lead time, horizon | ✅ 55 self-checks pass (`tests/BarberBook.Core.SelfCheck`) |
 | State machine, cancellation and no-show policy, passwords, slugs | ✅ same run |
 | Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | ✅ 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
-| ASP.NET Core web layer (EF mapping, services, pages) | 🟡 written, **not compiled or run yet** because NuGet was unreachable in the authoring environment. First step on a machine with internet: `dotnet build`, then fix anything the compiler reports |
+| EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/BarberBook.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
+| ASP.NET Core services and pages | ⬜ not written yet (Steps 1-5 of the build plan) |
 | Integration test of the full booking flow against the real app | ⬜ |
 | Load test of the booking race through the application | ⬜ |
 
