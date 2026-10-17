@@ -7,6 +7,7 @@ Read [`docs/BUSINESS_RULES.md`](docs/BUSINESS_RULES.md) first. It is the source 
 
 ## Where to start
 
+- Building it on your PC: [`docs/START_HERE.md`](docs/START_HERE.md)
 - Spec: [`docs/BUSINESS_RULES.md`](docs/BUSINESS_RULES.md)
 - What to build next, with acceptance criteria: [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)
 - Working conventions and the VS Code / mobile workflow: [`CLAUDE.md`](CLAUDE.md)
