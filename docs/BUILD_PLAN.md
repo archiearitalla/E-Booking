@@ -104,7 +104,8 @@ Files: `Dockerfile`, `docs/DEPLOY.md`.
 Render free web service (Docker) or Cloud Run, Neon Postgres, secrets as environment variables, regular `pg_dump` backup (section 17.1).
 
 Acceptance:
-- `CREATE EXTENSION btree_gist` succeeds on Neon, and `tests/db/double_booking.sh` passes against it. If not, stop and choose another database before going live (invariant I1 depends on it).
+- Database is **Neon Free, PostgreSQL 16** (decided, see rules section 17.3). Create a separate Neon branch for tests. `CREATE EXTENSION btree_gist` succeeds there, and `tests/db/double_booking.sh` passes against that test branch. If not, stop and use the fallback (Supabase Free) or another database before going live, because invariant I1 depends on it.
+- A scheduled `pg_dump` backup is stored outside Neon.
 - Booking page works on the free host; cold start behavior is documented.
 
 ## Step 9: JSON API and Flutter ⬜

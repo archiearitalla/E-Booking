@@ -298,7 +298,7 @@ Principle: start at ₱0 and keep every provider behind a configuration switch, 
 | Need | Free choice | Known limits (verify before relying on them) | Risk |
 |---|---|---|---|
 | Source code | GitHub private repository | n/a | none |
-| Database | Neon Postgres, Free plan | 1 GB storage, 100 compute-hours per project per month, compute suspends after 5 minutes idle, no card | First query after idle is slower. Hitting a limit suspends compute or blocks writes until upgrade. Must confirm the `btree_gist` extension is allowed, because invariant I1 depends on it ❓ |
+| Database | **Decided: Neon Postgres, Free plan, PostgreSQL 16** | 1 GB storage, 100 compute-hours per project per month, compute suspends after 5 minutes idle and wakes automatically, no card. `btree_gist` is listed as supported (version 1.7 on PostgreSQL 16) | First query after idle is slower. Hitting a limit suspends compute or blocks writes until upgrade. Free-plan availability of `btree_gist` is not stated in the docs, so it is confirmed by the first migration (see below) |
 | Web hosting | Render free web service (Docker image) or Google Cloud Run always-free | Render: 512 MB RAM, sleeps after 15 idle minutes (about 1 minute to wake), 750 instance-hours per month. Cloud Run: 2M requests per month, card required | Cold start on the first customer. Not for a paying shop without a keep-warm check or a paid plan |
 | Email (confirmations) | Resend free | 3,000 emails per month, 100 per day, 1 verified domain | A busy shop can reach the daily cap. Sending needs a domain you own |
 | Push (Flutter app) | Firebase Cloud Messaging | No per-message charge, as far as I know ❓ | Needs the mobile app installed |
@@ -330,3 +330,10 @@ Free-tier limits change over time, so recheck each provider's pricing page befor
 - **Not the app host for now.** Cloudflare Containers (the way to run an ASP.NET Core Docker image there) is not on the Workers Free plan; it needs Workers Paid. Workers themselves run JavaScript/TypeScript/WebAssembly, not ASP.NET Core.
 - **Good as the front door** (verify each against current docs before relying on it): DNS, TLS and CDN in front of the real host, bot protection on the booking form, hosting the Flutter web build or a landing page as static files.
 - **Alternative later:** rewrite the API as Workers plus Hyperdrive to Postgres. Workers Free allows 100,000 requests per day and 10 ms CPU per request, and Hyperdrive Free allows 100,000 queries per day. It would not sleep like Render, but it abandons the C# code and tests, so it is only worth reconsidering if the free hosting cold start becomes a real problem.
+
+### 17.3 Database decision and its safety check
+
+- **Chosen:** Neon Free, PostgreSQL 16, because the double-booking guarantee (invariant I1) needs `btree_gist` and Neon lists it, and the project does not pause after a week of inactivity.
+- **Fallback:** Supabase Free also lists `btree_gist`, but the project pauses after one week of inactivity and has no automatic backups, so it is only a fallback.
+- **Gate before going live:** on the real Neon database, `CREATE EXTENSION btree_gist` must succeed and `tests/db/double_booking.sh` must pass against a separate Neon branch or database (the script wipes its schema, so never point it at live data). If either fails, do not go live; switch database first.
+- **Backups:** the free plan has a very short history window and no scheduled snapshots. Take a regular `pg_dump` and store it outside Neon.
