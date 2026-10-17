@@ -201,12 +201,14 @@ Two customers confirming the last slot at the same moment is expected, not excep
 
 No SMS gateway is used (it is the only provider cost with no free tier). Messages are sent by a person from their own messaging app, and the system only prepares the link:
 
-- **Customer to shop:** the confirmation page has a "Message the shop" button that opens the customer's messaging app with the shop's number and a prefilled text (service, date and time, booking reference, manage link). An optional Messenger or Viber link can be added in the shop's settings.
+- **Customer to shop (SMS):** the confirmation page has a "Message the shop" button that opens the customer's messaging app with the shop's number and a prefilled text (service, date and time, booking reference, manage link).
+- **Customer to shop (Messenger):** if the shop sets its Facebook Page username in settings, the confirmation page also shows "Message us on Messenger", linking to `https://m.me/<page-username>`. Meta's documentation describes `m.me` links for Pages only and documents no way to prefill text, so the button first **copies the booking message to the clipboard** and the customer pastes it into the chat. Once the customer has messaged the Page, the shop continues the conversation from the Page inbox.
 - **Shop to customer:** each booking in the back office has a "Message customer" button that opens the staff member's own messaging app with the customer's number and a prefilled reminder or confirmation text. A "Copy message" button is the fallback when the device cannot open a message app (most desktop browsers).
+- **Messenger limits:** a phone number cannot open a Messenger chat, so the shop cannot start a Messenger conversation with a customer from our data alone. An optional "Messenger link" field on the booking form is deferred ❓ (opening a person's chat through `m.me/<username>` is not covered by Meta's documentation, so it needs testing first).
 - The text is prefilled but always editable by the sender. Templates are fixed in English for the MVP.
 - Links are built with the `sms:` URI scheme. The exact form that works on both Android and iOS must be tested on real devices ❓.
 - No delivery tracking, no automatic sending, no cost. Automatic reminders, if wanted, use free email (section 17).
-- Needs new business settings, `contact_phone` and an optional `messenger_url`, added by an additive migration `002_*` ⬜.
+- Needs new business settings, `contact_phone` and an optional `messenger_page` (the Page username, not a full URL), added by an additive migration `002_*` ⬜.
 - Message bodies must be URL-encoded, and phone numbers are shown only to signed-in staff of that business, never on public pages.
 
 ## 9. Tenancy, roles and authorization
