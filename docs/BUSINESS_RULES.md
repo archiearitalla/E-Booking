@@ -176,7 +176,7 @@ Further rules:
 - **Price and name snapshot:** `price_snapshot` and `service_name_snapshot` are copied at booking time. Later price edits never change old bookings.
 - **Customer identity:** customers are per business, matched by normalized phone number. A repeat booking updates the name and email on file.
 - **Phone:** digits with an optional leading `+`, 7 to 15 digits.
-- **Staff-created bookings** (walk-ins, phone-ins) skip the lead time, so a booking can start right now. They still must be inside working hours, outside blackouts and free of overlaps, and the database constraint still applies. The actor is recorded as `STAFF` in the audit log.
+- **Staff-created bookings** (walk-ins, phone-ins) skip the lead time, so a booking can start right now. They still must be inside working hours, outside blackouts and free of overlaps, and the database constraint still applies. "Right now" means the slot already in progress: a walk-in may start up to one slot length (the business's slot size) before the current time (decided by the owner). The actor is recorded as `STAFF` in the audit log.
 - **Input limits:** name 1–80 chars, email ≤ 120 chars and valid format, notes none in MVP.
 
 ### 8.3 Race handling
@@ -289,7 +289,8 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 | Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | ✅ 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
 | EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/BarberBook.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
 | `BookingService` (availability, create, idempotency, transitions, audit) | ✅ 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
-| Pages, onboarding, admin, message links | ⬜ not written yet (Steps 3-6 of the build plan) |
+| Registration, sign-in/out, cookie claims, `/Admin` protection, sign-in rate limit, antiforgery | ✅ 20 tests over services and HTTP against PostgreSQL 16 (`Secure` cookie flag and real-browser rendering not verified) |
+| Public booking pages, admin back office, message links | ⬜ not written yet (Steps 4-6 of the build plan) |
 | Integration test of the full booking flow against the real app | ⬜ |
 | Load test of the booking race through the application | ⬜ |
 

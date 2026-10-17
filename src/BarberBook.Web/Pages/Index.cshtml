@@ -1,0 +1,11 @@
+@page
+@model BarberBook.Web.Pages.IndexModel
+@{
+    ViewData["Title"] = Text.AppName;
+}
+<div class="card">
+    <h1>@Text.HomeTitle</h1>
+    <p>@Text.HomeBody</p>
+    <p><a class="button" href="/Register">@Text.NavRegister</a></p>
+    <p>@Text.HomeHaveShop <a href="/Login">@Text.NavSignIn</a>.</p>
+</div>

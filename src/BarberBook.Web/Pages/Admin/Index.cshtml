@@ -1,0 +1,10 @@
+@page
+@model BarberBook.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = Text.AdminTitle;
+}
+<div class="card">
+    <h1>@Text.AdminTitle</h1>
+    <p>@Text.AdminWelcome <strong>@User.DisplayName()</strong> <span class="badge">@User.Role()</span></p>
+    <p>@Text.AdminSoon</p>
+</div>

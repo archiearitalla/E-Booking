@@ -1,0 +1,21 @@
+using System.Security.Claims;
+
+namespace BarberBook.Web.Services;
+
+/// <summary>
+/// The signed-in user's tenant and identity. Back-office code takes the business id from here, never from the request.
+/// </summary>
+public static class UserClaims
+{
+    public const string BusinessIdType = "business_id";
+
+    public static Guid? BusinessId(this ClaimsPrincipal user) =>
+        Guid.TryParse(user.FindFirstValue(BusinessIdType), out var id) ? id : null;
+
+    public static Guid? UserId(this ClaimsPrincipal user) =>
+        Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+
+    public static string? Role(this ClaimsPrincipal user) => user.FindFirstValue(ClaimTypes.Role);
+
+    public static string? DisplayName(this ClaimsPrincipal user) => user.FindFirstValue(ClaimTypes.Name);
+}

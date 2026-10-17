@@ -1,0 +1,53 @@
+@page
+@model BarberBook.Web.Pages.RegisterModel
+@{
+    ViewData["Title"] = Text.RegisterTitle;
+}
+<div class="card">
+    <h1>@Text.RegisterTitle</h1>
+    <form method="post" novalidate>
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="alert" role="alert">@Text.ValidationFailed</div>
+        }
+
+        <div class="field">
+            <label for="BusinessName">@Text.LabelShopName</label>
+            <input type="text" id="BusinessName" name="Input.BusinessName" value="@Model.Input.BusinessName" maxlength="80" autocomplete="organization"
+                   aria-invalid="@(Model.ErrorFor("businessName") is null ? "false" : "true")" aria-describedby="BusinessName-error" />
+            @if (Model.ErrorFor("businessName") is { } e1) { <p class="error" id="BusinessName-error">@e1</p> }
+        </div>
+
+        <div class="field">
+            <label for="Slug">@Text.LabelSlug</label>
+            <input type="text" id="Slug" name="Input.Slug" value="@Model.Input.Slug" maxlength="40" autocapitalize="none" autocomplete="off"
+                   aria-invalid="@(Model.ErrorFor("slug") is null ? "false" : "true")" aria-describedby="Slug-hint Slug-error" />
+            <p class="hint" id="Slug-hint">@Text.HintSlug</p>
+            @if (Model.ErrorFor("slug") is { } e2) { <p class="error" id="Slug-error">@e2</p> }
+        </div>
+
+        <div class="field">
+            <label for="OwnerName">@Text.LabelOwnerName</label>
+            <input type="text" id="OwnerName" name="Input.OwnerName" value="@Model.Input.OwnerName" maxlength="80" autocomplete="name"
+                   aria-invalid="@(Model.ErrorFor("ownerName") is null ? "false" : "true")" aria-describedby="OwnerName-error" />
+            @if (Model.ErrorFor("ownerName") is { } e3) { <p class="error" id="OwnerName-error">@e3</p> }
+        </div>
+
+        <div class="field">
+            <label for="Email">@Text.LabelEmail</label>
+            <input type="email" id="Email" name="Input.Email" value="@Model.Input.Email" maxlength="120" autocomplete="email"
+                   aria-invalid="@(Model.ErrorFor("email") is null ? "false" : "true")" aria-describedby="Email-error" />
+            @if (Model.ErrorFor("email") is { } e4) { <p class="error" id="Email-error">@e4</p> }
+        </div>
+
+        <div class="field">
+            <label for="Password">@Text.LabelPassword</label>
+            <input type="password" id="Password" name="Input.Password" maxlength="128" autocomplete="new-password"
+                   aria-invalid="@(Model.ErrorFor("password") is null ? "false" : "true")" aria-describedby="Password-hint Password-error" />
+            <p class="hint" id="Password-hint">@Text.HintPassword</p>
+            @if (Model.ErrorFor("password") is { } e5) { <p class="error" id="Password-error">@e5</p> }
+        </div>
+
+        <button type="submit" class="primary">@Text.ButtonRegister</button>
+    </form>
+</div>

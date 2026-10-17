@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - @Text.AppName</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="/">@Text.AppName</a>
+        <nav aria-label="Main">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a href="/Admin">@Text.NavDashboard</a>
+                <form method="post" asp-page="/Logout" class="inline">
+                    <button type="submit" class="link">@Text.NavSignOut</button>
+                </form>
+            }
+            else
+            {
+                <a href="/Login">@Text.NavSignIn</a>
+                <a href="/Register">@Text.NavRegister</a>
+            }
+        </nav>
+    </header>
+    <main class="container">
+        @RenderBody()
+    </main>
+    <footer class="site-footer">@Text.AppName v@(AppInfo.Version)</footer>
+</body>
+</html>

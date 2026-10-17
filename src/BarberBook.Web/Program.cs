@@ -17,6 +17,8 @@ builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionSt
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<BarberBook.Web.Services.BookingService>();
+builder.Services.AddScoped<BarberBook.Web.Services.OnboardingService>();
+builder.Services.AddScoped<BarberBook.Web.Services.AuthService>();
 
 // Authentication: cookie for the web back office. Authorization is always enforced server-side.
 builder.Services
@@ -50,8 +52,9 @@ var bookingPerMinute = builder.Configuration.GetValue("RateLimits:BookingPerMinu
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    o.AddPolicy(RateLimitPolicies.Auth, ctx => ByClientIp(ctx, authPerMinute));
-    o.AddPolicy(RateLimitPolicies.Booking, ctx => ByClientIp(ctx, bookingPerMinute));
+    // Sign-in and registration count attempts, i.e. form posts; merely viewing the form is not limited.
+    o.AddPolicy(RateLimitPolicies.Auth, ctx => ByClientIp(ctx, authPerMinute, postOnly: true));
+    o.AddPolicy(RateLimitPolicies.Booking, ctx => ByClientIp(ctx, bookingPerMinute, postOnly: false));
 });
 
 // Behind a reverse proxy (Render, Cloud Run, Cloudflare) the real client IP is in X-Forwarded-For.
@@ -123,15 +126,17 @@ app.MapGet("/healthz", async (IDbContextFactory<AppDbContext> factory, Cancellat
 
 app.Run();
 
-static RateLimitPartition<string> ByClientIp(HttpContext ctx, int permitsPerMinute) =>
-    RateLimitPartition.GetFixedWindowLimiter(
-        ctx.Connection.RemoteIpAddress?.ToString() ?? IPAddress.None.ToString(),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = permitsPerMinute,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0,
-        });
+static RateLimitPartition<string> ByClientIp(HttpContext ctx, int permitsPerMinute, bool postOnly) =>
+    postOnly && !HttpMethods.IsPost(ctx.Request.Method)
+        ? RateLimitPartition.GetNoLimiter("not-limited")
+        : RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? IPAddress.None.ToString(),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitsPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            });
 
 public static class RateLimitPolicies
 {

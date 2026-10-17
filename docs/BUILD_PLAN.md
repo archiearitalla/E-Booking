@@ -22,7 +22,7 @@ Acceptance:
 
 ## Step 1: Program.cs and startup ✅ (parts unverified)
 
-Verified: empty database gets all tables on first start, second start applies nothing; `/healthz` 200 with version, and 503 after the database was dropped while the app ran; security headers present on responses; `/Error` renders. Unverified until later steps add endpoints/pages: the `auth`/`booking` rate-limit policies returning 429 (defined, not yet attached), the `/Admin` folder policy redirect (no Admin pages yet), HSTS (HTTPS only), forwarded-headers (`Proxy:TrustForwardedHeaders`, off by default).
+Verified: empty database gets all tables on first start, second start applies nothing; `/healthz` 200 with version, and 503 after the database was dropped while the app ran; security headers present on responses; `/Error` renders. Verified in Step 3: the `auth` rate-limit policy returns 429 and the `/Admin` folder policy redirects to `/Login`. Still unverified: the `booking` policy (not attached until Step 4), HSTS (HTTPS only), forwarded headers (`Proxy:TrustForwardedHeaders`, off by default).
 
 Files: `src/BarberBook.Web/Program.cs`, `appsettings.json`, `appsettings.Development.json`, `Pages/Error.cshtml`.
 
@@ -54,7 +54,7 @@ Acceptance (integration tests against a real PostgreSQL):
 
 Verified: all of the above in `tests/BarberBook.Web.Tests` (21 xunit tests, real PostgreSQL 16, 25 consecutive runs without a failure after the fixes below). Findings while testing: (1) concurrent inserts into the exclusion constraint can deadlock (40P01, wrapped by EF in `InvalidOperationException`) and 50 at once exceeded the 30 s command timeout, so attempts for one staff member are queued with `pg_advisory_xact_lock`; the constraint is still the guarantee. (2) A retry with the same idempotency key that lost the slot race now returns the existing booking instead of `SlotTaken`. Interpretation to confirm: a staff walk-in may start in the slot that is in progress right now (up to one slot length ago). Not verified: HTTP layer (no pages yet), Held/Pending flows beyond the state machine, Neon behaviour of advisory locks.
 
-## Step 3: Onboarding and sign-in ⬜
+## Step 3: Onboarding and sign-in ✅
 
 Files: `Services/OnboardingService.cs`, `Services/AuthService.cs`, `Pages/Register`, `Pages/Login`, `Pages/Logout`.
 
@@ -65,6 +65,8 @@ Acceptance:
 - Wrong password and unknown email produce the same message and similar timing.
 - After sign-in, `User` has `business_id`, role and display name claims. Sign-out clears the cookie.
 - More than the allowed attempts per minute returns 429.
+
+Verified: all of the above in `tests/BarberBook.Web.Tests` (41 tests now, 20 of them for Step 3; run 5 times in a row without a failure; the HTTP ones drive the real app in-process against PostgreSQL 16) and by starting the real app under Kestrel (pages 200, `/Admin` redirects to `/Login`). Also covered: parallel registrations for one slug give one success and friendly errors; the password is stored as a PBKDF2 hash; open redirects through `ReturnUrl` are ignored; a form post without the antiforgery token is rejected; the auth cookie is `HttpOnly` and `SameSite=Lax`. Notes: the 429 limit counts form posts only (viewing the form is free); `Pages/Admin/Index` is a placeholder until Step 5; `PlanLimits` holds the 1-staff FREE limit for the staff page in Step 5. Not verified: the `Secure` cookie flag (needs HTTPS), real-browser rendering, accessibility checks, and "similar timing" is a loose 0.5x to 2x bound on PBKDF2 time, not a side-channel analysis.
 
 ## Step 4: Public booking pages ⬜
 
