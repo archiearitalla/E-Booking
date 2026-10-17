@@ -1,0 +1,315 @@
+# BarberBook — Business Rules
+
+Source of truth for how the booking system behaves. Code, API, database and every client (web, admin, mobile, widget) must follow this document. If a requirement conflicts with an invariant in section 4, raise it here first and change this file in the same pull request as the code.
+
+- **Status:** Draft v0.1 — for owner review
+- **Product:** Multi-tenant SaaS booking for small service businesses (barbershops and salons first)
+- **Stack:** ASP.NET Core 8, PostgreSQL 16, EF Core (Npgsql)
+- **Legend:** ✅ implemented and verified here · 🟡 written, not yet compiled or run · ⬜ planned · ❓ open decision (section 15)
+
+---
+
+## 1. Scope
+
+**In scope for the MVP**
+
+- Appointment bookings: a customer picks a service, an optional staff member, a date and a time.
+- Pay on site. No online payment in the MVP.
+- Many independent businesses ("tenants") on one deployment, each with its own booking page `/b/{slug}`.
+- Business owner back office: bookings, services, staff, working hours, closures, settings, audit log.
+- Free plan limited to 1 staff member.
+
+**Out of scope for the MVP** (see roadmap, section 14): online payments and deposits, SMS/email reminders, rescheduling, multi-branch, waitlists, loyalty, events/classes, restaurant/table reservations, customer accounts.
+
+## 2. Glossary
+
+| Term | Meaning |
+|---|---|
+| Business (tenant) | One shop. Owns staff, services, customers, bookings. Identified publicly by `slug`. |
+| Staff | A bookable resource: one person whose time can be reserved. Capacity is always 1. |
+| Service | What is booked (Haircut). Has duration, optional buffer, price. |
+| Working hours | Weekly open windows per staff member, in the business's local time. |
+| Blackout | A closure (holiday, leave) that overrides working hours. Shop-wide or for one staff member. |
+| Slot | A possible start time, derived on demand. Never stored. |
+| Buffer | Cleanup time after a service that blocks the staff member but is not part of the appointment. |
+| Manage token | Unguessable secret in the customer's booking link. The customer's only credential. |
+| Actor | Who performed a change: `CUSTOMER`, `STAFF` or `SYSTEM`. |
+
+## 3. Platforms and the shared-API principle
+
+Every surface talks to **one** booking API that owns the invariants. Availability, double-booking protection, cancellation windows and authorization are never re-implemented in a client. Clients may *display* rules, but the server decides.
+
+| Surface | Users | Responsibility | Status |
+|---|---|---|---|
+| Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | 🟡 |
+| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | 🟡 |
+| JSON API `/api/v1` | Mobile apps, embeddable widget, integrations | Same operations as above over HTTP | ⬜ |
+| Customer / staff mobile app (Flutter, one codebase for Android and iOS) | Customers, staff | Thin client of the JSON API | ⬜ |
+| Embeddable widget | Shop's own website | Iframe or script around the public API | ⬜ |
+
+**Design rules for the platforms**
+
+1. The Razor pages and the JSON API both call the same application services (`BookingService`, `OnboardingService`). No business logic lives in pages or controllers.
+2. The API is versioned (`/api/v1`). Breaking changes require `/v2`; mobile apps in the wild cannot be force-updated.
+3. Business behavior is **configuration, not code**: slot size, lead time, horizon, cancellation cutoff, buffers, durations and hours are per-business data (section 6). This is what makes the system "dynamic" per tenant.
+4. Clients never send prices, durations, tenant ids or customer ids as trusted values. The server derives them from the service, the slug and the token.
+5. Errors use one shape across platforms (section 8.4).
+
+### 3.1 Planned API surface (`/api/v1`) ⬜
+
+Public, unauthenticated, rate limited:
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/businesses/{slug}` | Business info, active services, active staff |
+| GET | `/businesses/{slug}/availability?serviceId&staffId&date` | Free start times for one local date. `staffId` optional = any available |
+| POST | `/businesses/{slug}/bookings` | Create a booking. Requires `Idempotency-Key` header |
+| GET | `/bookings/{manageToken}` | View a booking |
+| POST | `/bookings/{manageToken}/cancel` | Customer cancellation, subject to the cutoff |
+
+Authenticated (owner/staff):
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/auth/login` | Credentials for non-browser clients. ❓ token format (section 15) |
+| GET | `/admin/bookings?from&to&staffId&status` | Calendar data |
+| POST | `/admin/bookings` | Staff creates a booking for a walk-in or phone customer |
+| POST | `/admin/bookings/{id}/transition` | Complete, no-show, cancel with reason |
+| CRUD | `/admin/services`, `/admin/staff`, `/admin/blackouts` | Configuration |
+| PUT | `/admin/staff/{id}/hours`, `/admin/settings` | Hours and business settings |
+
+## 4. Non-negotiable invariants
+
+These must hold at all times. Everything else is policy.
+
+| # | Invariant | Enforced by | Verified |
+|---|---|---|---|
+| I1 | A staff member is never double-booked. | PostgreSQL exclusion constraint `no_double_booking` on `(staff_id, active_range)` | ✅ 40 simultaneous inserts of one slot: 1 wins, 39 rejected |
+| I2 | Availability is derived, never stored. A slot is free only if inside working hours, outside blackouts, clear of active bookings plus buffers, after the lead time and inside the horizon. | `AvailabilityCalculator` (pure function), reused at confirmation | ✅ 32 unit checks |
+| I3 | Status changes follow the lifecycle in section 5. Cancelling frees the slot in the same transaction. | `BookingStateMachine` + generated `active_range` column | ✅ |
+| I4 | Instants are stored in UTC. The business's IANA time zone is stored alongside. No naive local times, no fixed offsets. | `timestamptz` columns, `location_time_zone`, `LocalTime` helpers | ✅ DST days verified (23h/25h) |
+| I5 | Holds are temporary and self-expiring. | `hold_expires_at_utc` + expiry job | ⬜ not used in the MVP (no HELD flow yet) |
+| I6 | Money and booking agree. A booking is confirmed only when its required payment state is satisfied. | Not applicable while pay-on-site | ⬜ |
+| I7 | A tenant can never see or modify another tenant's data. | Every query filtered by `business_id`; composite foreign keys `(id, business_id)` in the database | ✅ cross-tenant FK rejected; 🟡 query filters |
+| I8 | A customer can access only their own booking, via the manage token. | Lookup by token; unknown token returns not found | 🟡 |
+
+## 5. Booking lifecycle
+
+```
+              ┌────────── expires (TTL) ─────────┐
+              ▼                                   │
+ (create) → HELD ──confirm──→ PENDING ──approve/pay──→ CONFIRMED ──attend──→ COMPLETED
+              │                  │                      │
+              │                  │                      ├── cancel ──→ CANCELLED
+              └──── abandon ─────┴──→ CANCELLED         └── absent ──→ NO_SHOW
+```
+
+**MVP behavior:** pay-on-site and instant confirmation, so a booking is created directly as `CONFIRMED`. `HELD` and `PENDING` exist in the model and database for online payment later.
+
+| Rule | Detail |
+|---|---|
+| Occupies the slot | `HELD`, `PENDING`, `CONFIRMED` |
+| Does not occupy | `COMPLETED`, `CANCELLED`, `NO_SHOW` |
+| Terminal | `COMPLETED`, `CANCELLED`, `NO_SHOW`. No way back. |
+| Complete | Only from `CONFIRMED`, and only after the start time |
+| No-show | Only from `CONFIRMED`, and only 15 minutes after the start (grace period) |
+| Cancel | From `HELD`, `PENDING`, `CONFIRMED`. See section 7 |
+| Every change | Writes an audit row (section 11) |
+| Concurrent edits | Optimistic concurrency (`xmin`). The second writer is told the booking changed and must refresh. |
+
+## 6. Availability rules
+
+Configurable per business unless noted. Defaults apply to new businesses.
+
+| Setting | Default | Allowed | Meaning |
+|---|---|---|---|
+| Slot size | 30 min | 5, 10, 15, 20, 30, 60 | Step between offered start times |
+| Lead time | 60 min | ≥ 0 | Cannot book closer than this to now |
+| Horizon | 30 days | 1–365 | Cannot book further ahead than this |
+| Cancel cutoff | 2 h | ≥ 0 | Customers may cancel until this long before the start |
+| Service duration | 30 min | 5–600 | Per service |
+| Service buffer | 0 min | 0–240 | Per service. Blocks the staff member after the appointment |
+| Time zone | `Asia/Manila` | IANA id | Per business |
+
+**How a free slot is decided** (all must be true):
+
+1. The start is inside one of the staff member's windows for that weekday, and `start + duration` fits before the window closes. The buffer may extend past closing time.
+2. It does not overlap a blackout (shop-wide or this staff member).
+3. `[start, start + duration + buffer)` does not overlap any active booking's occupied range. Back-to-back is allowed: a range ending exactly when another starts is not an overlap.
+4. `start ≥ now + lead time` and `start ≤ now + horizon`.
+5. The staff member is active and offers the service.
+
+Further rules:
+
+- A day may have several windows (split shift for lunch). A window whose close is before its open crosses midnight (for example 18:00–02:00).
+- Slots are generated in UTC from the window's local open time, so DST transitions never skip or duplicate a slot.
+- **"Any available"** is not stored as null. At confirmation the server assigns a concrete staff member: among free eligible staff, the one with the fewest bookings that day, then by sort order.
+- The server re-runs the availability check at confirmation. A page that was loaded earlier is never trusted.
+
+## 7. Cancellation, no-show and rescheduling
+
+| Actor | Cancel | Condition |
+|---|---|---|
+| Customer (token) | Allowed | Booking is active, appointment not started, and now ≤ start − cutoff |
+| Staff / owner | Allowed | Any time while the booking is active. Reason recommended, recorded |
+| System | Allowed | Hold expiry (future) |
+
+- A refused customer cancellation shows the shop's cutoff and tells the customer to contact the shop.
+- No-show: marked by staff after the grace period. No fee in the MVP (pay on site). The count per customer is a roadmap item.
+- **Rescheduling** ⬜: will be atomic. The new slot is secured first, then the old one released, so the customer never loses both. Until then, cancel and rebook.
+- Closing a shop day or changing hours **never silently cancels** existing bookings. The admin sees a warning with the number of affected bookings and handles them deliberately.
+
+## 8. Booking creation
+
+### 8.1 Flow
+
+1. Customer chooses service, optional staff, date; the page shows free start times (derived, section 6).
+2. Customer enters name, phone and optional email. The form carries a one-time idempotency key.
+3. Server validates input, loads the service and eligible staff **for this business only**, re-checks availability, then attempts the insert.
+4. If the database rejects the insert (exclusion constraint), the server tries the next eligible staff member (for "any available"). If none succeed the customer gets "that time was just taken, please choose another".
+5. On success the booking is `CONFIRMED`, an audit row is written in the same transaction, and the customer is sent to their manage link.
+
+### 8.2 Rules
+
+- **Idempotency:** the same key from the same business creates at most one booking. A retry returns the existing booking (unique index on `(business_id, idempotency_key)`).
+- **Price and name snapshot:** `price_snapshot` and `service_name_snapshot` are copied at booking time. Later price edits never change old bookings.
+- **Customer identity:** customers are per business, matched by normalized phone number. A repeat booking updates the name and email on file.
+- **Phone:** digits with an optional leading `+`, 7 to 15 digits.
+- **Input limits:** name 1–80 chars, email ≤ 120 chars and valid format, notes none in MVP.
+
+### 8.3 Race handling
+
+Two customers confirming the last slot at the same moment is expected, not exceptional. Exactly one wins in the database; the loser receives a normal "slot taken" response (HTTP 409 in the API), never a server error.
+
+### 8.4 API error shape ⬜
+
+`application/problem+json` with a stable machine-readable `code`:
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `validation_failed` | 422 | Bad or missing input; field errors included |
+| `slot_taken` | 409 | The chosen time is no longer available |
+| `policy_violation` | 409 | For example cancellation after the cutoff |
+| `stale` | 409 | The booking changed since it was loaded |
+| `not_found` | 404 | Unknown slug or token, or not your tenant (indistinguishable on purpose) |
+| `rate_limited` | 429 | Too many requests |
+| `unauthorized` / `forbidden` | 401 / 403 | Not signed in / not allowed |
+
+## 9. Tenancy, roles and authorization
+
+- All back-office data access is scoped by the signed-in user's `business_id`. It is taken from the authenticated principal, never from the request.
+- Customers have no accounts in the MVP. The manage token authorizes exactly one booking.
+- Role tags are displayed as badges, but authorization is always enforced server-side.
+
+| Role | MVP status | Can |
+|---|---|---|
+| OWNER | ✅ | Everything for their business |
+| MANAGER | ⬜ | Everything except billing/plan and deleting the business |
+| STAFF | ⬜ | Own schedule, mark complete/no-show, create walk-ins, block own time |
+
+- Passwords: PBKDF2-SHA256, 600,000 iterations, per-password salt, constant-time compare. Unknown emails take the same code path as wrong passwords.
+- Sign-in and booking endpoints are rate limited per client IP.
+
+## 10. Pricing and payments
+
+- MVP: pay on site. Prices are shown in pesos (₱); the currency is not configurable yet.
+- Online payment ⬜ (PayMongo or Xendit): required deposit moves a booking through `PENDING`; the slot is held for a TTL; payment failure or timeout cancels the hold. Payment and booking endpoints must be idempotent. Captured money must never exist without a held slot (I6).
+
+## 11. Audit
+
+Every booking status change and creation writes: business, booking, actor type, actor id, actor label, action, from status, to status, reason, UTC time. The owner can view the latest entries. Audit rows are never edited or deleted by the application.
+
+## 12. Plans and limits
+
+| Plan | Staff | Notes |
+|---|---|---|
+| FREE | 1 | Enforced server-side when adding staff |
+| PRO | ❓ | Price and limits to be decided. Billing is not built |
+
+Pricing hypotheses (₱299–₱999 per month, SMS reminders as an add-on) are assumptions to test with the first 3–5 pilot shops, not commitments.
+
+## 13. Security and privacy
+
+- CSRF protection on every form POST; cookies are `HttpOnly`, `SameSite=Lax`, secure over HTTPS.
+- Parameterized queries only (EF Core). Output encoded by Razor.
+- Security headers: CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
+- Public availability responses contain times only. No customer names or phone numbers are exposed to other customers.
+- Secrets (connection strings) come from environment variables or a secret store, never from the repository.
+- Phone and email are personal data under the Philippine Data Privacy Act: collect only what is needed, state the purpose on the booking page, support deletion on request. ⬜ privacy notice and deletion tooling.
+- Database changes are additive and applied through numbered migrations. No `DROP`, `TRUNCATE` or destructive `ALTER` on existing tables without a reviewed plan and a verified backup.
+
+## 14. Roadmap (not in the MVP)
+
+1. JSON API `/api/v1` and Flutter mobile app
+2. SMS and email: confirmation, 24 h and 1 h reminders, cancellation notice
+3. Rescheduling (atomic)
+4. Staff-created walk-in bookings; manager and staff roles
+5. Online deposit via PayMongo/Xendit with holds and an expiry job
+6. Subscription billing for the PRO plan
+7. Hold-expiry job and payment reconciliation
+8. Customer no-show record and optional fee
+9. Multi-branch, other booking types (rooms, tables, classes)
+10. Tagalog and English UI toggle
+
+## 15. Open decisions for the owner
+
+1. **Niche language:** English only, or English with Tagalog labels on the public booking page?
+2. **Default cancel cutoff:** 2 hours is a guess. What do barbershops expect, and should the default be 0 (no restriction) to reduce friction?
+3. **Walk-ins:** should staff-created bookings bypass lead time and working hours, or follow the same rules?
+4. **Customer identity:** is phone number the right unique key, or should email also be accepted?
+5. ~~Reminders~~ **Decided (for now): free providers only.** Email via Resend free, push via FCM. SMS is paid and opt-in (section 17).
+6. **Mobile auth:** short-lived JWT plus refresh token, or opaque session tokens?
+7. **Plan limits:** what does PRO include (staff count, bookings per month, SMS)?
+8. **Data retention:** how long do we keep customer details after the last booking?
+9. ~~Mobile client~~ **Decided: Flutter** (cross-platform, Android and iOS from one codebase).
+
+## 16. Verification status
+
+| Area | Status |
+|---|---|
+| Availability, DST, buffers, blackouts, lead time, horizon | ✅ 55 self-checks pass (`tests/BarberBook.Core.SelfCheck`) |
+| State machine, cancellation and no-show policy, passwords, slugs | ✅ same run |
+| Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | ✅ 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
+| ASP.NET Core web layer (EF mapping, services, pages) | 🟡 written, **not compiled or run yet** because NuGet was unreachable in the authoring environment. First step on a machine with internet: `dotnet build`, then fix anything the compiler reports |
+| Integration test of the full booking flow against the real app | ⬜ |
+| Load test of the booking race through the application | ⬜ |
+
+## 17. Providers: free-tier plan (checked 2026-10-17)
+
+Principle: start at ₱0 and keep every provider behind a configuration switch, so moving to a paid plan or another vendor never touches business logic. The app talks to `IEmailSender` and `ISmsSender` interfaces ⬜, and the database and secrets come from environment variables.
+
+| Need | Free choice | Known limits (verify before relying on them) | Risk |
+|---|---|---|---|
+| Source code | GitHub private repository | n/a | none |
+| Database | Neon Postgres, Free plan | 1 GB storage, 100 compute-hours per project per month, compute suspends after 5 minutes idle, no card | First query after idle is slower. Hitting a limit suspends compute or blocks writes until upgrade. Must confirm the `btree_gist` extension is allowed, because invariant I1 depends on it ❓ |
+| Web hosting | Render free web service (Docker image) or Google Cloud Run always-free | Render: 512 MB RAM, sleeps after 15 idle minutes (about 1 minute to wake), 750 instance-hours per month. Cloud Run: 2M requests per month, card required | Cold start on the first customer. Not for a paying shop without a keep-warm check or a paid plan |
+| Email (confirmations) | Resend free | 3,000 emails per month, 100 per day, 1 verified domain | A busy shop can reach the daily cap. Sending needs a domain you own |
+| Push (Flutter app) | Firebase Cloud Messaging | No per-message charge, as far as I know ❓ | Needs the mobile app installed |
+| SMS reminders | **No free option found** | Semaphore lists ₱0.56 per text excluding VAT and mentions no free credits | Cost is about ₱1.12 plus VAT per booking for two reminders. Decision #5: SMS is a paid add-on in PRO or billed to the shop, never absorbed by the platform |
+| Payments | Not needed (pay on site) | n/a | n/a |
+
+**Rules that follow from this**
+
+- The free tier must not weaken any invariant. If a limit is hit, the system degrades by refusing new bookings clearly, never by double-booking.
+- Free hosting is for development and pilots with friendly shops. Move to a paid plan before charging customers.
+- Reminders default to email and push. SMS is opt-in per business.
+
+### 17.1 When to start paying (upgrade triggers)
+
+Rule: **no paid provider before there is paying revenue to cover it.** Each upgrade is triggered by a concrete event, not by a feeling.
+
+| Trigger | Upgrade |
+|---|---|
+| First paying shop goes live | Web hosting that does not sleep when idle (a customer must never wait about a minute for the booking page) |
+| Database reaches about 70% of the free storage or compute-hours | Paid database plan, which also adds restore and backups. Until then, take a regular `pg_dump` backup yourself |
+| Email daily cap (100 per day) is hit | Paid email plan |
+| A shop opts in to SMS reminders | SMS credits, charged to that shop through the PRO plan or a top-up |
+| Mobile app ready for release | Store developer accounts (Google Play and Apple have their own fees, check the current amount) |
+
+Free-tier limits change over time, so recheck each provider's pricing page before relying on a number in this section.
+
+### 17.2 Cloudflare
+
+- **Not the app host for now.** Cloudflare Containers (the way to run an ASP.NET Core Docker image there) is not on the Workers Free plan; it needs Workers Paid. Workers themselves run JavaScript/TypeScript/WebAssembly, not ASP.NET Core.
+- **Good as the front door** (verify each against current docs before relying on it): DNS, TLS and CDN in front of the real host, bot protection on the booking form, hosting the Flutter web build or a landing page as static files.
+- **Alternative later:** rewrite the API as Workers plus Hyperdrive to Postgres. Workers Free allows 100,000 requests per day and 10 ms CPU per request, and Hyperdrive Free allows 100,000 queries per day. It would not sleep like Render, but it abandons the C# code and tests, so it is only worth reconsidering if the free hosting cold start becomes a real problem.
