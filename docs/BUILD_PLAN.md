@@ -20,7 +20,9 @@ Acceptance:
 - `tests/db/double_booking.sh` prints "All database invariants hold."
 - `AppDbContext` model matches the SQL: write a small check that opens the context and runs `db.Bookings.Take(1)`, `db.Staff...` etc. against a migrated database without a column-name error.
 
-## Step 1: Program.cs and startup ⬜
+## Step 1: Program.cs and startup ✅ (parts unverified)
+
+Verified: empty database gets all tables on first start, second start applies nothing; `/healthz` 200 with version, and 503 after the database was dropped while the app ran; security headers present on responses; `/Error` renders. Unverified until later steps add endpoints/pages: the `auth`/`booking` rate-limit policies returning 429 (defined, not yet attached), the `/Admin` folder policy redirect (no Admin pages yet), HSTS (HTTPS only), forwarded-headers (`Proxy:TrustForwardedHeaders`, off by default).
 
 Files: `src/BarberBook.Web/Program.cs`, `appsettings.json`, `appsettings.Development.json`, `Pages/Error.cshtml`.
 
