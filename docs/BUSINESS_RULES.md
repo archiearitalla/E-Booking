@@ -5,6 +5,7 @@ Source of truth for how the booking system behaves. Code, API, database and ever
 - **Status:** Draft v0.1 — for owner review
 - **Product:** Multi-tenant SaaS booking for small service businesses (barbershops and salons first)
 - **Stack:** ASP.NET Core 8, PostgreSQL 16, EF Core (Npgsql)
+- **Guiding principle: free first.** Build and pilot at zero cost. No paid service until there are paying clients to cover it (section 17).
 - **Legend:** ✅ implemented and verified here · 🟡 written, not yet compiled or run · ⬜ planned · ❓ open decision (section 15)
 
 ---
@@ -175,6 +176,7 @@ Further rules:
 - **Price and name snapshot:** `price_snapshot` and `service_name_snapshot` are copied at booking time. Later price edits never change old bookings.
 - **Customer identity:** customers are per business, matched by normalized phone number. A repeat booking updates the name and email on file.
 - **Phone:** digits with an optional leading `+`, 7 to 15 digits.
+- **Staff-created bookings** (walk-ins, phone-ins) skip the lead time, so a booking can start right now. They still must be inside working hours, outside blackouts and free of overlaps, and the database constraint still applies. The actor is recorded as `STAFF` in the audit log.
 - **Input limits:** name 1–80 chars, email ≤ 120 chars and valid format, notes none in MVP.
 
 ### 8.3 Race handling
@@ -194,6 +196,18 @@ Two customers confirming the last slot at the same moment is expected, not excep
 | `not_found` | 404 | Unknown slug or token, or not your tenant (indistinguishable on purpose) |
 | `rate_limited` | 429 | Too many requests |
 | `unauthorized` / `forbidden` | 401 / 403 | Not signed in / not allowed |
+
+### 8.5 Message links instead of an SMS gateway
+
+No SMS gateway is used (it is the only provider cost with no free tier). Messages are sent by a person from their own messaging app, and the system only prepares the link:
+
+- **Customer to shop:** the confirmation page has a "Message the shop" button that opens the customer's messaging app with the shop's number and a prefilled text (service, date and time, booking reference, manage link). An optional Messenger or Viber link can be added in the shop's settings.
+- **Shop to customer:** each booking in the back office has a "Message customer" button that opens the staff member's own messaging app with the customer's number and a prefilled reminder or confirmation text. A "Copy message" button is the fallback when the device cannot open a message app (most desktop browsers).
+- The text is prefilled but always editable by the sender. Templates are fixed in English for the MVP.
+- Links are built with the `sms:` URI scheme. The exact form that works on both Android and iOS must be tested on real devices ❓.
+- No delivery tracking, no automatic sending, no cost. Automatic reminders, if wanted, use free email (section 17).
+- Needs new business settings, `contact_phone` and an optional `messenger_url`, added by an additive migration `002_*` ⬜.
+- Message bodies must be URL-encoded, and phone numbers are shown only to signed-in staff of that business, never on public pages.
 
 ## 9. Tenancy, roles and authorization
 
@@ -223,10 +237,10 @@ Every booking status change and creation writes: business, booking, actor type, 
 
 | Plan | Staff | Notes |
 |---|---|---|
-| FREE | 1 | Enforced server-side when adding staff |
+| FREE | 1 | Enforced server-side when adding staff. During the pilot every feature is free |
 | PRO | ❓ | Price and limits to be decided. Billing is not built |
 
-Pricing hypotheses (₱299–₱999 per month, SMS reminders as an add-on) are assumptions to test with the first 3–5 pilot shops, not commitments.
+Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are assumptions to test with the first 3–5 pilot shops, not commitments.
 
 ## 13. Security and privacy
 
@@ -236,12 +250,13 @@ Pricing hypotheses (₱299–₱999 per month, SMS reminders as an add-on) are a
 - Public availability responses contain times only. No customer names or phone numbers are exposed to other customers.
 - Secrets (connection strings) come from environment variables or a secret store, never from the repository.
 - Phone and email are personal data under the Philippine Data Privacy Act: collect only what is needed, state the purpose on the booking page, support deletion on request. ⬜ privacy notice and deletion tooling.
+- Retention: customer details are kept 24 months after the last booking, then anonymized (name and phone cleared, bookings kept for statistics). A customer can ask for deletion at any time. ⬜ job and tooling.
 - Database changes are additive and applied through numbered migrations. No `DROP`, `TRUNCATE` or destructive `ALTER` on existing tables without a reviewed plan and a verified backup.
 
 ## 14. Roadmap (not in the MVP)
 
 1. JSON API `/api/v1` and Flutter mobile app
-2. SMS and email: confirmation, 24 h and 1 h reminders, cancellation notice
+2. Free email and push reminders (Resend, FCM). A paid SMS gateway only if a paying shop asks for it
 3. Rescheduling (atomic)
 4. Staff-created walk-in bookings; manager and staff roles
 5. Online deposit via PayMongo/Xendit with holds and an expiry job
@@ -253,14 +268,14 @@ Pricing hypotheses (₱299–₱999 per month, SMS reminders as an add-on) are a
 
 ## 15. Open decisions for the owner
 
-1. **Niche language:** English only, or English with Tagalog labels on the public booking page?
-2. **Default cancel cutoff:** 2 hours is a guess. What do barbershops expect, and should the default be 0 (no restriction) to reduce friction?
-3. **Walk-ins:** should staff-created bookings bypass lead time and working hours, or follow the same rules?
-4. **Customer identity:** is phone number the right unique key, or should email also be accepted?
-5. ~~Reminders~~ **Decided (for now): free providers only.** Email via Resend free, push via FCM. SMS is paid and opt-in (section 17).
-6. **Mobile auth:** short-lived JWT plus refresh token, or opaque session tokens?
-7. **Plan limits:** what does PRO include (staff count, bookings per month, SMS)?
-8. **Data retention:** how long do we keep customer details after the last booking?
+1. ~~Language~~ **Decided: English only for the MVP.** All user-facing text lives in one place so Tagalog can be added later without touching logic.
+2. ~~Default cancel cutoff~~ **Decided: 2 hours**, configurable per business (section 6).
+3. ~~Walk-ins~~ **Decided:** staff-created bookings skip the lead time but still respect working hours, blackouts and overlaps (section 8.2).
+4. ~~Customer identity~~ **Decided: phone number** (section 8.2). Email is optional.
+5. ~~Reminders~~ **Decided: no SMS gateway.** Messages are sent manually through a prefilled link that opens the sender's own messaging app (section 8.5). Free email and push remain optional (section 17).
+6. ~~Mobile auth~~ **Decided (recommended default, no objection raised):** short-lived JWT access token (about 15 minutes) plus a refresh token kept in the phone's secure storage. Web admin keeps its cookie.
+7. **Plan limits, working default (not yet confirmed):** all features are free for pilot shops. The FREE plan keeps the 1-staff limit in code so a PRO plan can be defined after the pilot.
+8. ~~Data retention~~ **Decided (recommended default, no objection raised):** keep customer details 24 months after the last booking, then anonymize. Deletion on request always applies.
 9. ~~Mobile client~~ **Decided: Flutter** (cross-platform, Android and iOS from one codebase).
 
 ## 16. Verification status
@@ -285,14 +300,14 @@ Principle: start at ₱0 and keep every provider behind a configuration switch, 
 | Web hosting | Render free web service (Docker image) or Google Cloud Run always-free | Render: 512 MB RAM, sleeps after 15 idle minutes (about 1 minute to wake), 750 instance-hours per month. Cloud Run: 2M requests per month, card required | Cold start on the first customer. Not for a paying shop without a keep-warm check or a paid plan |
 | Email (confirmations) | Resend free | 3,000 emails per month, 100 per day, 1 verified domain | A busy shop can reach the daily cap. Sending needs a domain you own |
 | Push (Flutter app) | Firebase Cloud Messaging | No per-message charge, as far as I know ❓ | Needs the mobile app installed |
-| SMS reminders | **No free option found** | Semaphore lists ₱0.56 per text excluding VAT and mentions no free credits | Cost is about ₱1.12 plus VAT per booking for two reminders. Decision #5: SMS is a paid add-on in PRO or billed to the shop, never absorbed by the platform |
+| SMS reminders | **Not used** | No free SMS gateway exists (Semaphore lists about ₱0.56 per text excluding VAT) | Replaced by message links that open the user's own messaging app (section 8.5) |
 | Payments | Not needed (pay on site) | n/a | n/a |
 
 **Rules that follow from this**
 
 - The free tier must not weaken any invariant. If a limit is hit, the system degrades by refusing new bookings clearly, never by double-booking.
 - Free hosting is for development and pilots with friendly shops. Move to a paid plan before charging customers.
-- Reminders default to email and push. SMS is opt-in per business.
+- Reminders are manual message links (section 8.5). Automatic email and push are optional and free. SMS gateway is out unless a paying shop funds it.
 
 ### 17.1 When to start paying (upgrade triggers)
 
@@ -303,7 +318,7 @@ Rule: **no paid provider before there is paying revenue to cover it.** Each upgr
 | First paying shop goes live | Web hosting that does not sleep when idle (a customer must never wait about a minute for the booking page) |
 | Database reaches about 70% of the free storage or compute-hours | Paid database plan, which also adds restore and backups. Until then, take a regular `pg_dump` backup yourself |
 | Email daily cap (100 per day) is hit | Paid email plan |
-| A shop opts in to SMS reminders | SMS credits, charged to that shop through the PRO plan or a top-up |
+| A paying shop asks for automatic SMS | Add an SMS gateway, billed to that shop. Until then messages use the manual links in section 8.5 |
 | Mobile app ready for release | Store developer accounts (Google Play and Apple have their own fees, check the current amount) |
 
 Free-tier limits change over time, so recheck each provider's pricing page before relying on a number in this section.
