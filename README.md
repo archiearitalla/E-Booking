@@ -5,6 +5,12 @@ Online Booking System
 
 Read [`docs/BUSINESS_RULES.md`](docs/BUSINESS_RULES.md) first. It is the source of truth for behavior, invariants, API plan, free-tier providers and open decisions.
 
+## Where to start
+
+- Spec: [`docs/BUSINESS_RULES.md`](docs/BUSINESS_RULES.md)
+- What to build next, with acceptance criteria: [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)
+- Working conventions and the VS Code / mobile workflow: [`CLAUDE.md`](CLAUDE.md)
+
 ## Status
 
 | Part | State |
