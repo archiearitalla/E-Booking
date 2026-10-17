@@ -25,6 +25,8 @@ docs/                       BUSINESS_RULES.md (spec), BUILD_PLAN.md (what to bui
 ```bash
 dotnet run --project tests/BarberBook.Core.SelfCheck          # must print "All N checks passed."
 dotnet build src/BarberBook.Web                               # needs NuGet access
+# Integration tests need a disposable database whose name ends in _test (its schema is wiped):
+ConnectionStrings__Test="Host=localhost;Database=barberbook_test;Username=postgres;Password=..." dotnet test tests/BarberBook.Web.Tests
 # Disposable database only. The script wipes its public schema.
 PGHOST=localhost PGUSER=... PGPASSWORD=... PGDATABASE=barberbook_test tests/db/double_booking.sh
 ```
@@ -50,7 +52,7 @@ Mark anything not compiled or not run as unverified, in the commit message and i
 ## Current state
 
 Verified: Core (55 self-checks) and the database schema (20 checks on PostgreSQL 16).
-Compiled and checked against PostgreSQL 16 (Step 0 done): `src/BarberBook.Web/Data/*`, `AppInfo.cs`; run `tests/BarberBook.Web.ModelCheck` (needs `ConnectionStrings__Default` pointing at a disposable database) to confirm the EF model matches the schema. `Program.cs` is a placeholder until Step 1.
+Compiled and checked against PostgreSQL 16 (Step 0 done): `src/BarberBook.Web/Data/*`, `AppInfo.cs`; run `tests/BarberBook.Web.ModelCheck` (needs `ConnectionStrings__Default` pointing at a disposable database) to confirm the EF model matches the schema. `Services/BookingService.cs` (Step 2) is covered by `tests/BarberBook.Web.Tests` against real PostgreSQL.
 
 ## Working from two places (VS Code and mobile)
 

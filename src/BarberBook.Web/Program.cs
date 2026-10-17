@@ -16,6 +16,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<BarberBook.Web.Services.BookingService>();
 
 // Authentication: cookie for the web back office. Authorization is always enforced server-side.
 builder.Services

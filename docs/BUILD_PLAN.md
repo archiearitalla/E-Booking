@@ -38,7 +38,7 @@ Acceptance:
 - `/healthz` returns 200 with the version; with the database stopped it returns 503.
 - Response headers contain the security headers.
 
-## Step 2: BookingService ⬜
+## Step 2: BookingService ✅
 
 Files: `Services/BookingService.cs`, `Services/BookingResults.cs`.
 
@@ -51,6 +51,8 @@ Acceptance (integration tests against a real PostgreSQL):
 - Lead time, horizon, blackout, buffer and working hours are enforced on the server even when the posted start time came from a stale page.
 - Customer cancel after the cutoff is refused; staff cancel succeeds; every change writes an audit row.
 - A booking id from another business returns not found.
+
+Verified: all of the above in `tests/BarberBook.Web.Tests` (21 xunit tests, real PostgreSQL 16, 25 consecutive runs without a failure after the fixes below). Findings while testing: (1) concurrent inserts into the exclusion constraint can deadlock (40P01, wrapped by EF in `InvalidOperationException`) and 50 at once exceeded the 30 s command timeout, so attempts for one staff member are queued with `pg_advisory_xact_lock`; the constraint is still the guarantee. (2) A retry with the same idempotency key that lost the slot race now returns the existing booking instead of `SlotTaken`. Interpretation to confirm: a staff walk-in may start in the slot that is in progress right now (up to one slot length ago). Not verified: HTTP layer (no pages yet), Held/Pending flows beyond the state machine, Neon behaviour of advisory locks.
 
 ## Step 3: Onboarding and sign-in ⬜
 

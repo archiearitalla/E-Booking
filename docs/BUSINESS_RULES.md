@@ -288,7 +288,8 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 | State machine, cancellation and no-show policy, passwords, slugs | ✅ same run |
 | Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | ✅ 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
 | EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/BarberBook.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
-| ASP.NET Core services and pages | ⬜ not written yet (Steps 1-5 of the build plan) |
+| `BookingService` (availability, create, idempotency, transitions, audit) | ✅ 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
+| Pages, onboarding, admin, message links | ⬜ not written yet (Steps 3-6 of the build plan) |
 | Integration test of the full booking flow against the real app | ⬜ |
 | Load test of the booking race through the application | ⬜ |
 

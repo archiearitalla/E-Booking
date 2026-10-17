@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarberBook.Web", "src\Barbe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarberBook.Web.ModelCheck", "tests\BarberBook.Web.ModelCheck\BarberBook.Web.ModelCheck.csproj", "{5BE17680-D805-4422-AA09-902FAA6D9494}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarberBook.Web.Tests", "tests\BarberBook.Web.Tests\BarberBook.Web.Tests.csproj", "{83E02D18-6CFA-452D-AF76-CAFC0A230F45}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,18 @@ Global
 		{5BE17680-D805-4422-AA09-902FAA6D9494}.Release|x64.Build.0 = Release|Any CPU
 		{5BE17680-D805-4422-AA09-902FAA6D9494}.Release|x86.ActiveCfg = Release|Any CPU
 		{5BE17680-D805-4422-AA09-902FAA6D9494}.Release|x86.Build.0 = Release|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Debug|x64.Build.0 = Debug|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Debug|x86.Build.0 = Debug|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Release|x64.ActiveCfg = Release|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Release|x64.Build.0 = Release|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Release|x86.ActiveCfg = Release|Any CPU
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,5 +96,6 @@ Global
 		{C9DE7C95-4BF8-4516-9200-A016AD23C52F} = {B4FB9F52-F36C-497B-9239-069BB9D45E7C}
 		{109DC60B-0E8C-47CB-9A00-07D59990DD2F} = {6CA36E03-2EA0-4D23-97AD-4F76281B2630}
 		{5BE17680-D805-4422-AA09-902FAA6D9494} = {B4FB9F52-F36C-497B-9239-069BB9D45E7C}
+		{83E02D18-6CFA-452D-AF76-CAFC0A230F45} = {B4FB9F52-F36C-497B-9239-069BB9D45E7C}
 	EndGlobalSection
 EndGlobal
