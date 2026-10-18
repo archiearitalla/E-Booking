@@ -1,0 +1,58 @@
+@page "/b/{slug}/confirm"
+@model BarberBook.Web.Pages.Book.DetailsModel
+@{
+    ViewData["Title"] = Text.BookTitle;
+    var shop = Model.Shop!;
+}
+<div class="card">
+    <h1>@Text.BookSummary</h1>
+    <dl class="facts">
+        <dt>@Text.ManageShop</dt><dd>@shop.Name</dd>
+        <dt>@Text.ManageService</dt><dd>@Model.Service!.Name (@DisplayFormat.Duration(Model.Service.DurationMinutes))</dd>
+        <dt>@Text.ManageWith</dt><dd>@(Model.Staff?.Name ?? Text.BookStaffAny)</dd>
+        <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(Model.StartUtc, shop.TimeZone), @DisplayFormat.Time(Model.StartUtc, shop.TimeZone)</dd>
+        <dt>@Text.ManagePrice</dt><dd>@DisplayFormat.Price(Model.Service.Price) &middot; @Text.BookPayOnSite</dd>
+    </dl>
+    <p><a href="@Model.ChangeTimeUrl">@Text.BookChangeTime</a></p>
+</div>
+
+<div class="card">
+    <h2>@Text.BookYourDetails</h2>
+    <form method="post" novalidate>
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="alert" role="alert">@Text.ValidationFailed</div>
+        }
+        <input type="hidden" name="Input.ServiceId" value="@Model.Service.Id" />
+        <input type="hidden" name="Input.StaffId" value="@Model.Staff?.Id" />
+        <input type="hidden" name="Input.Start" value="@DisplayFormat.StartParam(Model.StartUtc)" />
+        <input type="hidden" name="Input.IdempotencyKey" value="@Model.Input.IdempotencyKey" />
+
+        <div class="field">
+            <label for="Name">@Text.BookLabelName</label>
+            <input type="text" id="Name" name="Input.Name" value="@Model.Input.Name" maxlength="80" autocomplete="name"
+                   aria-invalid="@(Model.ErrorFor("name") is null ? "false" : "true")" aria-describedby="Name-error" />
+            @if (Model.ErrorFor("name") is { } e1) { <p class="error" id="Name-error">@e1</p> }
+        </div>
+
+        <div class="field">
+            <label for="Phone">@Text.BookLabelPhone</label>
+            <input type="tel" id="Phone" name="Input.Phone" value="@Model.Input.Phone" maxlength="20" autocomplete="tel" inputmode="tel"
+                   aria-invalid="@(Model.ErrorFor("phone") is null ? "false" : "true")" aria-describedby="Phone-hint Phone-error" />
+            <p class="hint" id="Phone-hint">@Text.BookHintPhone</p>
+            @if (Model.ErrorFor("phone") is { } e2) { <p class="error" id="Phone-error">@e2</p> }
+        </div>
+
+        <div class="field">
+            <label for="Email">@Text.BookLabelEmail</label>
+            <input type="email" id="Email" name="Input.Email" value="@Model.Input.Email" maxlength="120" autocomplete="email"
+                   aria-invalid="@(Model.ErrorFor("email") is null ? "false" : "true")" aria-describedby="Email-error" />
+            @if (Model.ErrorFor("email") is { } e3) { <p class="error" id="Email-error">@e3</p> }
+        </div>
+
+        @if (Model.ErrorFor("idempotencyKey") is { } e4) { <p class="error">@e4</p> }
+
+        <p class="hint">@Text.BookPrivacy</p>
+        <button type="submit" class="primary once">@Text.BookConfirm</button>
+    </form>
+</div>

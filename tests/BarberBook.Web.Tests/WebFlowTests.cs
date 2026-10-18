@@ -1,45 +1,14 @@
 using System.Net;
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc.Testing;
+using static BarberBook.Web.Tests.HttpApp;
 
 namespace BarberBook.Web.Tests;
 
 /// <summary>The real app over HTTP (in-process server) against the real PostgreSQL test database.</summary>
+[Collection("http")] // these tests set process-wide environment variables, so they never run in parallel
 public class WebFlowTests
 {
-    private sealed class AppFactory : WebApplicationFactory<Program> { }
-
-    private static string Unique(string prefix) => prefix + Guid.NewGuid().ToString("N")[..10];
-
-    /// <summary>Configuration is read when the app starts, so the settings are set just before the host is created.</summary>
-    private static async Task<(AppFactory Factory, HttpClient Client)> StartAsync(int authPerMinute = 1000)
-    {
-        var cs = await TestDb.ConnectionStringAsync();
-        Environment.SetEnvironmentVariable("ConnectionStrings__Default", cs);
-        Environment.SetEnvironmentVariable("RateLimits__AuthPerMinute", authPerMinute.ToString());
-        Environment.SetEnvironmentVariable("Database__MigrateOnStartup", "false"); // the test database is already migrated
-        var factory = new AppFactory();
-        return (factory, NewClient(factory));
-    }
-
-    private static HttpClient NewClient(AppFactory factory) =>
-        factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-
-    private static async Task<string> TokenFromAsync(HttpClient client, string path)
-    {
-        var html = await client.GetStringAsync(path);
-        var match = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
-        Assert.True(match.Success, $"No antiforgery token on {path}");
-        return match.Groups[1].Value;
-    }
-
-    private static async Task<HttpResponseMessage> PostFormAsync(
-        HttpClient client, string path, Dictionary<string, string> fields, string? tokenPage = null)
-    {
-        var token = await TokenFromAsync(client, tokenPage ?? path);
-        fields["__RequestVerificationToken"] = token;
-        return await client.PostAsync(path, new FormUrlEncodedContent(fields));
-    }
+    private static Task<(AppFactory Factory, HttpClient Client)> StartAsync(int authPerMinute = 1000) =>
+        HttpApp.StartAsync(authPerMinute);
 
     private static Dictionary<string, string> RegisterFields(string email, string slug) => new()
     {

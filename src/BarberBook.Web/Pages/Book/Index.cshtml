@@ -1,0 +1,89 @@
+@page "/b/{slug}"
+@model BarberBook.Web.Pages.Book.IndexModel
+@{
+    ViewData["Title"] = Model.Shop?.Name ?? Text.BookTitle;
+    var shop = Model.Shop!;
+}
+<div class="card">
+    <h1>@shop.Name</h1>
+    <p class="muted">@Text.BookTitle</p>
+
+    @if (Model.Taken)
+    {
+        <div class="alert" role="alert">@Text.BookTaken</div>
+    }
+
+    @if (shop.Services.Count == 0)
+    {
+        <p>@Text.BookNoServices</p>
+    }
+    else
+    {
+        <form method="get" asp-page="/Book/Index" asp-route-slug="@shop.Slug">
+            <fieldset class="field">
+                <legend>@Text.BookService</legend>
+                @foreach (var service in shop.Services)
+                {
+                    <label class="choice">
+                        <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" required />
+                        <span>
+                            <strong>@service.Name</strong>
+                            <span class="muted">@DisplayFormat.Duration(service.DurationMinutes) &middot; @DisplayFormat.Price(service.Price)</span>
+                        </span>
+                    </label>
+                }
+            </fieldset>
+
+            <div class="field">
+                <label for="staffId">@Text.BookStaff</label>
+                <select id="staffId" name="staffId">
+                    <option value="">@Text.BookStaffAny</option>
+                    @foreach (var staff in shop.Staff)
+                    {
+                        <option value="@staff.Id" selected="@(Model.StaffId == staff.Id)">@staff.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="date">@Text.BookDate</label>
+                <input type="date" id="date" name="date" value="@DisplayFormat.DateParam(Model.SelectedDate)"
+                       min="@DisplayFormat.DateParam(shop.Today)" max="@DisplayFormat.DateParam(shop.Today.AddDays(shop.HorizonDays))" required />
+            </div>
+
+            <button type="submit" class="primary">@Text.BookShowTimes</button>
+        </form>
+    }
+</div>
+
+@if (Model.Searched)
+{
+    <div class="card" id="times" aria-live="polite">
+        <h2>@Text.BookAvailableTimes @Model.DateText</h2>
+        @if (Model.Notice is not null)
+        {
+            <p>@Model.Notice</p>
+        }
+        else if (Model.Times.Count == 0)
+        {
+            <p>@Text.BookNoTimes</p>
+        }
+        else
+        {
+            <ul class="slots">
+                @foreach (var start in Model.Times)
+                {
+                    <li>
+                        <a class="slot" asp-page="/Book/Details" asp-route-slug="@shop.Slug"
+                           asp-route-serviceId="@Model.ServiceId" asp-route-staffId="@Model.StaffId"
+                           asp-route-start="@DisplayFormat.StartParam(start)">@DisplayFormat.Time(start, shop.TimeZone)</a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+else if (shop.Services.Count > 0)
+{
+    <p class="muted">@Text.BookPickService</p>
+}

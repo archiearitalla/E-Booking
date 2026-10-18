@@ -42,7 +42,7 @@ Every surface talks to **one** booking API that owns the invariants. Availabilit
 
 | Surface | Users | Responsibility | Status |
 |---|---|---|---|
-| Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | 🟡 |
+| Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | ✅ |
 | Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | 🟡 |
 | JSON API `/api/v1` | Mobile apps, embeddable widget, integrations | Same operations as above over HTTP | ⬜ |
 | Customer / staff mobile app (Flutter, one codebase for Android and iOS) | Customers, staff | Thin client of the JSON API | ⬜ |
@@ -92,7 +92,7 @@ These must hold at all times. Everything else is policy.
 | I5 | Holds are temporary and self-expiring. | `hold_expires_at_utc` + expiry job | ⬜ not used in the MVP (no HELD flow yet) |
 | I6 | Money and booking agree. A booking is confirmed only when its required payment state is satisfied. | Not applicable while pay-on-site | ⬜ |
 | I7 | A tenant can never see or modify another tenant's data. | Every query filtered by `business_id`; composite foreign keys `(id, business_id)` in the database | ✅ cross-tenant FK rejected; 🟡 query filters |
-| I8 | A customer can access only their own booking, via the manage token. | Lookup by token; unknown token returns not found | 🟡 |
+| I8 | A customer can access only their own booking, via the manage token. | Lookup by token; unknown token returns not found | ✅ HTTP tests: unknown token, slug and URL return the identical 404 page |
 
 ## 5. Booking lifecycle
 
@@ -290,7 +290,8 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 | EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/BarberBook.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
 | `BookingService` (availability, create, idempotency, transitions, audit) | ✅ 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
 | Registration, sign-in/out, cookie claims, `/Admin` protection, sign-in rate limit, antiforgery | ✅ 20 tests over services and HTTP against PostgreSQL 16 (`Secure` cookie flag and real-browser rendering not verified) |
-| Public booking pages, admin back office, message links | ⬜ not written yet (Steps 4-6 of the build plan) |
+| Public booking pages (`/b/{slug}`, confirm, `/booking/{token}`) | ✅ 12 HTTP tests plus a real-browser run at phone width; not verified: stopwatch timing, Safari or a real phone, screen reader |
+| Admin back office, message links | ⬜ not written yet (Steps 5-6 of the build plan) |
 | Integration test of the full booking flow against the real app | ⬜ |
 | Load test of the booking race through the application | ⬜ |
 

@@ -292,6 +292,33 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
 
     // ---------------------------------------------------------------- queries and helpers
 
+    /// <summary>The booking the manage token points at, or null. The token authorizes exactly this one booking.</summary>
+    public async Task<BookingDetails?> GetByTokenAsync(string? manageToken, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(manageToken)) return null;
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await db.Bookings.AsNoTracking()
+            .Where(b => b.ManageToken == manageToken)
+            .Select(b => new
+            {
+                Summary = new BookingSummary(
+                    b.Id, b.BusinessId, b.StaffId, b.Staff.Name, b.ServiceId, b.ServiceNameSnapshot,
+                    b.StartsAtUtc, b.EndsAtUtc, b.Status, b.ManageToken, b.PriceSnapshot, EF.Property<uint>(b, "xmin")),
+                BusinessName = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.Name).First(),
+                CutoffHours = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.CancelCutoffHours).First(),
+                CustomerName = b.Customer.Name,
+                TimeZone = b.LocationTimeZone,
+            })
+            .FirstOrDefaultAsync(ct);
+        if (row is null) return null;
+
+        var policy = BookingPolicy.CanCancel(
+            row.Summary.Status, row.Summary.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, row.CutoffHours);
+        var refusal = !policy.Allowed && !row.Summary.Status.IsTerminal() ? policy.Reason : null;
+        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal);
+    }
+
     public async Task<BookingSummary?> LoadSummaryAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);

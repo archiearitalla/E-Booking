@@ -68,7 +68,7 @@ Acceptance:
 
 Verified: all of the above in `tests/BarberBook.Web.Tests` (41 tests now, 20 of them for Step 3; run 5 times in a row without a failure; the HTTP ones drive the real app in-process against PostgreSQL 16) and by starting the real app under Kestrel (pages 200, `/Admin` redirects to `/Login`). Also covered: parallel registrations for one slug give one success and friendly errors; the password is stored as a PBKDF2 hash; open redirects through `ReturnUrl` are ignored; a form post without the antiforgery token is rejected; the auth cookie is `HttpOnly` and `SameSite=Lax`. Notes: the 429 limit counts form posts only (viewing the form is free); `Pages/Admin/Index` is a placeholder until Step 5; `PlanLimits` holds the 1-staff FREE limit for the staff page in Step 5. Not verified: the `Secure` cookie flag (needs HTTPS), real-browser rendering, accessibility checks, and "similar timing" is a loose 0.5x to 2x bound on PBKDF2 time, not a side-channel analysis.
 
-## Step 4: Public booking pages ⬜
+## Step 4: Public booking pages ✅ (one criterion only partly verified)
 
 Files: `Pages/Book/Index`, `Pages/Book/Details`, `Pages/Booking/Manage`, `wwwroot/css/site.css`, `wwwroot/js/site.js`.
 
@@ -79,6 +79,12 @@ Acceptance:
 - A losing race shows "that time was just taken" and returns to the time list.
 - Unknown token and unknown slug return the same not-found page.
 - Double-clicking the confirm button creates one booking.
+
+Routes: `/b/{slug}` (service, barber, date, times), `/b/{slug}/confirm` (details form, one idempotency key per form), `/booking/{token}` (manage and cancel, no-store, noindex). Empty 4xx/5xx responses render one page per status (`/Status/{code}`), so an unknown slug, token or URL return the identical 404 page. The `booking` rate limit counts posts only.
+
+Verified: 12 new HTTP tests (53 in total, three consecutive full runs without a failure): full booking flow, privacy of the public page, parallel double submit gives one booking, a race lost to another customer returns to the time list with "That time was just taken", stale confirm link redirects to the time list, identical not-found pages, a service id from another shop is not found, field errors create nothing, customer cancel before the cutoff works, after the cutoff it is refused with the shop's cutoff and a forged post changes nothing, booking posts get 429, manage page headers. In a real browser at 375x812 (built-in browser pane): registered a shop, listed times, booked, and a genuine double-click on Confirm created exactly one booking (checked in the database).
+
+Not verified: the "under one minute" criterion was not timed with a stopwatch (the flow is three screens and four typed fields, and took seven browser actions); only Chrome-based pane tested, no Safari or real phone; no automated accessibility audit (labels, focus styles and ARIA are in place); the radio's accessible name was not inspected with a screen reader; the `Secure` cookie flag still needs HTTPS. Message links ("Message the shop") are Step 6.
 
 ## Step 5: Admin back office ⬜
 

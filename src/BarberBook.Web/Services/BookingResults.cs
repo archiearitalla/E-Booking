@@ -69,3 +69,16 @@ public sealed record BookingSummary(
     uint Version);
 
 public sealed record CreateOutcome(BookingSummary Booking, bool AlreadyExisted);
+
+/// <summary>
+/// What the customer sees on their manage page. <c>CancelRefusal</c> explains why self-service cancel is closed
+/// (null when it is allowed or when the booking is already finished).
+/// </summary>
+public sealed record BookingDetails(
+    BookingSummary Booking,
+    string BusinessName,
+    string TimeZone,
+    int CancelCutoffHours,
+    string CustomerName,
+    bool CanCancel,
+    string? CancelRefusal);
