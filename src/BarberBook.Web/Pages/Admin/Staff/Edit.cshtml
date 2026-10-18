@@ -1,0 +1,81 @@
+@page "{id:guid?}"
+@model BarberBook.Web.Pages.Admin.Staff.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? Text.StaffAdd : Text.StaffEdit;
+}
+<h1>@ViewData["Title"]</h1>
+
+<div class="card">
+    <h2>@Text.StaffDetails</h2>
+    <form method="post" asp-page-handler="Save" novalidate>
+        @if (Model.Errors.Count > 0 && !Model.HoursFormSubmitted) { <div class="alert" role="alert">@Text.ValidationFailed</div> }
+
+        <div class="field">
+            <label for="Name">@Text.LabelStaffName</label>
+            <input type="text" id="Name" name="Input.Name" value="@Model.Input.Name" maxlength="80"
+                   aria-invalid="@(Model.ErrorFor("name") is null ? "false" : "true")" aria-describedby="Name-error" />
+            @if (Model.ErrorFor("name") is { } e1) { <p class="error" id="Name-error">@e1</p> }
+        </div>
+        <div class="field">
+            <label for="SortOrder">@Text.LabelSortOrder</label>
+            <input type="number" id="SortOrder" name="Input.SortOrder" value="@Model.Input.SortOrder" min="0" max="1000" inputmode="numeric"
+                   aria-invalid="@(Model.ErrorFor("sortOrder") is null ? "false" : "true")" aria-describedby="SortOrder-error" />
+            @if (Model.ErrorFor("sortOrder") is { } e2) { <p class="error" id="SortOrder-error">@e2</p> }
+        </div>
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.IsActive" value="true" checked="@Model.Input.IsActive"
+                       aria-describedby="IsActive-error" />
+                <span>@Text.LabelActive <span class="muted">@Text.HintStaffActive</span></span>
+            </label>
+            @if (Model.ErrorFor("isActive") is { } e3) { <p class="error" id="IsActive-error">@e3</p> }
+        </div>
+
+        <fieldset class="field">
+            <legend>@Text.StaffServicesLegend</legend>
+            @if (Model.AllServices.Count == 0)
+            {
+                <p class="muted">@Text.ServicesEmpty</p>
+            }
+            @foreach (var s in Model.AllServices)
+            {
+                <label class="choice">
+                    <input type="checkbox" name="Input.ServiceIds" value="@s.Id" checked="@Model.Input.ServiceIds.Contains(s.Id)" />
+                    <span>@s.Name @if (!s.IsActive) { <span class="muted">(@Text.StatusInactive)</span> }</span>
+                </label>
+            }
+        </fieldset>
+
+        <button type="submit" class="primary">@Text.ActionSave</button>
+        <a href="/Admin/Staff">@Text.ActionBack</a>
+    </form>
+</div>
+
+@if (!Model.IsNew)
+{
+    <div class="card">
+        <h2 id="hours">@Text.HoursTitle</h2>
+        <p class="hint">@string.Format(Text.HoursHint, Model.TimeZone)</p>
+        <form method="post" asp-page-handler="Hours" asp-route-id="@Model.StaffId" novalidate>
+            @if (Model.ErrorFor("hours") is { } he) { <div class="alert" role="alert">@he</div> }
+            @foreach (var day in EditModel.DayOrder)
+            {
+                <fieldset class="hours-day">
+                    <legend>@EditModel.DayName(day)</legend>
+                    @for (var n = 0; n < EditModel.WindowsPerDay; n++)
+                    {
+                        var window = Model.HourFields[(day, n)];
+                        <div class="hours-row">
+                            <label for="open_@(day)_@n">@Text.HoursOpen<span class="sr-only"> @EditModel.DayName(day) @(n + 1)</span></label>
+                            <input type="time" id="open_@(day)_@n" name="open_@(day)_@n" value="@window.Open" />
+                            <label for="close_@(day)_@n">@Text.HoursClose<span class="sr-only"> @EditModel.DayName(day) @(n + 1)</span></label>
+                            <input type="time" id="close_@(day)_@n" name="close_@(day)_@n" value="@window.Close" />
+                        </div>
+                    }
+                </fieldset>
+            }
+            <p class="hint">@Text.HoursBlankClosed</p>
+            <button type="submit" class="primary">@Text.HoursSave</button>
+        </form>
+    </div>
+}

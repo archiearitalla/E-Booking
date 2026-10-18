@@ -20,6 +20,9 @@ builder.Services.AddScoped<BarberBook.Web.Services.BookingService>();
 builder.Services.AddScoped<BarberBook.Web.Services.OnboardingService>();
 builder.Services.AddScoped<BarberBook.Web.Services.AuthService>();
 builder.Services.AddScoped<BarberBook.Web.Services.ShopCatalogService>();
+builder.Services.AddScoped<BarberBook.Web.Services.AdminDayService>();
+builder.Services.AddScoped<BarberBook.Web.Services.CatalogAdminService>();
+builder.Services.AddScoped<BarberBook.Web.Services.ShopSettingsService>();
 
 // Authentication: cookie for the web back office. Authorization is always enforced server-side.
 builder.Services

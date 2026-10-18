@@ -43,7 +43,7 @@ Every surface talks to **one** booking API that owns the invariants. Availabilit
 | Surface | Users | Responsibility | Status |
 |---|---|---|---|
 | Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | ✅ |
-| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | 🟡 |
+| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | ✅ (OWNER only; no walk-in UI yet) |
 | JSON API `/api/v1` | Mobile apps, embeddable widget, integrations | Same operations as above over HTTP | ⬜ |
 | Customer / staff mobile app (Flutter, one codebase for Android and iOS) | Customers, staff | Thin client of the JSON API | ⬜ |
 | Embeddable widget | Shop's own website | Iframe or script around the public API | ⬜ |
@@ -291,7 +291,8 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 | `BookingService` (availability, create, idempotency, transitions, audit) | ✅ 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
 | Registration, sign-in/out, cookie claims, `/Admin` protection, sign-in rate limit, antiforgery | ✅ 20 tests over services and HTTP against PostgreSQL 16 (`Secure` cookie flag and real-browser rendering not verified) |
 | Public booking pages (`/b/{slug}`, confirm, `/booking/{token}`) | ✅ 12 HTTP tests plus a real-browser run at phone width; not verified: stopwatch timing, Safari or a real phone, screen reader |
-| Admin back office, message links | ⬜ not written yet (Steps 5-6 of the build plan) |
+| Admin back office (day view, services, staff and hours, closures, settings, audit, About) | ✅ 30 tests incl. tenant isolation on every endpoint, plan limit, "never silently cancels" warnings; not verified: screen reader, keyboard-only walkthrough of every form, Safari or real phones |
+| Message links | ⬜ not written yet (Step 6 of the build plan) |
 | Integration test of the full booking flow against the real app | ⬜ |
 | Load test of the booking race through the application | ⬜ |
 

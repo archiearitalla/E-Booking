@@ -1,0 +1,29 @@
+@page
+@model BarberBook.Web.Pages.Admin.Staff.IndexModel
+@{
+    ViewData["Title"] = Text.AdminNavStaff;
+}
+<h1>@Text.AdminNavStaff</h1>
+<p><a class="button" href="/Admin/Staff/Edit">@Text.StaffAdd</a></p>
+<p class="hint">@string.Format(Text.StaffPlanNote, Model.Plan, PlanLimits.MaxStaff(Model.Plan)?.ToString() ?? Text.StaffUnlimited)</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card empty"><p>@Text.StaffEmpty</p></div>
+}
+else
+{
+    <ul class="bookings">
+        @foreach (var s in Model.Rows)
+        {
+            <li class="card @(s.IsActive ? "" : "inactive")">
+                <div class="booking-head">
+                    <strong>@s.Name</strong>
+                    <span class="badge">@(s.IsActive ? Text.StatusActive : Text.StatusInactive)</span>
+                </div>
+                <p class="muted">@(s.ServiceNames.Count == 0 ? Text.StaffNoServices : string.Join(", ", s.ServiceNames))</p>
+                <p><a href="/Admin/Staff/Edit/@s.Id">@Text.ActionEdit<span class="sr-only"> @s.Name</span></a></p>
+            </li>
+        }
+    </ul>
+}

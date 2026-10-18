@@ -86,7 +86,7 @@ Verified: 12 new HTTP tests (53 in total, three consecutive full runs without a 
 
 Not verified: the "under one minute" criterion was not timed with a stopwatch (the flow is three screens and four typed fields, and took seven browser actions); only Chrome-based pane tested, no Safari or real phone; no automated accessibility audit (labels, focus styles and ARIA are in place); the radio's accessible name was not inspected with a screen reader; the `Secure` cookie flag still needs HTTPS. Message links ("Message the shop") are Step 6.
 
-## Step 5: Admin back office ⬜
+## Step 5: Admin back office ✅ (accessibility only partly verified)
 
 Files: `Pages/Admin/*`, `Pages/Shared/_AdminLayout.cshtml`.
 
@@ -96,6 +96,12 @@ Acceptance:
 - Every admin query is scoped to the signed-in business; a forged id from another business changes nothing.
 - Closing a day does not cancel bookings and shows how many are affected.
 - Role badge shown; keyboard navigation and visible focus work; empty, error and success states exist.
+
+Built: `/Admin` (day view; complete, no-show, cancel with reason; stale forms refused), `/Admin/Services` (+ edit; deactivate, never delete), `/Admin/Staff` (+ edit with service links and weekly hours, two windows per day, FREE plan limit of one active staff member enforced under an advisory lock), `/Admin/Closures` (whole-day closures for the shop or one person), `/Admin/Settings`, `/Admin/Audit`, `/Admin/About`. Services: `AdminDayService`, `CatalogAdminService`, `ShopSettingsService`; every method takes the business id from the signed-in user's claims (`AdminPageModel`), never from the request.
+
+Verified: 30 new tests (83 in total; five consecutive full runs without a failure after fixing one flaky test of my own, which had compared a global row count while other tests ran in parallel). Service level: tenant scoping of services, staff, hours, closures, settings, day view and audit; plan limit including six parallel adds; hours and closures count affected bookings and cancel none; closure blocks new bookings on that day. HTTP level: every admin page redirects anonymous users to sign-in; a forged id from another business returns 404 and leaves services, staff, hours, bookings and closures unchanged (eight endpoints tried: two reads and six writes); the day view and audit never show another business's data; cancel with reason writes the booking, the `STAFF` audit row and shows in the audit page; closing a day with a booking keeps it and shows "1 existing booking(s) ... not cancelled"; role badge, skip link, labelled nav landmark and `aria-current` on every page; empty, error and success states. In a real browser at 375x812: dashboard, closure warning, first Tab lands on the skip link with a 3px focus outline, nav buttons are 40px+ tall.
+
+Not verified: full keyboard-only walkthrough of every form; screen reader behaviour; contrast checked by eye only; Safari and real phones; the day view and forms were not load tested. Known limits: a signed-in cookie stays valid until it expires even if the user were deactivated (no user management exists yet); only the OWNER role exists, MANAGER and STAFF pages are not built; closures are whole days only; walk-in (staff-created) bookings have no UI yet; "Message customer" is Step 6.
 
 ## Step 6: Message links (section 8.5) ⬜
 

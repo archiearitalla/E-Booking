@@ -91,14 +91,15 @@ public class AccountServiceTests
     public async Task Invalid_registration_input_returns_field_errors()
     {
         var (onboarding, _, factory) = await CreateAsync();
-        var before = await factory.CreateDbContext().Businesses.CountAsync();
-
         var result = await onboarding.RegisterAsync(new RegisterRequest("", "A_B", "", "nope", "short"));
 
         Assert.Equal(FailureKind.Validation, result.Failure);
         foreach (var field in new[] { "businessName", "slug", "ownerName", "email", "password" })
             Assert.Contains(field, result.FieldErrors.Keys);
-        Assert.Equal(before, await factory.CreateDbContext().Businesses.CountAsync());
+        // Other tests create shops in parallel, so check only for rows this request could have created.
+        await using var db = factory.CreateDbContext();
+        Assert.False(await db.Businesses.AnyAsync(b => b.Slug == "a_b" || b.Name == ""));
+        Assert.False(await db.AdminUsers.AnyAsync(u => u.Email == "nope"));
     }
 
     [Fact]

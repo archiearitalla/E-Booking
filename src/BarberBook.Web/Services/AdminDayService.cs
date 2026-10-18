@@ -1,0 +1,72 @@
+using BarberBook.Core.Domain;
+using BarberBook.Core.Scheduling;
+using BarberBook.Web.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace BarberBook.Web.Services;
+
+public sealed record DayBooking(
+    Guid Id, string StaffName, string ServiceName, string CustomerName, string CustomerPhone,
+    DateTime StartsAtUtc, DateTime EndsAtUtc, BookingStatus Status, decimal Price, uint Version,
+    bool CanComplete, bool CanNoShow, bool CanCancel);
+
+public sealed record DayView(DateOnly Date, string TimeZone, IReadOnlyList<DayBooking> Bookings)
+{
+    public int ActiveCount => Bookings.Count(b => b.Status.OccupiesSlot());
+}
+
+public sealed record AuditRow(
+    DateTime AtUtc, string ActorType, string ActorLabel, string Action, string? FromStatus, string? ToStatus, string? Reason, Guid? BookingId);
+
+public sealed record AuditView(string TimeZone, IReadOnlyList<AuditRow> Rows);
+
+/// <summary>Read models for the back office day view and audit log. Every query is scoped by the caller's business id.</summary>
+public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+{
+    public async Task<DayView?> GetDayAsync(Guid businessId, DateOnly? date, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var business = await db.Businesses.AsNoTracking().FirstOrDefaultAsync(b => b.Id == businessId, ct);
+        if (business is null) return null;
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var day = date ?? LocalTime.LocalDateOf(now, business.TimeZone);
+        var (start, end) = LocalTime.DayRangeUtc(day, business.TimeZone);
+
+        var rows = await db.Bookings.AsNoTracking()
+            .Where(b => b.BusinessId == businessId && b.StartsAtUtc >= start && b.StartsAtUtc < end)
+            .OrderBy(b => b.StartsAtUtc).ThenBy(b => b.Staff.Name)
+            .Select(b => new
+            {
+                b.Id, StaffName = b.Staff.Name, b.ServiceNameSnapshot, CustomerName = b.Customer.Name,
+                CustomerPhone = b.Customer.Phone, b.StartsAtUtc, b.EndsAtUtc, b.Status, b.PriceSnapshot,
+                Version = EF.Property<uint>(b, "xmin"),
+            })
+            .ToListAsync(ct);
+
+        var bookings = rows.Select(r => new DayBooking(
+            r.Id, r.StaffName, r.ServiceNameSnapshot, r.CustomerName, r.CustomerPhone,
+            r.StartsAtUtc, r.EndsAtUtc, r.Status, r.PriceSnapshot, r.Version,
+            BookingPolicy.CanMarkCompleted(r.Status, r.StartsAtUtc, now).Allowed,
+            BookingPolicy.CanMarkNoShow(r.Status, r.StartsAtUtc, now).Allowed,
+            BookingPolicy.CanCancel(r.Status, r.StartsAtUtc, now, ActorKind.Staff, business.CancelCutoffHours).Allowed)).ToList();
+
+        return new DayView(day, business.TimeZone, bookings);
+    }
+
+    /// <summary>The latest audit entries of this business, newest first. Rows are never edited or deleted by the application.</summary>
+    public async Task<AuditView?> GetAuditAsync(Guid businessId, int take = 100, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var tz = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
+        if (tz is null) return null;
+
+        var rows = await db.AuditLogs.AsNoTracking()
+            .Where(a => a.BusinessId == businessId)
+            .OrderByDescending(a => a.AtUtc).ThenByDescending(a => a.Id)
+            .Take(Math.Clamp(take, 1, 500))
+            .Select(a => new AuditRow(a.AtUtc, a.ActorType, a.ActorLabel, a.Action, a.FromStatus, a.ToStatus, a.Reason, a.BookingId))
+            .ToListAsync(ct);
+        return new AuditView(tz, rows);
+    }
+}

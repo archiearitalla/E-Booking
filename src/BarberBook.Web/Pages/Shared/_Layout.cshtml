@@ -9,6 +9,7 @@
     <script src="~/js/site.js" defer></script>
 </head>
 <body>
+    <a class="skip-link" href="#main">@Text.SkipToContent</a>
     <header class="site-header">
         <a class="brand" href="/">@Text.AppName</a>
         <nav aria-label="Main">
@@ -26,7 +27,7 @@
             }
         </nav>
     </header>
-    <main class="container">
+    <main class="container" id="main" tabindex="-1">
         @RenderBody()
     </main>
     <footer class="site-footer">@Text.AppName v@(AppInfo.Version)</footer>

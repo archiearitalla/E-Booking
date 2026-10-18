@@ -1,0 +1,40 @@
+@{
+    Layout = "_Layout";
+    var path = Context.Request.Path.Value ?? "";
+    (string Href, string Label)[] items =
+    [
+        ("/Admin", Text.AdminNavBookings),
+        ("/Admin/Services", Text.AdminNavServices),
+        ("/Admin/Staff", Text.AdminNavStaff),
+        ("/Admin/Closures", Text.AdminNavClosures),
+        ("/Admin/Settings", Text.AdminNavSettings),
+        ("/Admin/Audit", Text.AdminNavAudit),
+        ("/Admin/About", Text.AdminNavAbout),
+    ];
+    bool Current(string href) => href == "/Admin"
+        ? path.TrimEnd('/').Equals("/Admin", StringComparison.OrdinalIgnoreCase)
+        : path.StartsWith(href, StringComparison.OrdinalIgnoreCase);
+}
+<nav class="subnav" aria-label="@Text.AdminNavLabel">
+    <ul>
+        @foreach (var (href, label) in items)
+        {
+            <li><a href="@href" aria-current="@(Current(href) ? "page" : null)">@label</a></li>
+        }
+    </ul>
+    <p class="who"><span class="muted">@User.DisplayName()</span> <span class="badge" title="@Text.AdminRoleTitle">@User.Role()</span></p>
+</nav>
+
+@if (Model is BarberBook.Web.Pages.Admin.AdminPageModel admin)
+{
+    @if (!string.IsNullOrEmpty(admin.Success))
+    {
+        <div class="notice" role="status">@admin.Success</div>
+    }
+    @if (!string.IsNullOrEmpty(admin.Failure))
+    {
+        <div class="alert" role="alert">@admin.Failure</div>
+    }
+}
+
+@RenderBody()

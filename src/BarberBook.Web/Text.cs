@@ -93,6 +93,135 @@ public static class Text
     public const string ManageService = "Service";
     public const string ManageClosed = "This booking can no longer be changed online.";
 
+    // Back office
+    public const string SkipToContent = "Skip to content";
+    public const string AdminNavLabel = "Back office";
+    public const string AdminRoleTitle = "Your role";
+    public const string AdminNavBookings = "Bookings";
+    public const string AdminNavServices = "Services";
+    public const string AdminNavStaff = "Staff";
+    public const string AdminNavClosures = "Closures";
+    public const string AdminNavSettings = "Settings";
+    public const string AdminNavAudit = "Audit log";
+    public const string AdminNavAbout = "About";
+
+    public const string ActionSave = "Save";
+    public const string ActionBack = "Back";
+    public const string ActionEdit = "Edit";
+    public const string ActionComplete = "Mark completed";
+    public const string ActionNoShow = "Mark no-show";
+    public const string ActionCancel = "Cancel booking";
+    public const string StatusActive = "Active";
+    public const string StatusInactive = "Inactive";
+    public const string LabelActive = "Active";
+    public const string LabelSortOrder = "Display order";
+    public const string UnitMinutes = "minutes";
+
+    public const string DayPrevious = "Previous day";
+    public const string DayNext = "Next day";
+    public const string DayGo = "Go";
+    public const string DayEmpty = "No bookings on this day.";
+    public const string DayCount = "{0} active of {1} booking(s) on this day.";
+    public const string CancelReason = "Reason (recommended)";
+    public const string BookingUpdated = "Booking updated.";
+
+    public const string ReasonTooLong = "Keep the reason to 200 characters or fewer.";
+    public const string ServiceNameInvalid = "Enter a service name of 1 to 80 characters.";
+    public const string DurationInvalid = "Duration must be 5 to 600 minutes.";
+    public const string BufferInvalid = "Buffer must be 0 to 240 minutes.";
+    public const string PriceInvalid = "Enter a price of 0 or more, for example 150.00.";
+    public const string SortOrderInvalid = "Display order must be between 0 and 1000.";
+    public const string StaffNameInvalid = "Enter a name of 1 to 80 characters.";
+    public const string StaffLimit = "Your plan allows {0} active staff member(s). Deactivate someone first.";
+    public const string HoursInvalid = "Each window needs different opening and closing times.";
+    public const string HoursOverlap = "Windows on the same day must not overlap.";
+    public const string HoursIncomplete = "Fill in both the opening and the closing time, or leave both blank.";
+    public const string TimeZoneInvalid = "Enter a valid time zone such as Asia/Manila.";
+    public const string SlotMinutesInvalid = "Choose 5, 10, 15, 20, 30 or 60 minutes.";
+    public const string LeadTimeInvalid = "Lead time must be 0 or more minutes.";
+    public const string HorizonInvalid = "Booking horizon must be 1 to 365 days.";
+    public const string CutoffInvalid = "Cancellation cut-off must be 0 or more hours.";
+    public const string ClosureRangeInvalid = "The last day must be on or after the first day.";
+    public const string ClosureTooLong = "A closure can last at most one year.";
+    public const string ClosureDatesRequired = "Choose both a first and a last day.";
+
+    public const string ServiceAdd = "Add a service";
+    public const string ServiceEdit = "Edit service";
+    public const string ServicesEmpty = "No services yet.";
+    public const string ServiceBufferShort = "cleanup";
+    public const string ServiceSaved = "Service saved.";
+    public const string LabelServiceName = "Service name";
+    public const string LabelDuration = "Duration (minutes)";
+    public const string LabelBuffer = "Cleanup buffer (minutes)";
+    public const string HintBuffer = "Time the barber is blocked after the appointment. Customers do not see it.";
+    public const string LabelPrice = "Price (pesos)";
+    public const string HintServiceActive = "Inactive services are hidden from the booking page. Existing bookings are kept.";
+
+    public const string StaffAdd = "Add a staff member";
+    public const string StaffEdit = "Edit staff member";
+    public const string StaffEmpty = "No staff yet.";
+    public const string StaffNoServices = "No services assigned.";
+    public const string StaffDetails = "Details";
+    public const string StaffPlanNote = "Plan {0}: up to {1} active staff member(s).";
+    public const string StaffUnlimited = "unlimited";
+    public const string LabelStaffName = "Name";
+    public const string HintStaffActive = "Only active staff can be booked. Deactivating never cancels bookings.";
+    public const string StaffServicesLegend = "Services this person offers";
+    public const string StaffSaved = "Staff member saved.";
+    public const string StaffSavedAffected = "Saved. {0} upcoming booking(s) remain for this person; they were not cancelled. Review them on the Bookings page.";
+
+    public const string HoursTitle = "Weekly hours";
+    public const string HoursHint = "Times are in the shop's time zone ({0}). Use a second row for a split shift. A closing time before the opening time runs past midnight.";
+    public const string HoursOpen = "Opens";
+    public const string HoursClose = "Closes";
+    public const string HoursBlankClosed = "Leave a day blank to mark it closed.";
+    public const string HoursSave = "Save hours";
+    public const string HoursSaved = "Hours saved.";
+    public const string HoursSavedAffected = "Hours saved. {0} upcoming booking(s) now fall outside these hours; they were not cancelled. Review them on the Bookings page.";
+
+    public const string ClosureAdd = "Close days";
+    public const string ClosureHint = "Closing days stops new bookings. It never cancels bookings that already exist.";
+    public const string ClosureWho = "Who is away";
+    public const string ClosureWholeShop = "Whole shop";
+    public const string ClosureFrom = "First day";
+    public const string ClosureTo = "Last day";
+    public const string ClosureReason = "Reason (optional)";
+    public const string ClosureAddButton = "Add closure";
+    public const string ClosureUpcoming = "Upcoming closures";
+    public const string ClosuresEmpty = "No upcoming closures.";
+    public const string ClosureAffected = "{0} existing booking(s) fall in this closure. They were not cancelled.";
+    public const string ClosureReview = "Review bookings";
+    public const string ClosureRemove = "Remove closure";
+    public const string ClosureSaved = "Closure added. No existing bookings are affected.";
+    public const string ClosureSavedAffected = "Closure added. {0} existing booking(s) fall in these days; they were not cancelled. Review and handle each one on the Bookings page.";
+    public const string ClosureRemoved = "Closure removed.";
+
+    public const string SettingsAddress = "Booking page";
+    public const string SettingsOpenPage = "Open";
+    public const string SettingsPlan = "Plan";
+    public const string LabelTimeZone = "Time zone";
+    public const string HintTimeZone = "IANA name, for example Asia/Manila. Existing bookings keep their exact time; review your weekly hours if you change this.";
+    public const string LabelSlotMinutes = "Time between start times";
+    public const string LabelLeadTime = "Shortest notice (minutes)";
+    public const string LabelHorizon = "Book up to (days ahead)";
+    public const string LabelCutoff = "Customers can cancel until (hours before)";
+    public const string HintCutoff = "After this, customers must contact the shop.";
+    public const string SettingsSaved = "Settings saved.";
+    public const string SettingsSavedZone = "Settings saved. The time zone changed: please review your weekly hours.";
+
+    public const string AuditHint = "The latest 100 changes. Entries are never edited or deleted.";
+    public const string AuditEmpty = "Nothing recorded yet.";
+    public const string AuditWhen = "When";
+    public const string AuditWho = "By";
+    public const string AuditWhat = "Action";
+    public const string AuditReason = "Reason";
+
+    public const string AboutApp = "Application";
+    public const string AboutVersion = "Version";
+    public const string AboutBuild = "Build";
+    public const string AboutRuntime = ".NET runtime";
+    public const string AboutEnvironment = "Environment";
+
     public const string AdminTitle = "Dashboard";
     public const string AdminWelcome = "Welcome,";
     public const string AdminSoon = "Your bookings, services and staff will appear here.";
