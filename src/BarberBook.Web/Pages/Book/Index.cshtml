@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.Shop?.Name ?? Text.BookTitle;
     var shop = Model.Shop!;
+    ViewData["Theme"] = shop.BrandColor;
 }
 <div class="card">
     <h1>@shop.Name</h1>
@@ -13,7 +14,11 @@
         <div class="alert" role="alert">@Text.BookTaken</div>
     }
 
-    @if (shop.Services.Count == 0)
+    @if (!shop.AcceptingBookings)
+    {
+        <p>@Text.TrialEndedPublic</p>
+    }
+    else if (shop.Services.Count == 0)
     {
         <p>@Text.BookNoServices</p>
     }

@@ -26,6 +26,17 @@ public static class Text
     public const string PasswordInvalid = "Use a password of 8 to 128 characters.";
     public const string LoginFailed = "Email or password is incorrect.";
     public const string DefaultServiceName = "Haircut";
+    public const string DefaultServiceSalon = "Haircut and styling";
+    public const string DefaultServiceClinic = "Consultation";
+    public const string LabelIndustry = "Type of business";
+    public const string IndustryBarbershop = "Barbershop";
+    public const string IndustrySalon = "Salon";
+    public const string IndustryClinic = "Clinic";
+    public const string IndustryInvalid = "Choose one of the listed types.";
+    public const string TrialBanner = "Trial: {0} day(s) left. Online bookings stop when the trial ends.";
+    public const string TrialEndedBanner = "Your trial has ended. Online bookings are closed; you can still manage existing bookings.";
+    public const string TrialEndedPublic = "This business is not taking online bookings right now. Please contact them directly.";
+    public const string BookingPrivacyNotice = "We keep your name and phone number only to manage your appointment, and you can ask the business to delete them.";
     public const string RegisterTitle = "Create your shop";
     public const string LoginTitle = "Sign in";
 
@@ -206,6 +217,15 @@ public static class Text
     public const string LabelHorizon = "Book up to (days ahead)";
     public const string LabelCutoff = "Customers can cancel until (hours before)";
     public const string HintCutoff = "After this, customers must contact the shop.";
+    public const string LabelBrandColor = "Booking page color";
+    public const string HintBrandColor = "Buttons and highlights on your public booking page use this color.";
+    public const string BrandColorInvalid = "Choose one of the listed colors.";
+    public const string ColorTeal = "Teal";
+    public const string ColorBlue = "Blue";
+    public const string ColorOrange = "Orange";
+    public const string ColorRose = "Rose";
+    public const string ColorViolet = "Violet";
+    public const string ColorSlate = "Slate";
     public const string SettingsSaved = "Settings saved.";
     public const string SettingsSavedZone = "Settings saved. The time zone changed: please review your weekly hours.";
 

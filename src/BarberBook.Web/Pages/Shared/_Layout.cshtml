@@ -8,7 +8,7 @@
     @await RenderSectionAsync("Head", required: false)
     <script src="~/js/site.js" defer></script>
 </head>
-<body>
+<body data-theme="@BarberBook.Web.Services.BrandColors.Normalize(ViewData["Theme"] as string)">
     <a class="skip-link" href="#main">@Text.SkipToContent</a>
     <header class="site-header">
         <a class="brand" href="/">@Text.AppName</a>

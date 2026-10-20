@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BarberBook.Web.Services;
 
-public sealed record SignedInUser(Guid AdminUserId, Guid BusinessId, string Role, string DisplayName);
+public sealed record SignedInUser(Guid AdminUserId, Guid BusinessId, string Role, string DisplayName, DateTime? TrialEndsAtUtc = null);
 
 public sealed class AuthService(IDbContextFactory<AppDbContext> dbFactory)
 {
@@ -29,25 +29,31 @@ public sealed class AuthService(IDbContextFactory<AppDbContext> dbFactory)
         if (user is null || !user.IsActive || !passwordOk || string.IsNullOrEmpty(password))
             return ServiceResult<SignedInUser>.Fail(FailureKind.Validation, Text.LoginFailed);
 
-        return ServiceResult<SignedInUser>.Ok(new SignedInUser(user.Id, user.BusinessId, user.Role, user.DisplayName));
+        var trialEnds = await db.Businesses.AsNoTracking().Where(b => b.Id == user.BusinessId)
+            .Select(b => b.TrialEndsAtUtc).FirstOrDefaultAsync(ct);
+        return ServiceResult<SignedInUser>.Ok(new SignedInUser(user.Id, user.BusinessId, user.Role, user.DisplayName, trialEnds));
     }
 
     /// <summary>The cookie identity. The business id here is the only source of tenant scoping in the back office.</summary>
-    public static ClaimsPrincipal CreatePrincipal(Guid adminUserId, Guid businessId, string role, string displayName)
+    public static ClaimsPrincipal CreatePrincipal(
+        Guid adminUserId, Guid businessId, string role, string displayName, DateTime? trialEndsAtUtc = null)
     {
-        var identity = new ClaimsIdentity(
-        [
-            new Claim(ClaimTypes.NameIdentifier, adminUserId.ToString()),
-            new Claim(UserClaims.BusinessIdType, businessId.ToString()),
-            new Claim(ClaimTypes.Role, role),
-            new Claim(ClaimTypes.Name, displayName),
-        ], CookieAuthenticationDefaults.AuthenticationScheme);
-        return new ClaimsPrincipal(identity);
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, adminUserId.ToString()),
+            new(UserClaims.BusinessIdType, businessId.ToString()),
+            new(ClaimTypes.Role, role),
+            new(ClaimTypes.Name, displayName),
+        };
+        // Display only (the trial banner). Enforcement happens on the server from the database value.
+        if (trialEndsAtUtc is { } ends)
+            claims.Add(new Claim(UserClaims.TrialEndsType, DateTime.SpecifyKind(ends, DateTimeKind.Utc).ToString("O")));
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }
 
     public static ClaimsPrincipal CreatePrincipal(SignedInUser user) =>
-        CreatePrincipal(user.AdminUserId, user.BusinessId, user.Role, user.DisplayName);
+        CreatePrincipal(user.AdminUserId, user.BusinessId, user.Role, user.DisplayName, user.TrialEndsAtUtc);
 
     public static ClaimsPrincipal CreatePrincipal(RegisteredOwner owner) =>
-        CreatePrincipal(owner.AdminUserId, owner.BusinessId, owner.Role, owner.DisplayName);
+        CreatePrincipal(owner.AdminUserId, owner.BusinessId, owner.Role, owner.DisplayName, owner.TrialEndsAtUtc);
 }

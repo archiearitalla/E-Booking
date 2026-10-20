@@ -208,7 +208,7 @@ No SMS gateway is used (it is the only provider cost with no free tier). Message
 - The text is prefilled but always editable by the sender. Templates are fixed in English for the MVP.
 - Links are built with the `sms:` URI scheme. The exact form that works on both Android and iOS must be tested on real devices ❓.
 - No delivery tracking, no automatic sending, no cost. Automatic reminders, if wanted, use free email (section 17).
-- Needs new business settings, `contact_phone` and an optional `messenger_page` (the Page username, not a full URL), added by an additive migration `002_*` ⬜.
+- Needs new business settings, `contact_phone` and an optional `messenger_page` (the Page username, not a full URL), added by an additive migration `003_*` ⬜ (`002_brand_color.sql` already exists).
 - Message bodies must be URL-encoded, and phone numbers are shown only to signed-in staff of that business, never on public pages.
 
 ## 9. Tenancy, roles and authorization
@@ -342,3 +342,40 @@ Free-tier limits change over time, so recheck each provider's pricing page befor
 - **Fallback:** Supabase Free also lists `btree_gist`, but the project pauses after one week of inactivity and has no automatic backups, so it is only a fallback.
 - **Gate before going live:** on the real Neon database, `CREATE EXTENSION btree_gist` must succeed and `tests/db/double_booking.sh` must pass against a separate Neon branch or database (the script wipes its schema, so never point it at live data). If either fails, do not go live; switch database first.
 - **Backups:** the free plan has a very short history window and no scheduled snapshots. Take a regular `pg_dump` and store it outside Neon.
+
+## 18. Industries and the trial 🟡 (simple version written and compiled; tests not yet run)
+
+Purpose: let a business try the system live for 30 days so it can see how it works. Kept deliberately simple.
+
+### 18.1 Industry
+
+- A business has an `industry`: `barbershop`, `salon` or `clinic`, chosen at sign-up.
+- The industry only chooses the starter service (Haircut, Haircut and styling, Consultation). It never changes the booking rules in sections 5 to 8 or the invariants in section 4. Everything can be edited afterwards.
+
+### 18.2 Sign-up and the 30-day trial
+
+- Each sign-up creates its own tenant: its own business, owner login and booking link `/b/{slug}` (the slug is the public key, the owner login is the private one). Tenant isolation is unchanged.
+- `Trial:Days` (configuration, default 30) sets `trial_ends_at_utc` at sign-up. `0` turns trials off, for example on a deployment the client hosts for itself. Existing shops have no trial date and are never limited.
+- The admin shows the days left.
+- **After the trial ends:** the public page stops accepting new customer bookings and says so. Staff can still manage and create bookings. Nothing is deleted automatically; the operator deletes a tenant's data by hand, after confirming with the business.
+- Sign-up is open (no invite code) while the URL is shared only with the business being shown the system. The sign-in and sign-up rate limit applies. An invite code can be added later if the URL becomes public.
+
+### 18.3 Customer data
+
+- A booking holds name, phone, optional email, service, staff member and time. No symptoms, diagnosis or health notes are collected; the MVP has no free-text note field.
+- The confirm page shows a short privacy line (what is kept, why, and that deletion can be requested). Retention is as in section 13.
+- Messages to customers are generic (date, time, business name) and are sent by the business through the manual links in section 8.5.
+
+### 18.4 Automation labels
+
+- Anything shown to a client as an automation is labelled **Built** (works in the current application) or **Preview** (planned). No Preview item is described as working. Nothing is sent to a customer automatically.
+
+### 18.5 Hosting
+
+- A business may run on the shared free hosting (section 17) or on hosting the client pays for. The application takes everything from configuration, so a client-hosted deployment needs no code change.
+- Free hosting has no uptime guarantee, a slow first request after idle time and limited database history. The trial must say so.
+- Before any real customer data is stored: the Neon safety gate in section 17.3 has passed and a `pg_dump` kept outside Neon has been restored once.
+
+### 18.6 Not built
+
+Invite codes, an export of business data at the end of the trial, a consent record per booking, a higher staff limit for trials (FREE stays at 1 staff member), clinic-specific fields such as an intake form.

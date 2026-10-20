@@ -333,6 +333,31 @@ public class AdminServiceTests
         Assert.Equal((30, 60, 30, 2, "Asia/Manila"), (untouchedB.SlotMinutes, untouchedB.LeadTimeMinutes, untouchedB.HorizonDays, untouchedB.CancelCutoffHours, untouchedB.TimeZone));
     }
 
+    [Fact]
+    public async Task Brand_color_defaults_to_teal_accepts_only_presets_and_is_kept_when_not_sent()
+    {
+        var (db, _, settings, _, _) = await StackAsync();
+        var a = await NewTenantAsync(db);
+        var b = await NewTenantAsync(db);
+        Assert.Equal("teal", (await settings.GetSettingsAsync(a.BusinessId))!.BrandColor);
+
+        var bad = await settings.SaveSettingsAsync(a.BusinessId, new SettingsInput("Shop", "Asia/Manila", 30, 60, 30, 2, "<script>"));
+        Assert.Equal(FailureKind.Validation, bad.Failure);
+        Assert.Contains("brandColor", bad.FieldErrors.Keys);
+
+        Assert.True((await settings.SaveSettingsAsync(a.BusinessId, new SettingsInput("Shop", "Asia/Manila", 30, 60, 30, 2, "orange"))).IsSuccess);
+        Assert.Equal("orange", (await settings.GetSettingsAsync(a.BusinessId))!.BrandColor);
+
+        // A save that does not mention the color leaves it alone, and another business is never touched.
+        Assert.True((await settings.SaveSettingsAsync(a.BusinessId, new SettingsInput("Shop 2", "Asia/Manila", 30, 60, 30, 2))).IsSuccess);
+        Assert.Equal("orange", (await settings.GetSettingsAsync(a.BusinessId))!.BrandColor);
+        Assert.Equal("teal", (await settings.GetSettingsAsync(b.BusinessId))!.BrandColor);
+
+        // The database refuses anything that is not a preset, even if the service were bypassed.
+        await using var ctx = db.CreateDbContext();
+        await Assert.ThrowsAnyAsync<Exception>(() => ctx.Database.ExecuteSqlRawAsync("UPDATE business SET brand_color = 'hotpink' WHERE id = {0}", a.BusinessId));
+    }
+
     // ------------------------------------------------------------ day view and audit
 
     [Fact]

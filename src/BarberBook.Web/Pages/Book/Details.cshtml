@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Text.BookTitle;
     var shop = Model.Shop!;
+    ViewData["Theme"] = shop.BrandColor;
 }
 <div class="card">
     <h1>@Text.BookSummary</h1>
@@ -53,6 +54,7 @@
         @if (Model.ErrorFor("idempotencyKey") is { } e4) { <p class="error">@e4</p> }
 
         <p class="hint">@Text.BookPrivacy</p>
+        <p class="hint">@Text.BookingPrivacyNotice</p>
         <button type="submit" class="primary once">@Text.BookConfirm</button>
     </form>
 </div>

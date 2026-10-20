@@ -15,6 +15,9 @@ public class Business
     public int HorizonDays { get; set; } = 30;
     public int CancelCutoffHours { get; set; } = 2;
     public string Plan { get; set; } = "FREE";
+    public string BrandColor { get; set; } = "teal";
+    public string Industry { get; set; } = "barbershop";
+    public DateTime? TrialEndsAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 

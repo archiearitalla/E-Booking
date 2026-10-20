@@ -59,6 +59,22 @@
             @if (Model.ErrorFor("cancelCutoffHours") is { } e6) { <p class="error" id="CancelCutoffHours-error">@e6</p> }
         </div>
 
+        <fieldset class="field" aria-describedby="BrandColor-hint BrandColor-error">
+            <legend>@Text.LabelBrandColor</legend>
+            <div class="swatches">
+                @foreach (var (key, label) in BrandColors.All)
+                {
+                    <label class="swatch" data-theme="@key">
+                        <input type="radio" name="Input.BrandColor" value="@key" checked="@(Model.Input.BrandColor == key)" />
+                        <span class="swatch-dot" aria-hidden="true"></span>
+                        <span>@label</span>
+                    </label>
+                }
+            </div>
+            <p class="hint" id="BrandColor-hint">@Text.HintBrandColor</p>
+            @if (Model.ErrorFor("brandColor") is { } e7) { <p class="error" id="BrandColor-error">@e7</p> }
+        </fieldset>
+
         <button type="submit" class="primary">@Text.ActionSave</button>
     </form>
 </div>

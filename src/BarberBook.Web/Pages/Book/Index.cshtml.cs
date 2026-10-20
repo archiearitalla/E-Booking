@@ -23,6 +23,7 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking) : Pa
     {
         Shop = await catalog.GetBySlugAsync(slug, ct);
         if (Shop is null) return NotFound();
+        if (!Shop.AcceptingBookings) return Page(); // trial ended: the page says so and offers no times
 
         var service = Shop.FindService(ServiceId);
         if (service is null) return Page(); // nothing chosen yet (or an id from another shop, which shows nothing)

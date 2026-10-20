@@ -6,10 +6,30 @@ using Microsoft.EntityFrameworkCore;
 namespace BarberBook.Web.Services;
 
 public sealed record ShopSettings(
-    string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours);
+    string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
+    string BrandColor = BrandColors.Default);
 
+/// <summary><c>BrandColor</c> null leaves the saved color unchanged.</summary>
 public sealed record SettingsInput(
-    string? Name, string? TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours);
+    string? Name, string? TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
+    string? BrandColor = null);
+
+/// <summary>The accent colors a shop can pick. The keys match the CHECK constraint and the <c>data-theme</c> rules in site.css.</summary>
+public static class BrandColors
+{
+    public const string Default = "teal";
+
+    public static readonly IReadOnlyList<(string Key, string Label)> All =
+    [
+        ("teal", Text.ColorTeal), ("blue", Text.ColorBlue), ("orange", Text.ColorOrange),
+        ("rose", Text.ColorRose), ("violet", Text.ColorViolet), ("slate", Text.ColorSlate),
+    ];
+
+    public static bool IsValid(string? key) => key is not null && All.Any(c => c.Key == key);
+
+    /// <summary>Theme key for a page: unknown or missing values fall back to the default.</summary>
+    public static string Normalize(string? key) => IsValid(key) ? key! : Default;
+}
 
 public sealed record ClosureRow(Guid Id, Guid? StaffId, string? StaffName, DateOnly FromDate, DateOnly ToDate, string? Reason, int AffectedBookings);
 
@@ -26,7 +46,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -42,12 +62,14 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.LeadTimeMinutes is < 0 or > 525_600) errors["leadTimeMinutes"] = Text.LeadTimeInvalid;
         if (input.HorizonDays is < 1 or > 365) errors["horizonDays"] = Text.HorizonInvalid;
         if (input.CancelCutoffHours is < 0 or > 8_760) errors["cancelCutoffHours"] = Text.CutoffInvalid;
+        if (input.BrandColor is not null && !BrandColors.IsValid(input.BrandColor)) errors["brandColor"] = Text.BrandColorInvalid;
         if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var business = await db.Businesses.FirstOrDefaultAsync(b => b.Id == businessId, ct);
         if (business is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
 
+        if (input.BrandColor is not null) business.BrandColor = input.BrandColor;
         var zoneChanged = !string.Equals(business.TimeZone, zone, StringComparison.Ordinal);
         business.Name = name;
         business.TimeZone = zone;

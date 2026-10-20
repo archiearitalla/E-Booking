@@ -8,6 +8,12 @@ namespace BarberBook.Web.Services;
 public static class UserClaims
 {
     public const string BusinessIdType = "business_id";
+    public const string TrialEndsType = "trial_ends_utc";
+
+    /// <summary>When the trial ends, from the cookie. For the banner only; null when there is no trial.</summary>
+    public static DateTime? TrialEndsUtc(this ClaimsPrincipal user) =>
+        DateTime.TryParse(user.FindFirstValue(TrialEndsType), null,
+            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var d) ? d : null;
 
     public static Guid? BusinessId(this ClaimsPrincipal user) =>
         Guid.TryParse(user.FindFirstValue(BusinessIdType), out var id) ? id : null;

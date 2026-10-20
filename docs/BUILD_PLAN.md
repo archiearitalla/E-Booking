@@ -105,7 +105,7 @@ Not verified: full keyboard-only walkthrough of every form; screen reader behavi
 
 ## Step 6: Message links (section 8.5) ⬜
 
-Files: `Data/Migrations/002_contact_settings.sql`, entity and settings page updates, a small `MessageLinks` helper in `Services/`.
+Files: `Data/Migrations/003_contact_settings.sql`, entity and settings page updates, a small `MessageLinks` helper in `Services/`.
 
 Acceptance:
 - Correctly URL-encoded `sms:` and `m.me` links; "Copy message" works.
@@ -133,3 +133,19 @@ Acceptance:
 Files: `Api/` endpoints per section 3.1, problem+json errors per section 8.4, JWT plus refresh token per decision 6. Then the Flutter app.
 
 Acceptance: the API reuses `BookingService`; no business rule is duplicated in a controller.
+
+## Branding: per-shop accent color ✅ (browser check of the settings page still open)
+
+Files: `Data/Migrations/002_brand_color.sql`, `BrandColors` in `Services/ShopSettingsService.cs`, `Pages/Admin/Settings`, `data-theme` rules in `wwwroot/css/site.css`, `Pages/Shared/_Layout.cshtml`.
+
+A shop picks one of six preset colors (teal, blue, orange, rose, violet, slate) in Settings; its public booking, confirm and manage pages use it. Presets rather than free hex because the CSP forbids inline styles and a closed list cannot carry markup. The database CHECK enforces the list.
+
+Verified: solution builds with 0 warnings; Core self-check 55/55; the Web test suite passes against PostgreSQL 16.11 (90 tests, including the preset-only check, the database CHECK and the per-shop theme on the public page). Not verified: the settings page and the five new colors in a browser, contrast of the new colors in a checker, Safari. Logo and cover photo are not built (they need an image storage decision).
+
+## Industries and the 30-day trial ✅ (browser check of Register and the banner still open)
+
+Files: `Data/Migrations/003_industry_trial.sql`, `Services/Industries.cs`, `OnboardingService`, `AuthService` (trial claim), `Pages/Register`, `Pages/Shared/_AdminLayout` (banner), `BookingService.CreateAsync` and `ShopCatalogService` (booking closes after the trial), `appsettings.json` (`Trial:Days`).
+
+Verified: the Web test suite passes against PostgreSQL 16.11 (90 tests), including `TrialAndIndustryTests` (clinic starter service and trial end date, no trial by default, unknown industry refused, customers refused and staff still allowed after the trial, the public page reports it). Not verified: the Register page and the trial banner in a browser, the claim after a real sign-in, the new migrations on Neon.
+
+Test database used: a portable PostgreSQL 16.11 on port 55432, separate from the machine's own PostgreSQL.

@@ -21,7 +21,7 @@ public class SettingsModel(ShopSettingsService settings) : AdminPageModel
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var result = await settings.SaveSettingsAsync(BusinessId,
-            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours), ct);
+            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -45,6 +45,7 @@ public class SettingsModel(ShopSettingsService settings) : AdminPageModel
         {
             Name = s.Name, TimeZone = s.TimeZone, SlotMinutes = s.SlotMinutes,
             LeadTimeMinutes = s.LeadTimeMinutes, HorizonDays = s.HorizonDays, CancelCutoffHours = s.CancelCutoffHours,
+            BrandColor = s.BrandColor,
         };
     }
 
@@ -56,5 +57,6 @@ public class SettingsModel(ShopSettingsService settings) : AdminPageModel
         public int LeadTimeMinutes { get; set; } = 60;
         public int HorizonDays { get; set; } = 30;
         public int CancelCutoffHours { get; set; } = 2;
+        public string? BrandColor { get; set; } = BrandColors.Default;
     }
 }

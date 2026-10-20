@@ -119,6 +119,21 @@ public class PublicBookingTests
     }
 
     [Fact]
+    public async Task The_booking_page_uses_the_shops_color_theme_and_other_shops_keep_the_default()
+    {
+        var (factory, client) = await StartAsync();
+        using var _ = factory;
+        var colored = await NewShopAsync();
+        var plain = await NewShopAsync();
+        await using (var ctx = colored.Db.CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == colored.BusinessId)
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.BrandColor, "rose"));
+
+        Assert.Contains("data-theme=\"rose\"", await client.GetStringAsync($"/b/{colored.Slug}"));
+        Assert.Contains("data-theme=\"teal\"", await client.GetStringAsync($"/b/{plain.Slug}"));
+    }
+
+    [Fact]
     public async Task The_public_page_never_shows_customer_names_or_numbers()
     {
         var (factory, client) = await StartAsync();

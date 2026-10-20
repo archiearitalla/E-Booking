@@ -18,6 +18,18 @@
             @if (Model.ErrorFor("businessName") is { } e1) { <p class="error" id="BusinessName-error">@e1</p> }
         </div>
 
+        <fieldset class="field">
+            <legend>@Text.LabelIndustry</legend>
+            @foreach (var (key, label, _) in Industries.All)
+            {
+                <label class="choice">
+                    <input type="radio" name="Input.Industry" value="@key" checked="@((Model.Input.Industry ?? Industries.Default) == key)" />
+                    <span>@label</span>
+                </label>
+            }
+            @if (Model.ErrorFor("industry") is { } eI) { <p class="error">@eI</p> }
+        </fieldset>
+
         <div class="field">
             <label for="Slug">@Text.LabelSlug</label>
             <input type="text" id="Slug" name="Input.Slug" value="@Model.Input.Slug" maxlength="40" autocapitalize="none" autocomplete="off"

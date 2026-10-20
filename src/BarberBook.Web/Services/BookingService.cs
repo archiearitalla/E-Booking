@@ -70,6 +70,11 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         if (business is null || service is null)
             return ServiceResult<CreateOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
+        // A finished trial closes online booking for customers; staff can still record bookings.
+        if (request.Actor.Kind != ActorKind.Staff && business.TrialEndsAtUtc is { } trialEnds
+            && time.GetUtcNow().UtcDateTime > DateTime.SpecifyKind(trialEnds, DateTimeKind.Utc))
+            return ServiceResult<CreateOutcome>.Fail(FailureKind.PolicyViolation, Text.TrialEndedPublic);
+
         var candidates = await LoadEligibleStaffAsync(db, business.Id, service.Id, request.StaffId, ct);
         if (request.StaffId is not null && candidates.Count == 0)
             return ServiceResult<CreateOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
@@ -309,6 +314,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 CutoffHours = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.CancelCutoffHours).First(),
                 CustomerName = b.Customer.Name,
                 TimeZone = b.LocationTimeZone,
+                BrandColor = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.BrandColor).First(),
             })
             .FirstOrDefaultAsync(ct);
         if (row is null) return null;
@@ -316,7 +322,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var policy = BookingPolicy.CanCancel(
             row.Summary.Status, row.Summary.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, row.CutoffHours);
         var refusal = !policy.Allowed && !row.Summary.Status.IsTerminal() ? policy.Reason : null;
-        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal);
+        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor);
     }
 
     public async Task<BookingSummary?> LoadSummaryAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)

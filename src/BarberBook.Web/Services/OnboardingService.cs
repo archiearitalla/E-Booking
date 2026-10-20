@@ -9,16 +9,20 @@ using Npgsql;
 namespace BarberBook.Web.Services;
 
 public sealed record RegisterRequest(
-    string? BusinessName, string? Slug, string? OwnerName, string? Email, string? Password, string? TimeZone = null);
+    string? BusinessName, string? Slug, string? OwnerName, string? Email, string? Password, string? TimeZone = null,
+    string? Industry = null, int TrialDays = 0);
 
-public sealed record RegisteredOwner(Guid BusinessId, Guid AdminUserId, string Slug, string DisplayName, string Role);
+public sealed record RegisteredOwner(
+    Guid BusinessId, Guid AdminUserId, string Slug, string DisplayName, string Role, DateTime? TrialEndsAtUtc = null);
 
 /// <summary>
 /// Creates a shop: business, owner, one staff member, one service and Mon-Sat 09:00-18:00 hours, all in one
 /// transaction (one SaveChanges). The FREE plan allows 1 staff member, which this starter data respects.
 /// </summary>
-public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory)
+public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider? time = null)
 {
+    private readonly TimeProvider clock = time ?? TimeProvider.System;
+
     private const string UniqueViolation = "23505";
 
     public async Task<ServiceResult<RegisteredOwner>> RegisterAsync(RegisterRequest request, CancellationToken ct = default)
@@ -45,6 +49,9 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory)
         var timeZone = string.IsNullOrWhiteSpace(request.TimeZone) ? "Asia/Manila" : request.TimeZone.Trim();
         if (!LocalTime.IsValidZone(timeZone)) errors["timeZone"] = Text.ValidationFailed;
 
+        var industry = string.IsNullOrWhiteSpace(request.Industry) ? Industries.Default : request.Industry.Trim();
+        if (!Industries.IsValid(industry)) errors["industry"] = Text.IndustryInvalid;
+
         if (errors.Count > 0) return ServiceResult<RegisteredOwner>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -54,7 +61,11 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory)
         if (await db.AdminUsers.AnyAsync(u => u.Email.ToLower() == email.ToLower(), ct)) errors["email"] = Text.EmailTaken;
         if (errors.Count > 0) return ServiceResult<RegisteredOwner>.Invalid(errors);
 
-        var business = new Business { Slug = slug, Name = businessName, TimeZone = timeZone };
+        var business = new Business
+        {
+            Slug = slug, Name = businessName, TimeZone = timeZone, Industry = industry,
+            TrialEndsAtUtc = request.TrialDays > 0 ? clock.GetUtcNow().UtcDateTime.AddDays(request.TrialDays) : null,
+        };
         var owner = new AdminUser
         {
             BusinessId = business.Id,
@@ -65,7 +76,7 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory)
         };
         var service = new Service
         {
-            BusinessId = business.Id, Name = Text.DefaultServiceName, DurationMinutes = 30, Price = 0,
+            BusinessId = business.Id, Name = Industries.StarterService(industry), DurationMinutes = 30, Price = 0,
         };
         var staff = new Staff { BusinessId = business.Id, Name = ownerName };
         staff.StaffServices.Add(new StaffService { ServiceId = service.Id, BusinessId = business.Id });
@@ -87,7 +98,7 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory)
             });
         }
 
-        return ServiceResult<RegisteredOwner>.Ok(new RegisteredOwner(business.Id, owner.Id, business.Slug, owner.DisplayName, owner.Role));
+        return ServiceResult<RegisteredOwner>.Ok(new RegisteredOwner(business.Id, owner.Id, business.Slug, owner.DisplayName, owner.Role, business.TrialEndsAtUtc));
     }
 
     private static PostgresException? FindPostgres(Exception? ex)

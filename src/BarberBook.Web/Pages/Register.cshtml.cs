@@ -7,8 +7,11 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace BarberBook.Web.Pages;
 
 [EnableRateLimiting(RateLimitPolicies.Auth)]
-public class RegisterModel(OnboardingService onboarding) : FormPageModel
+public class RegisterModel(OnboardingService onboarding, IConfiguration config) : FormPageModel
 {
+    /// <summary>Trial length in days for new sign-ups. 0 turns trials off (for example on a dedicated deployment).</summary>
+    private int TrialDays => config.GetValue("Trial:Days", 0);
+
     [BindProperty]
     public RegisterInput Input { get; set; } = new();
 
@@ -18,7 +21,8 @@ public class RegisterModel(OnboardingService onboarding) : FormPageModel
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var result = await onboarding.RegisterAsync(
-            new RegisterRequest(Input.BusinessName, Input.Slug, Input.OwnerName, Input.Email, Input.Password), ct);
+            new RegisterRequest(Input.BusinessName, Input.Slug, Input.OwnerName, Input.Email, Input.Password,
+                Industry: Input.Industry, TrialDays: TrialDays), ct);
 
         if (!result.IsSuccess)
         {
@@ -39,5 +43,6 @@ public class RegisterModel(OnboardingService onboarding) : FormPageModel
         public string? OwnerName { get; set; }
         public string? Email { get; set; }
         public string? Password { get; set; }
+        public string? Industry { get; set; } = Industries.Default;
     }
 }

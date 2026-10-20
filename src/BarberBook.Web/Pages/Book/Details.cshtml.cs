@@ -24,6 +24,7 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
     public async Task<IActionResult> OnGetAsync(string slug, Guid? serviceId, Guid? staffId, string? start, CancellationToken ct)
     {
         if (!await LoadAsync(slug, serviceId, staffId, start, ct)) return NotFound();
+        if (!Shop!.AcceptingBookings) return RedirectToPage("/Book/Index", new { slug = Shop.Slug });
 
         // Show the form only for a time that is still free; otherwise go back to the time list.
         var localDate = LocalTime.LocalDateOf(StartUtc, Shop!.TimeZone);
@@ -54,6 +55,8 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
             case FailureKind.Validation:
                 Errors = result.FieldErrors;
                 return Page();
+            case FailureKind.PolicyViolation:
+                return RedirectToPage("/Book/Index", new { slug = Shop.Slug });
             default:
                 return NotFound();
         }

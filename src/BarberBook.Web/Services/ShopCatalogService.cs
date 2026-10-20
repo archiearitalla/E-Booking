@@ -11,7 +11,8 @@ public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> Servi
 /// <summary>What the public booking page may show. No phone numbers, no emails, no customer data.</summary>
 public sealed record PublicShop(
     Guid Id, string Slug, string Name, string TimeZone, int HorizonDays,
-    DateOnly Today, IReadOnlyList<PublicService> Services, IReadOnlyList<PublicStaff> Staff)
+    DateOnly Today, IReadOnlyList<PublicService> Services, IReadOnlyList<PublicStaff> Staff, string BrandColor = BrandColors.Default,
+    bool AcceptingBookings = true)
 {
     public PublicService? FindService(Guid? id) => Services.FirstOrDefault(s => s.Id == id);
     public PublicStaff? FindStaff(Guid? id) => Staff.FirstOrDefault(s => s.Id == id);
@@ -43,6 +44,8 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
         var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, business.TimeZone);
         return new PublicShop(
             business.Id, business.Slug, business.Name, business.TimeZone, business.HorizonDays, today,
-            services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList());
+            services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
+            business.TrialEndsAtUtc is not { } ends
+                || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc));
     }
 }

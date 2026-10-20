@@ -51,7 +51,7 @@ Mark anything not compiled or not run as unverified, in the commit message and i
 
 ## Current state
 
-Verified: Core (55 self-checks) and the database schema (20 checks on PostgreSQL 16).
+Verified: Core (55 self-checks), the database schema (20 checks on PostgreSQL 16) and the Web test suite (90 tests on PostgreSQL 16.11).
 Compiled and checked against PostgreSQL 16 (Step 0 done): `src/BarberBook.Web/Data/*`, `AppInfo.cs`; run `tests/BarberBook.Web.ModelCheck` (needs `ConnectionStrings__Default` pointing at a disposable database) to confirm the EF model matches the schema. `Services/BookingService.cs` (Step 2) is covered by `tests/BarberBook.Web.Tests` against real PostgreSQL.
 
 ## Working from two places (VS Code and mobile)

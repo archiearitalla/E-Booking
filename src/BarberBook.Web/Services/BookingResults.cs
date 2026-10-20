@@ -81,4 +81,5 @@ public sealed record BookingDetails(
     int CancelCutoffHours,
     string CustomerName,
     bool CanCancel,
-    string? CancelRefusal);
+    string? CancelRefusal,
+    string BrandColor = BrandColors.Default);
