@@ -71,6 +71,8 @@ public static class Text
     public const string BookService = "Service";
     public const string BookStaff = "Barber";
     public const string BookStaffAny = "Any available";
+    public const string StaffLabelSalon = "Stylist";
+    public const string StaffLabelClinic = "Doctor";
     public const string BookDate = "Date";
     public const string BookShowTimes = "Show available times";
     public const string BookAvailableTimes = "Available times on";

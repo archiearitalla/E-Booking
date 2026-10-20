@@ -93,6 +93,21 @@ public class TrialAndIndustryTests
     }
 
     [Fact]
+    public async Task The_public_page_uses_the_industrys_word_for_the_person_being_booked()
+    {
+        var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+        var clock = new TestClock(BaseNow);
+        var clinic = (await new OnboardingService(db, clock).RegisterAsync(Request("clinic"))).Value!;
+        var salon = (await new OnboardingService(db, clock).RegisterAsync(Request("salon"))).Value!;
+        var shop = (await new OnboardingService(db, clock).RegisterAsync(Request())).Value!;
+        var catalog = new ShopCatalogService(db, clock);
+
+        Assert.Equal("Doctor", Industries.StaffLabel((await catalog.GetBySlugAsync(clinic.Slug))!.Industry));
+        Assert.Equal("Stylist", Industries.StaffLabel((await catalog.GetBySlugAsync(salon.Slug))!.Industry));
+        Assert.Equal("Barber", Industries.StaffLabel((await catalog.GetBySlugAsync(shop.Slug))!.Industry));
+    }
+
+    [Fact]
     public async Task A_shop_with_no_trial_date_always_accepts_bookings()
     {
         var db = new TestDbFactory(await TestDb.ConnectionStringAsync());

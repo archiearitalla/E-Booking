@@ -40,7 +40,7 @@
             </fieldset>
 
             <div class="field">
-                <label for="staffId">@Text.BookStaff</label>
+                <label for="staffId">@Industries.StaffLabel(shop.Industry)</label>
                 <select id="staffId" name="staffId">
                     <option value="">@Text.BookStaffAny</option>
                     @foreach (var staff in shop.Staff)

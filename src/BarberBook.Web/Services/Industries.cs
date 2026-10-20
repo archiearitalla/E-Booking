@@ -15,6 +15,14 @@ public static class Industries
         ("clinic", Text.IndustryClinic, Text.DefaultServiceClinic),
     ];
 
+    /// <summary>The word the public page uses for the person being booked.</summary>
+    public static string StaffLabel(string? key) => key switch
+    {
+        "salon" => Text.StaffLabelSalon,
+        "clinic" => Text.StaffLabelClinic,
+        _ => Text.BookStaff,
+    };
+
     public static bool IsValid(string? key) => key is not null && All.Any(i => i.Key == key);
 
     public static string StarterService(string key) => All.First(i => i.Key == key).StarterService;

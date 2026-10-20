@@ -12,7 +12,7 @@ public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> Servi
 public sealed record PublicShop(
     Guid Id, string Slug, string Name, string TimeZone, int HorizonDays,
     DateOnly Today, IReadOnlyList<PublicService> Services, IReadOnlyList<PublicStaff> Staff, string BrandColor = BrandColors.Default,
-    bool AcceptingBookings = true)
+    bool AcceptingBookings = true, string Industry = Industries.Default)
 {
     public PublicService? FindService(Guid? id) => Services.FirstOrDefault(s => s.Id == id);
     public PublicStaff? FindStaff(Guid? id) => Staff.FirstOrDefault(s => s.Id == id);
@@ -46,6 +46,7 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
             business.Id, business.Slug, business.Name, business.TimeZone, business.HorizonDays, today,
             services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
             business.TrialEndsAtUtc is not { } ends
-                || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc));
+                || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc),
+            business.Industry);
     }
 }
