@@ -117,9 +117,9 @@ Files: `tests/BarberBook.Web.Tests/` (xunit), `.github/workflows/ci.yml`.
 
 Acceptance: CI runs the self-check, the SQL invariants (PostgreSQL service container) and the integration tests on every push.
 
-## Step 8: Free deployment ⬜
+## Step 8: Free deployment 🟡 (files written; nothing deployed yet)
 
-Files: `Dockerfile`, `docs/DEPLOY.md`.
+Files: `Dockerfile`, `.dockerignore`, `render.yaml`, `docs/DEPLOY.md`. Written, and the Release publish was run in Production mode on a PORT from the environment (health check and a booking page answered). Not done: the Docker image build (no Docker on this machine), the Neon safety gate, a Render deploy, the backup job. Those need the owner's accounts; the steps are in `docs/DEPLOY.md`.
 
 Render free web service (Docker) or Cloud Run, Neon Postgres, secrets as environment variables, regular `pg_dump` backup (section 17.1).
 

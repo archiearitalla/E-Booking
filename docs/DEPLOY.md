@@ -1,0 +1,85 @@
+# Deploying BarberBook on free tiers
+
+Target: Render (the app, built from the `Dockerfile`), Neon (PostgreSQL 16), Cloudflare (DNS in front). Everything here is free; limits and costs are in `BUSINESS_RULES.md` section 17 and in the cost notes at the end.
+
+An account on each service is needed and only the owner can create them. Nothing below puts a secret in the repository.
+
+## 0. Safety gate before real customer data (BUSINESS_RULES 17.3)
+
+The no-double-booking guarantee needs the `btree_gist` extension. Prove it on Neon before going live:
+
+1. In Neon, create a project on **PostgreSQL 16**. Create a second database named `barberbook_test` in it (or a separate branch).
+2. In the SQL editor of the **test** database run `CREATE EXTENSION IF NOT EXISTS btree_gist;`. It must succeed.
+3. From a machine with `psql`, run the invariant script against the test database only (it wipes the public schema):
+   ```bash
+   PGHOST=<neon host> PGUSER=<user> PGPASSWORD=<password> PGDATABASE=barberbook_test PGSSLMODE=require tests/db/double_booking.sh
+   ```
+   It must print "All database invariants hold." If it does not, stop and use the fallback in 17.3.
+
+## 1. Database (Neon)
+
+1. Use the main database of the project for the app (for example `neondb`).
+2. Copy the **direct** connection details, not the one with `-pooler` in the host (the app takes transaction advisory locks; pooled behaviour has not been checked).
+3. Build the connection string in this form:
+   ```
+   Host=<neon host>;Database=<db>;Username=<user>;Password=<password>;SSL Mode=Require
+   ```
+4. The app creates all tables itself on first start (`Database:MigrateOnStartup`, default on). A second start applies nothing.
+
+## 2. App (Render)
+
+Option A, Blueprint (fewest clicks): in Render choose **New, Blueprint**, pick this GitHub repository (grant Render access to it, it is private), and it reads `render.yaml`. When asked for `ConnectionStrings__Default`, paste the string from step 1.
+
+Option B, manually: **New, Web Service, Docker**, this repository, plan **Free**, health check path `/healthz`, and these environment variables:
+
+| Variable | Value |
+|---|---|
+| `ConnectionStrings__Default` | the Neon string (secret) |
+| `Proxy__TrustForwardedHeaders` | `true` (so rate limits see the visitor's IP, not Render's) |
+| `Trial__Days` | `30` for the shared trial. `0` for a client's own deployment |
+| `Database__MigrateOnStartup` | `true` |
+
+After the first deploy, open `https://<name>.onrender.com/healthz`. It returns `{"status":"ok","version":...}` when the database is reachable and `503` when it is not.
+
+## 3. Domain (Cloudflare)
+
+1. Render: service, **Settings, Custom Domains**, add `book.<your domain>`.
+2. Cloudflare DNS: add a `CNAME` record named `book` pointing to the `.onrender.com` address Render shows. Leave it **DNS only** (grey cloud) at first. With the orange cloud on, the proxy chain changes the forwarded IP header and the per-IP rate limit has not been checked behind it.
+3. Do not touch the records for the root domain or existing email.
+4. Wait for Render to issue the certificate, then open `https://book.<your domain>/Register`.
+
+## 4. Check after deploy
+
+- `/healthz` returns ok.
+- Register a test clinic, see the trial banner, add a service price, open `/b/<slug>` on a phone and book a time.
+- The booking shows in `/Admin` and the time disappears from the public list.
+- Delete the test shop afterwards (operator task, see below).
+
+## 5. Backups (before real data)
+
+The free database keeps a very short history. Take a regular dump and keep it outside Neon:
+
+```bash
+pg_dump "postgresql://<user>:<password>@<host>/<db>?sslmode=require" -Fc -f barberbook-$(date +%F).dump
+```
+
+Restore it once into an empty database to prove it works (`pg_restore -d <empty db> <file>`). A scheduled job can run this daily and upload the file to storage such as Cloudflare R2 (free allowance, verify current limits). That job is not built yet.
+
+## 6. Things to tell the client (free hosting)
+
+- No uptime guarantee. After about 15 minutes without visits the app sleeps and the next visit takes around a minute.
+- Limited database history, so backups are the owner's job.
+- The trial closes online booking after 30 days. Staff can still use the admin.
+
+## 7. Deleting a tenant (by hand)
+
+There is no delete button. After confirming with the business, delete in this order inside one transaction, using the business id: `audit_log`, `booking`, `customer`, `blackout`, `staff_service`, `working_hour`, `staff`, `service`, `admin_user`, `business`. Take a dump first.
+
+## 8. Moving to paid hosting
+
+Triggers are in `BUSINESS_RULES.md` 17.1 (first paying client, database near its limits, daily email cap). A client who hosts for themselves uses the same `Dockerfile` and variables with `Trial__Days=0`.
+
+## What was and was not verified here
+
+Verified: the project publishes in Release, runs in Production mode on the port given in `PORT`, serves `/healthz` and a booking page, with forwarded headers on.
+Not verified: the Docker image build (no Docker on the development machine), a real Render deploy, Neon (the `btree_gist` gate in step 0), the custom domain, and behaviour behind the Cloudflare proxy.

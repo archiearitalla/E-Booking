@@ -1,0 +1,17 @@
+# Render Blueprint: one web service built from the Dockerfile. See docs/DEPLOY.md.
+# The connection string is a secret: Render asks for it when the Blueprint is created (sync: false), it is never stored here.
+services:
+  - type: web
+    name: barberbook
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: ConnectionStrings__Default
+        sync: false
+      - key: Proxy__TrustForwardedHeaders
+        value: "true"
+      - key: Trial__Days
+        value: "30"
+      - key: Database__MigrateOnStartup
+        value: "true"
