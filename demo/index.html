@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BarberBook Demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Manrope:wght@400;500;700&display=swap">
+<style>
+/* Layout: intro and feature list beside a live phone demo; the shop owner's day view sits below and reacts to the demo bookings. */
+:root{
+  --bg:#f5f3ef; --card:#ffffff; --soft:#efece6; --fg:#1d1a16; --muted:#6b645a; --line:#e0dbd1;
+  --ok:#2f7d4f; --ok-soft:#e1f1e7; --warn:#a15c07; --warn-soft:#fbeed6; --ac:#c2410c;
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Manrope",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14120f; --card:#1f1c18; --soft:#2a2621; --fg:#f1ede6; --muted:#a39b8e; --line:#38332c;
+  --ok:#6cc58c; --ok-soft:#1b3326; --warn:#f0b35a; --warn-soft:#3a2b12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14120f; --card:#1f1c18; --soft:#2a2621; --fg:#f1ede6; --muted:#a39b8e; --line:#38332c;
+  --ok:#6cc58c; --ok-soft:#1b3326; --warn:#f0b35a; --warn-soft:#3a2b12; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding-block:36px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:start}
+@media(max-width:820px){.hero{grid-template-columns:minmax(0,1fr)}}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 10px}
+h1{font-family:var(--display);font-size:clamp(34px,6vw,52px);line-height:1.04;margin:0 0 14px;letter-spacing:-.02em;text-wrap:balance}
+.lead{font-size:17px;color:var(--muted);max-width:46ch;margin:0 0 22px}
+.feat{list-style:none;margin:0 0 24px;padding:0;display:grid;gap:12px;max-width:46ch}
+.feat li{display:grid;grid-template-columns:22px 1fr;gap:12px}
+.feat svg{width:22px;height:22px;color:var(--ac);margin-top:2px}
+.feat b{display:block;font-weight:700}
+.feat span{color:var(--muted);font-size:14px}
+.note{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;max-width:52ch}
+.demo{display:flex;flex-direction:column;align-items:center;gap:12px;min-width:0}
+.pick{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;justify-content:center}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;outline-offset:2px}
+.sw.on{border-color:var(--fg)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:340px}
+.steps button{font:inherit;font-size:12px;font-weight:500;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.steps button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.dev{width:324px;max-width:100%;background:var(--soft);border-radius:38px;padding:10px;border:1px solid var(--line)}
+.sc{background:var(--card);border-radius:29px;height:620px;overflow:hidden;display:flex;flex-direction:column;font-size:13px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 6px;gap:8px}
+.top b{font-weight:700;font-size:15px}
+.top small{display:block;color:var(--muted);font-size:11.5px}
+.ic{width:36px;height:36px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;border:0;color:var(--fg);cursor:pointer;flex:none}
+.ic svg{width:17px;height:17px}
+.bd{flex:1;overflow:auto;padding:6px 16px 12px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
+.bd::-webkit-scrollbar{display:none}
+h3.t{font-family:var(--display);font-size:22px;line-height:1.15;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:12px}
+.sec{display:flex;justify-content:space-between;align-items:baseline;font-weight:700}
+.sec span{font-size:12px;font-weight:500;color:color-mix(in srgb,var(--ac) 60%,var(--fg))}
+.hb{background:var(--ac);color:#fff;border-radius:22px;padding:18px;min-height:156px;display:flex;flex-direction:column;justify-content:flex-end;gap:12px;position:relative;overflow:hidden}
+.hb:before{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.14)}
+.hb svg{position:absolute;right:20px;top:20px;width:40px;height:40px;opacity:.9}
+.hb p{margin:0;font-family:var(--display);font-size:23px;line-height:1.1;font-weight:700;max-width:180px;position:relative}
+.pill{background:#fff;color:#1d1a16;border:0;border-radius:999px;padding:10px 16px;font:inherit;font-weight:700;font-size:13px;align-self:flex-start;cursor:pointer;min-height:40px}
+.cta{background:var(--ac);color:#fff;border:0;border-radius:16px;padding:14px;font:inherit;font-size:14px;font-weight:700;margin:0 16px 16px;cursor:pointer;min-height:48px}
+.ghost{background:transparent;border:1.5px solid var(--line);color:var(--fg);border-radius:16px;padding:12px;font:inherit;font-size:13px;font-weight:500;margin:0 16px 10px;cursor:pointer;min-height:44px}
+.chips{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
+.chip{flex:none;padding:8px 14px;border-radius:999px;background:var(--soft);font-size:12px;font-weight:500;cursor:pointer;border:0;color:var(--fg);font-family:inherit}
+.chip.on{background:var(--ac);color:#fff}
+.row{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--soft);cursor:pointer;border:1.5px solid transparent;width:100%;text-align:left;font:inherit;color:var(--fg)}
+.row.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,var(--card))}
+.row b{font-weight:700;font-size:14px;display:block}
+.av{width:44px;height:44px;border-radius:14px;background:color-mix(in srgb,var(--ac) 20%,var(--card));color:color-mix(in srgb,var(--ac) 70%,var(--fg));display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.av svg{width:20px;height:20px}
+.pr{margin-left:auto;font-weight:700;font-size:14px;display:flex;align-items:center}
+.pr svg{width:16px;height:16px;color:var(--muted)}
+.rt{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)}
+.rt svg{width:13px;height:13px;color:#d99a12;fill:#d99a12}
+.dates{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
+.d{flex:none;width:48px;padding:9px 0;border-radius:14px;background:var(--soft);text-align:center;cursor:pointer;border:0;font:inherit;color:var(--fg)}
+.d small{display:block;font-size:11px;color:var(--muted)}
+.d span{font-size:16px;font-weight:700}
+.d.on{background:var(--ac);color:#fff}.d.on small{color:#fff}
+.tm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.t{padding:11px 0;text-align:center;border-radius:12px;background:var(--soft);cursor:pointer;border:0;font:inherit;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:500}
+.t.on{background:var(--ac);color:#fff}
+.t.x{color:var(--muted);text-decoration:line-through;cursor:default;opacity:.55}
+.sm{background:var(--soft);border-radius:16px;padding:12px 14px}
+.sm div{display:flex;justify-content:space-between;gap:12px;padding:5px 0}
+.sm .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:10px;font-weight:700;font-size:15px}
+.fld{background:var(--soft);border-radius:14px;padding:12px;color:var(--muted)}
+.ok{width:78px;height:78px;border-radius:50%;background:color-mix(in srgb,var(--ac) 16%,var(--card));color:color-mix(in srgb,var(--ac) 75%,var(--fg));display:flex;align-items:center;justify-content:center;margin:28px auto 6px}
+.ok svg{width:38px;height:38px}
+.owner{margin-top:48px}
+.owner h2{font-family:var(--display);font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+.owner>p{color:var(--muted);margin:0 0 18px;max-width:60ch}
+.board{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;min-width:0}
+.bh{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.bh b{font-family:var(--display);font-size:18px}
+.stats{display:flex;gap:18px;font-size:13px;color:var(--muted)}
+.stats strong{color:var(--fg);font-size:18px;font-family:var(--display);margin-right:4px}
+.bk{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.bk .time{font-variant-numeric:tabular-nums;font-weight:700}
+.bk .who b{font-weight:700;display:block}
+.bk .who span{color:var(--muted);font-size:13px}
+.badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-new{background:color-mix(in srgb,var(--ac) 16%,var(--card));color:color-mix(in srgb,var(--ac) 75%,var(--fg))}
+.b-wait{background:var(--warn-soft);color:var(--warn)}
+.b-done{background:var(--soft);color:var(--muted)}
+.act{font:inherit;font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;min-height:36px}
+.side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+@media(max-width:480px){.bk{grid-template-columns:52px minmax(0,1fr)}.side{grid-column:2;flex-direction:row;align-items:center}}
+:focus-visible{outline:3px solid #2f6fed;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Booking for barbershops and salons</p>
+      <h1>Book a cut in under a minute.</h1>
+      <p class="lead">Customers pick a service, a barber and a time on their phone. The shop sees the day at a glance. Try both sides below.</p>
+      <ul class="feat">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><div><b>Phone first, no app</b><span>One link or QR code. No account for the customer.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><div><b>No double bookings</b><span>Two people tapping the last slot at once: one wins, the other picks another time.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/><path d="M12 22c-5 0-9-3-9-8 0-4 3-7 7-7"/></svg><div><b>Your shop's color</b><span>Pick an accent in the swatches. The booking page follows it.</span></div></li>
+      </ul>
+      <p class="note">Interface demo with sample data. Names, prices and times are examples, and nothing you tap here is saved or sent.</p>
+    </div>
+    <div class="demo">
+      <div class="pick"><span>Shop color</span><span id="sws" style="display:flex;gap:8px"></span></div>
+      <div class="steps" id="steps"></div>
+      <div class="dev"><div class="sc" id="sc"></div></div>
+    </div>
+  </section>
+
+  <section class="owner">
+    <h2>What the shop sees</h2>
+    <p>Book on the phone above and the appointment shows up here. Mark it complete after the service.</p>
+    <div class="board">
+      <div class="bh"><b id="bdate">Tuesday, October 21</b><div class="stats" id="stats"></div></div>
+      <div id="rows"></div>
+    </div>
+  </section>
+
+  <footer class="note" style="margin-top:40px">Designed and built by <a href="https://veskacode.com" style="color:inherit">Veskacode</a>. This is an interface demo with sample data.</footer>
+</main>
+
+<script>
+var COL={teal:'#0f766e',blue:'#1d4ed8',orange:'#c2410c',rose:'#be123c',violet:'#6d28d9',slate:'#334155'};
+var P={
+ scissors:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
+ check:'<polyline points="20 6 9 17 4 12"/>',
+ back:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+ next:'<polyline points="9 18 15 12 9 6"/>',
+ star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+ pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+ smile:'<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>',
+ drop:'<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+ dots:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'
+};
+function ic(n){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+P[n]+'</svg>'}
+var NAMES=['Home','Service','Time','Review','Done'];
+var SV=[['Classic haircut','30 min',250,'scissors'],['Haircut and beard','45 min',400,'smile'],['Beard trim','20 min',150,'clock'],['Hot towel shave','30 min',300,'drop']];
+var BR=[['Ben','4.9'],['Migs','4.8'],['Rey','4.7']];
+var TM=['9:00','9:30','10:00','10:30','11:00','11:30','1:00','1:30','2:00'];
+var OFF=[1,4,7];
+var DY=[['Tue',21],['Wed',22],['Thu',23],['Fri',24],['Sat',25],['Sun',26],['Mon',27]];
+var S=0,svc=1,bar=0,day=0,tm=3,cat=0,ck='orange',booked=false,bstatus='new';
+var BASE=[['9:00','Juan Dela Cruz','Classic haircut','Ben','done'],['11:30','Ana Lim','Beard trim','Migs','ok'],['1:30','Pedro Cruz','Hot towel shave','Rey','wait']];
+
+function hdr(title,back){
+ var l=back?'<button class="ic" data-go="'+(S-1)+'" aria-label="Back">'+ic('back')+'</button>':'<div><small>Welcome to</small><b>Ben\'s Barbershop</b></div>';
+ return '<div class="top">'+l+(back?'<b>'+title+'</b>':'')+'<span class="ic" aria-hidden="true">'+ic(back?'dots':'pin')+'</span></div>';
+}
+function screen(){
+ var h='',s=SV[svc];
+ if(S==0){
+  h=hdr('',0)+'<div class="bd"><div class="hb">'+ic('scissors')+'<p>Book your next fresh cut</p><button class="pill" data-go="1">Book now</button></div>'+
+  '<div class="chips">'+['Haircut','Beard','Combo','Shave'].map(function(c,i){return '<button class="chip'+(i==cat?' on':'')+'" data-cat="'+i+'">'+c+'</button>'}).join('')+'</div>'+
+  '<div class="sec"><span style="color:var(--fg);font-size:14px;font-weight:700">Our barbers</span><span>Open today</span></div>'+
+  BR.map(function(b,i){return '<button class="row" data-bar="'+i+'"><div class="av">'+b[0][0]+'</div><div><b>'+b[0]+'</b><div class="rt">'+ic('star')+b[1]+'</div></div><span class="pr">'+ic('next')+'</span></button>'}).join('')+'</div>';
+ } else if(S==1){
+  h=hdr('Choose service',1)+'<div class="bd"><h3 class="t">What are you booking today?</h3>'+SV.map(function(v,i){return '<button class="row'+(i==svc?' on':'')+'" data-svc="'+i+'"><div class="av">'+ic(v[3])+'</div><div><b>'+v[0]+'</b><span class="sub">'+v[1]+'</span></div><span class="pr">&#8369;'+v[2]+'</span></button>'}).join('')+'</div><button class="cta" data-go="2">Continue</button>';
+ } else if(S==2){
+  h=hdr('Pick a time',1)+'<div class="bd"><div class="sec">Barber</div><div class="chips">'+['Any available'].concat(BR.map(function(b){return b[0]})).map(function(n,i){return '<button class="chip'+(i==bar?' on':'')+'" data-bar2="'+i+'">'+n+'</button>'}).join('')+'</div>'+
+  '<div class="sec">October</div><div class="dates">'+DY.map(function(d,i){return '<button class="d'+(i==day?' on':'')+'" data-day="'+i+'"><small>'+d[0]+'</small><span>'+d[1]+'</span></button>'}).join('')+'</div>'+
+  '<div class="sec">Available times</div><div class="tm">'+TM.map(function(t,i){var o=OFF.indexOf(i)>-1;return o?'<span class="t x">'+t+'</span>':'<button class="t'+(i==tm?' on':'')+'" data-tm="'+i+'">'+t+'</button>'}).join('')+'</div></div><button class="cta" data-go="3">Continue</button>';
+ } else if(S==3){
+  var bn=bar==0?'Any available':BR[bar-1][0];
+  h=hdr('Review',1)+'<div class="bd"><h3 class="t">Almost done</h3><div class="sm"><div><span class="sub">Service</span><span>'+s[0]+'</span></div><div><span class="sub">Barber</span><span>'+bn+'</span></div><div><span class="sub">Date</span><span>'+DY[day][0]+', Oct '+DY[day][1]+'</span></div><div><span class="sub">Time</span><span>'+TM[tm]+'</span></div><div class="tot"><span>Pay at the shop</span><span>&#8369;'+s[2]+'</span></div></div><div class="fld">Maria Santos</div><div class="fld">0917 000 0000</div></div><button class="cta" data-go="4">Confirm booking</button>';
+ } else {
+  h='<div class="bd" style="justify-content:center;text-align:center"><div class="ok">'+ic('check')+'</div><h3 class="t">You are booked</h3><div class="sub">'+s[0]+' &middot; '+DY[day][0]+', Oct '+DY[day][1]+' at '+TM[tm]+'</div><div class="sm" style="text-align:left;margin-top:8px"><div><span class="sub">Where</span><span>Ben\'s Barbershop</span></div><div><span class="sub">Cancel for free until</span><span>2 hours before</span></div></div></div><button class="cta" data-go="0">Done</button><button class="ghost" data-go="2">Manage or cancel</button>';
+ }
+ return h;
+}
+function board(){
+ var rows=BASE.slice();
+ if(booked&&day==0){rows.push([TM[tm],'Maria Santos',SV[svc][0],bar==0?'Ben':BR[bar-1][0],bstatus]);}
+ var order=function(t){var p=t.split(':'),h=+p[0];if(h<8)h+=12;return h*60+ +p[1]};
+ rows.sort(function(a,b){return order(a[0])-order(b[0])});
+ var BAD={ok:['b-ok','Confirmed'],'new':['b-new','New'],wait:['b-wait','Waiting'],done:['b-done','Completed']};
+ var done=0;
+ var html=rows.map(function(r){
+  var b=BAD[r[4]];if(r[4]=='done')done++;
+  var btn=(r[4]=='new'||r[4]=='ok')?'<button class="act" data-comp="'+r[1]+'">Complete</button>':'';
+  return '<div class="bk"><span class="time">'+r[0]+'</span><div class="who"><b>'+r[1]+'</b><span>'+r[2]+' with '+r[3]+'</span></div><div class="side"><span class="badge '+b[0]+'">'+b[1]+'</span>'+btn+'</div></div>';
+ }).join('');
+ document.getElementById('rows').innerHTML=html;
+ document.getElementById('stats').innerHTML='<span><strong>'+rows.length+'</strong>bookings</span><span><strong>'+done+'</strong>completed</span>';
+}
+function render(){
+ document.getElementById('sc').innerHTML=screen();
+ document.getElementById('steps').innerHTML=NAMES.map(function(n,i){return '<button class="'+(i==S?'on':'')+'" data-go="'+i+'">'+(i+1)+'. '+n+'</button>'}).join('');
+ document.getElementById('sws').innerHTML=Object.keys(COL).map(function(k){return '<button class="sw'+(k==ck?' on':'')+'" data-ck="'+k+'" style="background:'+COL[k]+'" aria-label="'+k+'"></button>'}).join('');
+ document.documentElement.style.setProperty('--ac',COL[ck]);
+ board();
+}
+document.addEventListener('click',function(e){
+ var t=e.target.closest('[data-go],[data-svc],[data-bar],[data-bar2],[data-day],[data-tm],[data-cat],[data-ck],[data-comp]');if(!t)return;
+ var d=t.dataset;
+ if(d.go!==undefined){S=+d.go;if(S==4){booked=true;bstatus='new'}}
+ if(d.svc!==undefined)svc=+d.svc;
+ if(d.bar!==undefined){bar=+d.bar+1;S=1}
+ if(d.bar2!==undefined)bar=+d.bar2;
+ if(d.day!==undefined)day=+d.day;
+ if(d.tm!==undefined)tm=+d.tm;
+ if(d.cat!==undefined)cat=+d.cat;
+ if(d.ck!==undefined)ck=d.ck;
+ if(d.comp!==undefined){
+  if(d.comp=='Maria Santos')bstatus='done';
+  else BASE.forEach(function(r){if(r[1]==d.comp)r[4]='done'});
+ }
+ render();
+});
+render();
+</script>
+</body>
+</html>
