@@ -12,6 +12,18 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException(
         "Connection string missing. Set the ConnectionStrings__Default environment variable (never commit it).");
 
+// A wrong format must not echo the value: it holds the database password, and startup errors end up in host logs.
+try
+{
+    _ = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+}
+catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotFoundException)
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings__Default is not a valid Npgsql connection string. Use the form " +
+        "Host=...;Database=...;Username=...;Password=...;SSL Mode=Require, not a postgresql:// URL.");
+}
+
 // Data: one factory, plus a scoped context built from it for ordinary page/service use.
 builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());

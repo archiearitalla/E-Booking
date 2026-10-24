@@ -5,6 +5,7 @@ services:
     name: barberbook
     runtime: docker
     plan: free
+    region: singapore   # same region as the Neon project (AWS Singapore); a service's region cannot be changed later
     healthCheckPath: /healthz
     envVars:
       - key: ConnectionStrings__Default

@@ -84,3 +84,10 @@ Triggers are in `BUSINESS_RULES.md` 17.1 (first paying client, database near its
 Verified on Neon (PostgreSQL 18.6, Singapore): `btree_gist` works, `tests/db/double_booking.sh` passes, and the Web suite passes 91 of 91 (step 0 is done for that project).
 Verified: the project publishes in Release, runs in Production mode on the port given in `PORT`, serves `/healthz` and a booking page, with forwarded headers on.
 Not verified: the Docker image build (no Docker on the development machine), a real Render deploy, the custom domain, and behaviour behind the Cloudflare proxy.
+
+## Lessons from the first deploy attempt
+
+- **Connection string format.** Neon's "Connection string" box shows a `postgresql://...` URL. The app needs the key/value form: `Host=...;Database=...;Username=...;Password=...;SSL Mode=Require`. A URL stops startup with a clear message (the value is no longer echoed, so it cannot leak into logs).
+- **Region.** `render.yaml` sets `region: singapore` to match the Neon project. A Render service's region cannot be changed later; to move one, delete the service and sync the Blueprint again.
+- **Auto Sync.** A Blueprint created from this repository syncs automatically on every push to `main`. Switch Auto Sync to No in the Blueprint settings if a change to `render.yaml` should wait for a manual sync.
+- **Never paste a log or screenshot that shows a connection string.** If one leaks, reset the database password in Neon (Connect, Reset password) and update the Render environment variable.
