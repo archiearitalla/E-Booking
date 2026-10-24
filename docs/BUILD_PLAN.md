@@ -117,7 +117,7 @@ Files: `tests/BarberBook.Web.Tests/` (xunit), `.github/workflows/ci.yml`.
 
 Acceptance: CI runs the self-check, the SQL invariants (PostgreSQL service container) and the integration tests on every push.
 
-## Step 8: Free deployment 🟡 (files written; nothing deployed yet)
+## Step 8: Free deployment 🟡 (live on Render and Neon; domain, backups and real-phone check still open)
 
 Files: `Dockerfile`, `.dockerignore`, `render.yaml`, `docs/DEPLOY.md`. Written, and the Release publish was run in Production mode on a PORT from the environment (health check and a booking page answered). The Neon safety gate passed (PostgreSQL 18.6, see rules 17.3.1). Not done: the Docker image build (no Docker on this machine), a Render deploy, the backup job. Those need the owner's accounts; the steps are in `docs/DEPLOY.md`.
 
@@ -149,3 +149,11 @@ Files: `Data/Migrations/003_industry_trial.sql`, `Services/Industries.cs`, `Onbo
 Verified: the Web test suite passes against PostgreSQL 16.11 (90 tests), including `TrialAndIndustryTests` (clinic starter service and trial end date, no trial by default, unknown industry refused, customers refused and staff still allowed after the trial, the public page reports it). Not verified: the Register page and the trial banner in a browser, the claim after a real sign-in, the new migrations on Neon.
 
 Test database used: a portable PostgreSQL 16.11 on port 55432, separate from the machine's own PostgreSQL.
+
+### Step 8 result (2026-10-25)
+
+Deployed to Render (free, Singapore, built from the `Dockerfile`) with Neon (Free, Singapore, PostgreSQL 18.6). `GET /healthz` returns `{"status":"ok","version":"0.1.0"}`, `/Register` returns 200, and the security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options) are present. The Docker image build is verified by the Render build itself.
+
+The first two attempts failed: the connection string was pasted in URL form (Npgsql cannot read it, and the old code echoed it into the log, so the Neon password was reset), and the service had been created in Oregon instead of Singapore. Both are fixed and recorded in `docs/DEPLOY.md`. Blueprint Auto Sync is set to No, so a push does not redeploy by itself; use Manual Deploy or Manual sync.
+
+Still open: the custom domain `book.<domain>` and the Cloudflare record, a registration and booking run on a real phone against the live link, the `pg_dump` backup and one restore, a first-request time after idle (not measured), and behaviour behind the Cloudflare proxy.
