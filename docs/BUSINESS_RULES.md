@@ -43,7 +43,7 @@ Every surface talks to **one** booking API that owns the invariants. Availabilit
 | Surface | Users | Responsibility | Status |
 |---|---|---|---|
 | Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | ✅ |
-| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | ✅ (OWNER only; no walk-in UI yet) |
+| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | ✅ (OWNER only; walk-in form built) |
 | JSON API `/api/v1` | Mobile apps, embeddable widget, integrations | Same operations as above over HTTP | ⬜ |
 | Customer / staff mobile app (Flutter, one codebase for Android and iOS) | Customers, staff | Thin client of the JSON API | ⬜ |
 | Embeddable widget | Shop's own website | Iframe or script around the public API | ⬜ |
@@ -176,7 +176,7 @@ Further rules:
 - **Price and name snapshot:** `price_snapshot` and `service_name_snapshot` are copied at booking time. Later price edits never change old bookings.
 - **Customer identity:** customers are per business, matched by normalized phone number. A repeat booking updates the name and email on file.
 - **Phone:** digits with an optional leading `+`, 7 to 15 digits.
-- **Staff-created bookings** (walk-ins, phone-ins) skip the lead time, so a booking can start right now. They still must be inside working hours, outside blackouts and free of overlaps, and the database constraint still applies. "Right now" means the slot already in progress: a walk-in may start up to one slot length (the business's slot size) before the current time (decided by the owner). The actor is recorded as `STAFF` in the audit log.
+- **Staff-created bookings** (walk-ins, phone-ins) skip the lead time, so a booking can start right now. They still must be inside working hours, outside blackouts and free of overlaps, and the database constraint still applies. "Right now" means the slot already in progress: a walk-in may start up to one slot length (the business's slot size) before the current time (decided by the owner). The actor is recorded as `STAFF` in the audit log. The phone number is optional for a staff-created booking: without one the customer is stored with a generated placeholder (prefix `walkin-`), is never shown or dialled, and is never matched with a later visit. A customer booking still needs a valid phone. The back-office page is `/Admin/WalkIn` (pick service and who, choose a free time today, name, optional phone); it books through the same service, so the database constraint and the working-hours rules apply.
 - **Input limits:** name 1–80 chars, email ≤ 120 chars and valid format, notes none in MVP.
 
 ### 8.3 Race handling
@@ -357,7 +357,8 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Each sign-up creates its own tenant: its own business, owner login and booking link `/b/{slug}` (the slug is the public key, the owner login is the private one). Tenant isolation is unchanged.
 - `Trial:Days` (configuration, default 30) sets `trial_ends_at_utc` at sign-up. `0` turns trials off, for example on a deployment the client hosts for itself. Existing shops have no trial date and are never limited.
 - The admin shows the days left.
-- **After the trial ends:** the public page stops accepting new customer bookings and says so. Staff can still manage and create bookings. Nothing is deleted automatically; the operator deletes a tenant's data by hand, after confirming with the business.
+- **After the trial ends the account lapses.** The public page stops accepting customer bookings and says so, and every back-office page sends the owner to a "your free trial has ended" page with a way to contact the operator and a sign-out button. The server checks this against the database on every admin request (the cookie is only for the bell). Nothing is deleted: the data is kept. The operator extends or lifts a trial by setting or clearing `trial_ends_at_utc` for that business (see DEPLOY.md), and deletes a tenant by hand after confirming with the business.
+- **A trial has every feature and no staff limit.** The one-staff limit of the FREE plan applies only to a business with no trial date.
 - Sign-up is open (no invite code) while the URL is shared only with the business being shown the system. The sign-in and sign-up rate limit applies. An invite code can be added later if the URL becomes public.
 
 ### 18.3 Customer data
@@ -378,7 +379,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 ### 18.6 Not built
 
-Invite codes, an export of business data at the end of the trial, a consent record per booking, a higher staff limit for trials (FREE stays at 1 staff member), clinic-specific fields such as an intake form.
+Invite codes, a consent record per booking, clinic-specific fields such as an intake form.
 
 ### 17.3.1 Result of the Neon safety gate (2026-10-25)
 

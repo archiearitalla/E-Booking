@@ -103,6 +103,24 @@ public class AdminServiceTests
         Assert.True((await catalog.SaveStaffAsync(t.BusinessId, new StaffInput(inactive.Value.Id, "Carl", true, 1, [t.ServiceId]))).IsSuccess);
     }
 
+
+    [Fact]
+    public async Task A_business_on_a_trial_has_no_staff_limit_and_one_without_a_trial_keeps_the_free_limit()
+    {
+        var (db, catalog, _, _, _) = await StackAsync();
+        var trial = (await new OnboardingService(db).RegisterAsync(
+            new RegisterRequest("Clinic", Unique("tr"), "Dr Reyes", $"{Unique("o")}@example.com", "correct-horse-1", TrialDays: 30))).Value!;
+        var plain = await NewTenantAsync(db);
+        var trialService = await db.CreateDbContext().Services.Where(s => s.BusinessId == trial.BusinessId).Select(s => s.Id).SingleAsync();
+
+        foreach (var name in new[] { "Dr Cruz", "Dr Lim", "Dr Tan" })
+            Assert.True((await catalog.SaveStaffAsync(trial.BusinessId, new StaffInput(null, name, true, 1, [trialService]))).IsSuccess);
+        await using var ctx = db.CreateDbContext();
+        Assert.Equal(4, await ctx.StaffMembers.CountAsync(s => s.BusinessId == trial.BusinessId && s.IsActive));
+
+        var refused = await catalog.SaveStaffAsync(plain.BusinessId, new StaffInput(null, "Carl", true, 1, [plain.ServiceId]));
+        Assert.Equal(FailureKind.Validation, refused.Failure);
+    }
     [Fact]
     public async Task Parallel_attempts_to_add_staff_cannot_exceed_the_plan_limit()
     {

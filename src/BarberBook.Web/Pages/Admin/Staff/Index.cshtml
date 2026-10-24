@@ -5,7 +5,7 @@
 }
 <h1>@Text.AdminNavStaff</h1>
 <p><a class="button" href="/Admin/Staff/Edit">@Text.StaffAdd</a></p>
-<p class="hint">@string.Format(Text.StaffPlanNote, Model.Plan, PlanLimits.MaxStaff(Model.Plan)?.ToString() ?? Text.StaffUnlimited)</p>
+<p class="hint">@string.Format(Text.StaffPlanNote, Model.Plan, PlanLimits.MaxStaff(Model.Plan, Model.InTrial)?.ToString() ?? Text.StaffUnlimited)</p>
 
 @if (Model.Rows.Count == 0)
 {

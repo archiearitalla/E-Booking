@@ -1,0 +1,17 @@
+@page
+@model BarberBook.Web.Pages.Admin.TrialEndedModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Text.TrialEndedTitle;
+}
+<div class="card">
+    <h1>@Text.TrialEndedTitle</h1>
+    <p>@Text.TrialEndedBody</p>
+    @if (Model.ContactUrl.Length > 0)
+    {
+        <p><a class="button" href="@Model.ContactUrl">@Text.TrialEndedContact</a></p>
+    }
+    <form method="post" asp-page="/Logout">
+        <button type="submit" class="secondary">@Text.NavSignOut</button>
+    </form>
+</div>

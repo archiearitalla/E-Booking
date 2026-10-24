@@ -432,7 +432,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         if (name.Length is < 1 or > 80) errors["name"] = Text.NameInvalid;
 
         phone = Regex.Replace(r.Phone ?? "", @"[\s\-().]", "");
-        if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;
+        if (r.Actor.Kind == ActorKind.Staff && phone.Length == 0)
+            phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N"); // a walk-in with no number: its own customer, never matched later
+        else if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;
 
         var rawEmail = (r.Email ?? "").Trim();
         email = rawEmail.Length == 0 ? null : rawEmail;

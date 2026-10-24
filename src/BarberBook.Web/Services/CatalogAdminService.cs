@@ -133,7 +133,9 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         // Serialize staff changes per business so two simultaneous adds cannot both slip under the plan limit.
         await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"staff:" + businessId}, 0))", ct);
 
-        var plan = await db.Businesses.Where(b => b.Id == businessId).Select(b => b.Plan).FirstOrDefaultAsync(ct);
+        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc }).FirstOrDefaultAsync(ct);
+        var plan = biz?.Plan;
+        var inTrial = biz?.TrialEndsAtUtc is not null;
         if (plan is null) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
         var isNew = input.Id is null;
@@ -152,7 +154,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         var wasActive = !isNew && staff.IsActive;
-        if (input.IsActive && !wasActive && PlanLimits.MaxStaff(plan) is { } limit)
+        if (input.IsActive && !wasActive && PlanLimits.MaxStaff(plan!, inTrial) is { } limit)
         {
             var activeOthers = await db.StaffMembers.CountAsync(s => s.BusinessId == businessId && s.IsActive && s.Id != staff.Id, ct);
             if (activeOthers >= limit)

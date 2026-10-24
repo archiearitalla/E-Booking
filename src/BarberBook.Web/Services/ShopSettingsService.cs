@@ -7,7 +7,7 @@ namespace BarberBook.Web.Services;
 
 public sealed record ShopSettings(
     string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
-    string BrandColor = BrandColors.Default);
+    string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null);
 
 /// <summary><c>BrandColor</c> null leaves the saved color unchanged.</summary>
 public sealed record SettingsInput(
@@ -46,8 +46,17 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc))
             .FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>True when the business has a trial end date that has passed. Read from the database on every call; the cookie claim is only for display.</summary>
+    public async Task<bool> TrialEndedAsync(Guid businessId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var ends = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
+            .Select(b => b.TrialEndsAtUtc).FirstOrDefaultAsync(ct);
+        return ends is { } e && time.GetUtcNow().UtcDateTime > DateTime.SpecifyKind(e, DateTimeKind.Utc);
     }
 
     /// <summary>Saving never touches existing bookings; a changed time zone is only reported so the owner can review hours.</summary>

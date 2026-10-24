@@ -508,3 +508,27 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
 }
 .bell-panel p { margin: 0.25rem 0 0; font-size: 0.9375rem; color: var(--muted); }
+
+/* Walk-in form: free times as radio chips */
+
+.timechips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+@media (min-width: 30rem) { .timechips { grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); } }
+.timechip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand);
+  background: var(--field);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.timechip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.timechip:hover { border-color: var(--brand); }
+.timechip:has(input:checked) { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.timechip:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }

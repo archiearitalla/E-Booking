@@ -30,5 +30,10 @@ public static class DisplayFormat
         return DateTime.TryParse(value, Invariant, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out utc);
     }
 
+    /// <summary>A walk-in recorded without a phone number is stored with a generated placeholder; it is never shown or dialled.</summary>
+    public const string WalkInPhonePrefix = "walkin-";
+
+    public static bool IsPlaceholderPhone(string? phone) => phone is not null && phone.StartsWith(WalkInPhonePrefix, StringComparison.Ordinal);
+
     public static string DateParam(DateOnly date) => date.ToString("yyyy-MM-dd", Invariant);
 }

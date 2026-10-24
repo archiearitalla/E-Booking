@@ -320,11 +320,13 @@ public class AdminWebTests
     // ------------------------------------------------------------ staff, settings, about
 
     [Fact]
-    public async Task The_staff_page_enforces_the_free_plan_limit()
+    public async Task The_staff_page_enforces_the_free_plan_limit_for_a_business_with_no_trial()
     {
         var (factory, _) = await HttpApp.StartAsync();
         using var _f = factory;
         var owner = await RegisterOwnerAsync(factory);
+        await using (var setup = owner.Db.CreateDbContext()) // a trial has no staff limit, so remove the trial to test the FREE plan
+            await setup.Businesses.Where(b => b.Id == owner.BusinessId).ExecuteUpdateAsync(s => s.SetProperty(b => b.TrialEndsAtUtc, (DateTime?)null));
 
         var response = await PostAsync(owner.Client, "/Admin/Staff/Edit", "/Admin/Staff/Edit?handler=Save",
             new() { ["Input.Name"] = "Carl", ["Input.SortOrder"] = "1", ["Input.IsActive"] = "true", ["Input.ServiceIds"] = owner.ServiceId.ToString() });

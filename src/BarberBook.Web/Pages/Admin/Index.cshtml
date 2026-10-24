@@ -40,7 +40,8 @@ else
                 <dl class="facts">
                     <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; @DisplayFormat.Price(b.Price)</dd>
                     <dt>@Text.ManageWith</dt><dd>@b.StaffName</dd>
-                    <dt>@Text.ManageWho</dt><dd>@b.CustomerName &middot; <a href="tel:@b.CustomerPhone">@b.CustomerPhone</a></dd>
+                    <dt>@Text.ManageWho</dt><dd>@b.CustomerName
+                        @if (DisplayFormat.IsPlaceholderPhone(b.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@b.CustomerPhone">@b.CustomerPhone</a></text> }</dd>
                 </dl>
 
                 @if (b.CanComplete || b.CanNoShow)

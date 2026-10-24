@@ -1,0 +1,85 @@
+@page
+@model BarberBook.Web.Pages.Admin.WalkInModel
+@{
+    ViewData["Title"] = Text.WalkInTitle;
+}
+<h1>@Text.WalkInTitle</h1>
+<p class="muted">@Text.WalkInIntro</p>
+
+<div class="card">
+    <form method="get">
+        <fieldset class="field">
+            <legend>@Text.BookService</legend>
+            @foreach (var service in Model.Services)
+            {
+                <label class="choice">
+                    <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" required />
+                    <span>
+                        <strong>@service.Name</strong>
+                        <span class="muted">@DisplayFormat.Duration(service.DurationMinutes) &middot; @DisplayFormat.Price(service.Price)</span>
+                    </span>
+                </label>
+            }
+        </fieldset>
+        <div class="field">
+            <label for="staffId">@Text.ManageWith</label>
+            <select id="staffId" name="staffId">
+                <option value="">@Text.WalkInAnyone</option>
+                @foreach (var staff in Model.Staff)
+                {
+                    <option value="@staff.Id" selected="@(Model.StaffId == staff.Id)">@staff.Name</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="primary">@Text.WalkInShowTimes</button>
+    </form>
+</div>
+
+@if (Model.Searched)
+{
+    <div class="card" id="times">
+        <h2>@Text.WalkInTimes</h2>
+        @if (Model.Times.Count == 0)
+        {
+            <p>@Text.WalkInNoTimes</p>
+        }
+        else
+        {
+            <form method="post" novalidate>
+                <input type="hidden" name="ServiceId" value="@Model.ServiceId" />
+                <input type="hidden" name="StaffId" value="@Model.StaffId" />
+                <input type="hidden" name="Input.IdempotencyKey" value="@Model.Input.IdempotencyKey" />
+
+                <fieldset class="field">
+                    <legend class="sr-only">@Text.WalkInTimes</legend>
+                    <div class="timechips">
+                        @for (var i = 0; i < Model.Times.Count; i++)
+                        {
+                            <label class="timechip">
+                                <input type="radio" name="Input.Start" value="@DisplayFormat.StartParam(Model.Times[i])" checked="@(i == 0)" />
+                                <span>@DisplayFormat.Time(Model.Times[i], Model.TimeZone)</span>
+                            </label>
+                        }
+                    </div>
+                    @if (Model.ErrorFor("start") is { } eS) { <p class="error">@eS</p> }
+                </fieldset>
+
+                <div class="field">
+                    <label for="Name">@Text.WalkInName</label>
+                    <input type="text" id="Name" name="Input.Name" value="@Model.Input.Name" maxlength="80"
+                           aria-invalid="@(Model.ErrorFor("name") is null ? "false" : "true")" />
+                    @if (Model.ErrorFor("name") is { } eN) { <p class="error">@eN</p> }
+                </div>
+                <div class="field">
+                    <label for="Phone">@Text.WalkInPhone</label>
+                    <input type="tel" id="Phone" name="Input.Phone" value="@Model.Input.Phone" maxlength="30" inputmode="tel" autocomplete="off"
+                           aria-invalid="@(Model.ErrorFor("phone") is null ? "false" : "true")" aria-describedby="Phone-hint" />
+                    <p class="hint" id="Phone-hint">@Text.WalkInPhoneHint</p>
+                    @if (Model.ErrorFor("phone") is { } eP) { <p class="error">@eP</p> }
+                </div>
+                <p class="hint">@Text.WalkInNoMedical</p>
+                <button type="submit" class="primary once">@Text.WalkInSave</button>
+            </form>
+        }
+    </div>
+}

@@ -7,11 +7,14 @@ public class IndexModel(CatalogAdminService catalog, ShopSettingsService setting
 {
     public IReadOnlyList<StaffRow> Rows { get; private set; } = [];
     public string Plan { get; private set; } = "FREE";
+    public bool InTrial { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Rows = await catalog.ListStaffAsync(BusinessId, ct);
-        Plan = (await settings.GetSettingsAsync(BusinessId, ct))?.Plan ?? "FREE";
+        var current = await settings.GetSettingsAsync(BusinessId, ct);
+        Plan = current?.Plan ?? "FREE";
+        InTrial = current?.TrialEndsAtUtc is not null;
         return Page();
     }
 }

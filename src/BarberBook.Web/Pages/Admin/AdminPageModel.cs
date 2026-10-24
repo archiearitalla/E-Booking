@@ -23,4 +23,20 @@ public abstract class AdminPageModel : FormPageModel
     {
         if (User.BusinessId() is null) context.Result = Forbid();
     }
+
+    /// <summary>
+    /// A business whose trial has ended is locked out of the back office: every admin page sends it to the
+    /// "trial ended" page. Checked against the database on each request. Nothing is deleted.
+    /// </summary>
+    public override async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
+    {
+        if (User.BusinessId() is { } id
+            && await context.HttpContext.RequestServices.GetRequiredService<ShopSettingsService>()
+                .TrialEndedAsync(id, context.HttpContext.RequestAborted))
+        {
+            context.Result = RedirectToPage("/Admin/TrialEnded");
+            return;
+        }
+        await base.OnPageHandlerExecutionAsync(context, next);
+    }
 }

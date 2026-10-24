@@ -91,3 +91,16 @@ Not verified: the Docker image build (no Docker on the development machine), a r
 - **Region.** `render.yaml` sets `region: singapore` to match the Neon project. A Render service's region cannot be changed later; to move one, delete the service and sync the Blueprint again.
 - **Auto Sync.** A Blueprint created from this repository syncs automatically on every push to `main`. Switch Auto Sync to No in the Blueprint settings if a change to `render.yaml` should wait for a manual sync.
 - **Never paste a log or screenshot that shows a connection string.** If one leaks, reset the database password in Neon (Connect, Reset password) and update the Render environment variable.
+
+## Extending, lifting or ending a trial (operator)
+
+A trial is the column `trial_ends_at_utc` on the `business` row. When it has passed, the owner is locked out of the back office and the public page is closed; nothing is deleted.
+
+```sql
+-- extend by 14 days from now
+UPDATE business SET trial_ends_at_utc = now() + interval '14 days' WHERE slug = '<slug>';
+-- lift the trial (a paying client): no limit, no lock
+UPDATE business SET trial_ends_at_utc = NULL WHERE slug = '<slug>';
+```
+
+The first deploy of a change that sets the trial needs a restart-free redeploy only; the lock is checked on every request.
