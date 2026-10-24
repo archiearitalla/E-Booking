@@ -1,4 +1,4 @@
-# Deploying BarberBook on free tiers
+# Deploying VeskaFlow on free tiers
 
 Target: Render (the app, built from the `Dockerfile`), Neon (PostgreSQL 16), Cloudflare (DNS in front). Everything here is free; limits and costs are in `BUSINESS_RULES.md` section 17 and in the cost notes at the end.
 

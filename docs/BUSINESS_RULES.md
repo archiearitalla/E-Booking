@@ -1,4 +1,4 @@
-# BarberBook — Business Rules
+# VeskaFlow — Business Rules
 
 Source of truth for how the booking system behaves. Code, API, database and every client (web, admin, mobile, widget) must follow this document. If a requirement conflicts with an invariant in section 4, raise it here first and change this file in the same pull request as the code.
 

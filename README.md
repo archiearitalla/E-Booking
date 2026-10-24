@@ -1,7 +1,7 @@
 # E-Booking
 Online Booking System
 
-**BarberBook**: multi-tenant booking SaaS for barbershops and salons. ASP.NET Core 8, PostgreSQL 16, Flutter mobile client planned.
+**VeskaFlow**: multi-tenant booking SaaS for barbershops and salons. ASP.NET Core 8, PostgreSQL 16, Flutter mobile client planned.
 
 Read [`docs/BUSINESS_RULES.md`](docs/BUSINESS_RULES.md) first. It is the source of truth for behavior, invariants, API plan, free-tier providers and open decisions.
 

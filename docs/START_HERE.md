@@ -1,4 +1,4 @@
-# START HERE: building BarberBook on your PC
+# START HERE: building VeskaFlow on your PC
 
 One file to open Claude Code (or any developer) with. It tells you what to install, what to paste, and in what order to build. The details live in the other docs; this is the entry point.
 
@@ -48,7 +48,7 @@ dotnet run --project tests/BarberBook.Core.SelfCheck     # expect: All 55 checks
 ```text
 Read CLAUDE.md, docs/BUSINESS_RULES.md and docs/BUILD_PLAN.md in full before changing anything.
 
-We are building the BarberBook MVP (ASP.NET Core 8 Razor Pages, PostgreSQL 16, EF Core) from the
+We are building the VeskaFlow MVP (ASP.NET Core 8 Razor Pages, PostgreSQL 16, EF Core) from the
 existing code. Work through docs/BUILD_PLAN.md in order, starting at Step 0. For each step:
 
 1. Implement only that step. Follow the rules in CLAUDE.md and the behavior in BUSINESS_RULES.md.

@@ -4,7 +4,7 @@ Guidance for Claude (and any developer) working in this repository. Read this fi
 
 ## What this is
 
-BarberBook: multi-tenant booking SaaS for barbershops and salons. ASP.NET Core 8 (Razor Pages), PostgreSQL 16, EF Core with Npgsql. A Flutter mobile app and a JSON API (`/api/v1`) come later. The goal is **free first**: no paid service until paying clients exist (see section 17 of the rules).
+VeskaFlow: multi-tenant booking SaaS for barbershops and salons. ASP.NET Core 8 (Razor Pages), PostgreSQL 16, EF Core with Npgsql. A Flutter mobile app and a JSON API (`/api/v1`) come later. The goal is **free first**: no paid service until paying clients exist (see section 17 of the rules).
 
 ## Source of truth
 

@@ -1,4 +1,4 @@
-# BarberBook web app. Build: docker build -t barberbook .   Run: see docs/DEPLOY.md
+# VeskaFlow web app. Build: docker build -t barberbook .   Run: see docs/DEPLOY.md
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 

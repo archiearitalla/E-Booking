@@ -17,7 +17,7 @@ public static class Text
     public const string BookingChanged = "This booking was changed by someone else. Please refresh and try again.";
     public const string NotAllowed = "That action is not allowed.";
 
-    public const string AppName = "BarberBook";
+    public const string AppName = "VeskaFlow";
     public const string BusinessNameInvalid = "Enter your shop name (1 to 80 characters).";
     public const string SlugInvalid = "Use 3 to 40 lowercase letters, numbers and single hyphens.";
     public const string SlugTaken = "That booking address is already taken. Please choose another.";
@@ -44,7 +44,7 @@ public static class Text
     public const string NavSignIn = "Sign in";
     public const string NavSignOut = "Sign out";
     public const string NavRegister = "Create your shop";
-    public const string HomeTitle = "Online booking for barbershops and salons";
+    public const string HomeTitle = "Online booking for barbershops, salons and clinics";
     public const string HomeBody = "Let customers pick a service and a time. No double bookings, no phone tag.";
     public const string HomeHaveShop = "Already have a shop?";
     public const string LoginNew = "New here?";
