@@ -18,3 +18,14 @@ window.addEventListener('pageshow', function (event) {
     button.removeAttribute('aria-busy');
   });
 });
+
+// Close the notification bell when the visitor taps elsewhere or presses Escape.
+document.addEventListener('click', function (event) {
+  document.querySelectorAll('details.bell[open]').forEach(function (d) {
+    if (!d.contains(event.target)) d.removeAttribute('open');
+  });
+});
+document.addEventListener('keydown', function (event) {
+  if (event.key !== 'Escape') return;
+  document.querySelectorAll('details.bell[open]').forEach(function (d) { d.removeAttribute('open'); });
+});

@@ -25,12 +25,6 @@
     <p class="who"><span class="muted">@User.DisplayName()</span> <span class="badge" title="@Text.AdminRoleTitle">@User.Role()</span></p>
 </nav>
 
-@if (User.TrialEndsUtc() is { } trialEnds)
-{
-    var daysLeft = (int)Math.Ceiling((trialEnds - DateTime.UtcNow).TotalDays);
-    <div class="notice" role="status">@(daysLeft > 0 ? string.Format(Text.TrialBanner, daysLeft) : Text.TrialEndedBanner)</div>
-}
-
 @if (Model is BarberBook.Web.Pages.Admin.AdminPageModel admin)
 {
     @if (!string.IsNullOrEmpty(admin.Success))

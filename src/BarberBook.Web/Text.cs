@@ -33,7 +33,9 @@ public static class Text
     public const string IndustrySalon = "Salon";
     public const string IndustryClinic = "Clinic";
     public const string IndustryInvalid = "Choose one of the listed types.";
-    public const string TrialBanner = "Trial: {0} day(s) left. Online bookings stop when the trial ends.";
+    public const string NotificationsLabel = "Notifications";
+    public const string TrialTitle = "Free trial";
+    public const string TrialBanner ="Trial: {0} day(s) left. Online bookings stop when the trial ends.";
     public const string TrialEndedBanner = "Your trial has ended. Online bookings are closed; you can still manage existing bookings.";
     public const string TrialEndedPublic = "This business is not taking online bookings right now. Please contact them directly.";
     public const string BookingPrivacyNotice = "We keep your name and phone number only to manage your appointment, and you can ask the business to delete them.";

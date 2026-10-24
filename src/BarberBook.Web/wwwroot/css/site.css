@@ -460,3 +460,51 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Notification bell in the header (the trial notice) */
+
+.bell { position: static; }
+.bell summary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+.bell summary::-webkit-details-marker { display: none; }
+.bell summary:hover { background: var(--brand-soft); }
+.bell-badge {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.05rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--brand-ink);
+  background: var(--brand);
+  border-radius: 999px;
+}
+.bell-badge.end { background: var(--danger); color: #fff; }
+.bell-panel {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 1rem;
+  z-index: 6;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 0.875rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.bell-panel p { margin: 0.25rem 0 0; font-size: 0.9375rem; color: var(--muted); }
