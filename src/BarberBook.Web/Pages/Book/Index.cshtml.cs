@@ -16,7 +16,10 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking) : Pa
     public string? Notice { get; private set; }
     public IReadOnlyList<DateTime> Times { get; private set; } = [];
 
-    public DateOnly SelectedDate => Date ?? Shop!.Today;
+    /// <summary>A date typed in "Pick another date" beyond the strip wins over the strip.</summary>
+    [BindProperty(SupportsGet = true)] public DateOnly? Other { get; set; }
+
+    public DateOnly SelectedDate => Other ?? Date ?? Shop!.Today;
     public string DateText => SelectedDate.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture);
 
     public async Task<IActionResult> OnGetAsync(string slug, CancellationToken ct)

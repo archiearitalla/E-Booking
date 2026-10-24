@@ -4,11 +4,21 @@
     ViewData["Title"] = Model.Shop?.Name ?? Text.BookTitle;
     var shop = Model.Shop!;
     ViewData["Theme"] = shop.BrandColor;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+    var stripDays = Math.Min(shop.HorizonDays + 1, 14);
 }
-<div class="card">
-    <h1>@shop.Name</h1>
-    <p class="muted">@Text.BookTitle</p>
+<section class="hero-card">
+    <div>
+        <p class="hero-kicker">@Text.BookTitle</p>
+        <h1>@shop.Name</h1>
+    </div>
+    @if (shop.AcceptingBookings && shop.Services.Count > 0)
+    {
+        <a class="hero-btn" href="#book">@Text.BookNow</a>
+    }
+</section>
 
+<div class="card" id="book">
     @if (Model.Taken)
     {
         <div class="alert" role="alert">@Text.BookTaken</div>
@@ -39,22 +49,47 @@
                 }
             </fieldset>
 
-            <div class="field">
-                <label for="staffId">@Industries.StaffLabel(shop.Industry)</label>
-                <select id="staffId" name="staffId">
-                    <option value="">@Text.BookStaffAny</option>
+            <fieldset class="field">
+                <legend>@Industries.StaffLabel(shop.Industry)</legend>
+                <div class="people">
+                    <label class="choice person">
+                        <input type="radio" name="staffId" value="" checked="@(Model.StaffId is null)" />
+                        <span class="avatar" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </span>
+                        <span><strong>@Text.BookStaffAny</strong></span>
+                    </label>
                     @foreach (var staff in shop.Staff)
                     {
-                        <option value="@staff.Id" selected="@(Model.StaffId == staff.Id)">@staff.Name</option>
+                        <label class="choice person">
+                            <input type="radio" name="staffId" value="@staff.Id" checked="@(Model.StaffId == staff.Id)" />
+                            <span class="avatar" aria-hidden="true">@staff.Name.Trim()[..1].ToUpperInvariant()</span>
+                            <span><strong>@staff.Name</strong></span>
+                        </label>
                     }
-                </select>
-            </div>
+                </div>
+            </fieldset>
 
-            <div class="field">
-                <label for="date">@Text.BookDate</label>
-                <input type="date" id="date" name="date" value="@DisplayFormat.DateParam(Model.SelectedDate)"
-                       min="@DisplayFormat.DateParam(shop.Today)" max="@DisplayFormat.DateParam(shop.Today.AddDays(shop.HorizonDays))" required />
-            </div>
+            <fieldset class="field">
+                <legend>@Text.BookDate</legend>
+                <div class="datestrip">
+                    @for (var i = 0; i < stripDays; i++)
+                    {
+                        var day = shop.Today.AddDays(i);
+                        <label class="daychip">
+                            <input type="radio" name="date" value="@DisplayFormat.DateParam(day)" checked="@(Model.SelectedDate == day)" />
+                            <small>@day.ToString("ddd", invariant)</small>
+                            <span>@day.Day</span>
+                            <small>@day.ToString("MMM", invariant)</small>
+                        </label>
+                    }
+                </div>
+                <details class="other-date">
+                    <summary>@Text.BookAnotherDate</summary>
+                    <input type="date" id="other" name="other" aria-label="@Text.BookAnotherDate"
+                           min="@DisplayFormat.DateParam(shop.Today)" max="@DisplayFormat.DateParam(shop.Today.AddDays(shop.HorizonDays))" />
+                </details>
+            </fieldset>
 
             <button type="submit" class="primary">@Text.BookShowTimes</button>
         </form>

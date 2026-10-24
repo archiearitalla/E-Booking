@@ -316,6 +316,99 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 
 .badge { display: inline-block; padding: 0.15rem 0.625rem; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 0.8125rem; font-weight: 700; white-space: nowrap; }
 
+/* Public booking page: hero, staff cards and date strip */
+
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.875rem;
+  min-height: 9.5rem;
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  color: var(--brand-ink);
+  background: var(--brand);
+  border-radius: var(--radius);
+}
+.hero-card::before {
+  content: "";
+  position: absolute;
+  top: -2.5rem;
+  right: -2.5rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+.hero-card > * { position: relative; }
+.hero-card h1 { margin: 0; font-size: 1.75rem; color: inherit; }
+.hero-kicker { margin: 0 0 0.25rem; font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; }
+.hero-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+  border-radius: 999px;
+  text-decoration: none;
+}
+.hero-btn:hover { color: #0f172a; background: #f1f5f9; }
+
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; }
+.people .choice { margin-bottom: 0; align-items: center; }
+.choice.person input, .daychip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 12px;
+}
+
+.datestrip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.daychip {
+  position: relative;
+  flex: none;
+  width: 3.75rem;
+  margin: 0;
+  padding: 0.5rem 0;
+  text-align: center;
+  font-weight: 400;
+  line-height: 1.25;
+  background: var(--field);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.daychip:hover { border-color: var(--muted); }
+.daychip small { display: block; font-size: 0.75rem; color: var(--muted); }
+.daychip span { display: block; font-size: 1.125rem; font-weight: 700; }
+.daychip:has(input:checked) { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.daychip:has(input:checked) small { color: var(--brand-ink); }
+.daychip:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.other-date { margin-top: 0.75rem; }
+.other-date summary { cursor: pointer; font-weight: 600; color: var(--brand); min-height: 2.5rem; display: flex; align-items: center; }
+.other-date input { margin-top: 0.5rem; }
+
 /* Per-shop accent color. The body carries data-theme; the CSP forbids inline styles, so each preset is a rule here. */
 
 [data-theme="blue"]   { --brand: #1d4ed8; --brand-hover: #1e40af; --brand-soft: #e5edff; }

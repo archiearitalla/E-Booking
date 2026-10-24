@@ -75,6 +75,8 @@ public static class Text
     public const string StaffLabelClinic = "Doctor";
     public const string BookDate = "Date";
     public const string BookShowTimes = "Show available times";
+    public const string BookNow = "Book now";
+    public const string BookAnotherDate = "Pick another date";
     public const string BookAvailableTimes = "Available times on";
     public const string BookNoTimes = "No times are available on this day. Try another date.";
     public const string BookPickService = "Choose a service to see available times.";
