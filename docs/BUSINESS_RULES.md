@@ -379,3 +379,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 ### 18.6 Not built
 
 Invite codes, an export of business data at the end of the trial, a consent record per booking, a higher staff limit for trials (FREE stays at 1 staff member), clinic-specific fields such as an intake form.
+
+### 17.3.1 Result of the Neon safety gate (2026-10-25)
+
+On the Neon Free project in AWS Singapore, **PostgreSQL 18.6**: `CREATE EXTENSION btree_gist` succeeded (version 1.8), `tests/db/double_booking.sh` printed "All database invariants hold." against a separate `barberbook_test` database, and the whole Web test suite passed (91 of 91, direct connection, `SSL Mode=Require`). One earlier run lost two tests to a dropped connection while the development PC was asleep; the rerun passed. Not checked: a Neon branch restore, behaviour after the compute has been idle, and PostgreSQL 16 on Neon (the other tests ran on 16.11 locally).

@@ -119,7 +119,7 @@ Acceptance: CI runs the self-check, the SQL invariants (PostgreSQL service conta
 
 ## Step 8: Free deployment 🟡 (files written; nothing deployed yet)
 
-Files: `Dockerfile`, `.dockerignore`, `render.yaml`, `docs/DEPLOY.md`. Written, and the Release publish was run in Production mode on a PORT from the environment (health check and a booking page answered). Not done: the Docker image build (no Docker on this machine), the Neon safety gate, a Render deploy, the backup job. Those need the owner's accounts; the steps are in `docs/DEPLOY.md`.
+Files: `Dockerfile`, `.dockerignore`, `render.yaml`, `docs/DEPLOY.md`. Written, and the Release publish was run in Production mode on a PORT from the environment (health check and a booking page answered). The Neon safety gate passed (PostgreSQL 18.6, see rules 17.3.1). Not done: the Docker image build (no Docker on this machine), a Render deploy, the backup job. Those need the owner's accounts; the steps are in `docs/DEPLOY.md`.
 
 Render free web service (Docker) or Cloud Run, Neon Postgres, secrets as environment variables, regular `pg_dump` backup (section 17.1).
 

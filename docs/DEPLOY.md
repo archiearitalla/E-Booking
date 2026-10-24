@@ -81,5 +81,6 @@ Triggers are in `BUSINESS_RULES.md` 17.1 (first paying client, database near its
 
 ## What was and was not verified here
 
+Verified on Neon (PostgreSQL 18.6, Singapore): `btree_gist` works, `tests/db/double_booking.sh` passes, and the Web suite passes 91 of 91 (step 0 is done for that project).
 Verified: the project publishes in Release, runs in Production mode on the port given in `PORT`, serves `/healthz` and a booking page, with forwarded headers on.
-Not verified: the Docker image build (no Docker on the development machine), a real Render deploy, Neon (the `btree_gist` gate in step 0), the custom domain, and behaviour behind the Cloudflare proxy.
+Not verified: the Docker image build (no Docker on the development machine), a real Render deploy, the custom domain, and behaviour behind the Cloudflare proxy.
