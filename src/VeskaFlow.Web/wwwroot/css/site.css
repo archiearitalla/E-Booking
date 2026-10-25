@@ -577,3 +577,10 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .closure-form:has(input[value="weekly"]:checked) .when-dates { display: none; }
 .closure-form:not(:has(input[value="weekly"]:checked)) .when-weekly { display: none; }
 .badge.off { background: var(--soft); color: var(--muted); }
+
+/* Services list: one collapsed row per service so a long list stays short. */
+.service-item summary { cursor: pointer; list-style: none; padding: .25rem 0; }
+.service-item summary::-webkit-details-marker { display: none; }
+.service-item summary::after { content: "\25BE"; float: right; color: var(--muted, #667); }
+.service-item[open] summary::after { content: "\25B4"; }
+.service-item summary .booking-head { display: inline-flex; gap: .5rem; align-items: center; flex-wrap: wrap; }

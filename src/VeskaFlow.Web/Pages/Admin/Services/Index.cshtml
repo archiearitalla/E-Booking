@@ -20,16 +20,20 @@ else
         @foreach (var s in Model.Rows)
         {
             <li class="card @(s.IsActive ? "" : "inactive")">
-                <div class="booking-head">
-                    <strong>@s.Name</strong>
-                    <span class="badge">@(s.IsActive ? Text.StatusActive : Text.StatusInactive)</span>
-                </div>
-                <p class="muted">
-                    @DisplayFormat.Duration(s.DurationMinutes)
-                    @if (s.BufferMinutes > 0) { <text>(+@s.BufferMinutes min @Text.ServiceBufferShort)</text> }
-                    &middot; @DisplayFormat.Price(s.Price)
-                </p>
-                <p><a href="/Admin/Services/Edit/@s.Id">@Text.ActionEdit<span class="sr-only"> @s.Name</span></a></p>
+                <details class="service-item">
+                    <summary>
+                        <span class="booking-head">
+                            <strong>@s.Name</strong>
+                            <span class="badge">@(s.IsActive ? Text.StatusActive : Text.StatusInactive)</span>
+                        </span>
+                    </summary>
+                    <p class="muted">
+                        @DisplayFormat.Duration(s.DurationMinutes)
+                        @if (s.BufferMinutes > 0) { <text>(+@s.BufferMinutes min @Text.ServiceBufferShort)</text> }
+                        &middot; @DisplayFormat.Price(s.Price)
+                    </p>
+                    <p><a href="/Admin/Services/Edit/@s.Id">@Text.ActionEdit<span class="sr-only"> @s.Name</span></a></p>
+                </details>
             </li>
         }
     </ul>
