@@ -71,6 +71,29 @@ public class ShopHoursTests
     private static int LocalHour(DateTime utc) => utc.AddHours(8).Hour; // the test shop is in Asia/Manila
 
     [Fact]
+    public async Task Saving_one_range_for_all_days_keeps_a_day_that_was_closed_closed_with_a_closure_the_owner_can_switch_off()
+    {
+        var (db, catalog, owner) = await SetupAsync(); // starter hours are Monday to Saturday: Sunday is a day off
+        var settings = new ShopSettingsService(db, new TestClock(BaseNow));
+        var all = Enumerable.Range(0, 7).Select(d => new HourWindow((short)d, new TimeOnly(9, 0), new TimeOnly(17, 0))).ToArray();
+
+        Assert.True((await catalog.SaveShopHoursAsync(owner.BusinessId, all)).IsSuccess);
+
+        // Sunday now has hours, but the owner's day off is kept as a visible, switch-off-able closure.
+        var closures = await settings.ListWeeklyClosuresAsync(owner.BusinessId);
+        var sunday = Assert.Single(closures);
+        Assert.Equal((short)0, sunday.DayOfWeek);
+        Assert.Null(sunday.StaffId);
+        Assert.True(sunday.IsActive);
+
+        // Saving again does not add more, and a closure the owner switched off stays off (Sunday is open on purpose).
+        await settings.SetWeeklyClosureActiveAsync(owner.BusinessId, sunday.Id, false);
+        Assert.True((await catalog.SaveShopHoursAsync(owner.BusinessId, all)).IsSuccess);
+        var after = Assert.Single(await settings.ListWeeklyClosuresAsync(owner.BusinessId));
+        Assert.False(after.IsActive);
+    }
+
+    [Fact]
     public async Task A_new_staff_member_starts_with_the_shop_hours()
     {
         var (db, catalog, owner) = await SetupAsync();

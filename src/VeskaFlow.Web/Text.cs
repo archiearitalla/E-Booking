@@ -222,6 +222,7 @@ public static class Text
     public const string HintFollowUpDays = "For services that need a return visit, for example 14. After you mark a booking completed, this date is suggested. Leave empty if it does not apply.";
     public const string FollowUpsHint = "Customers who should come back. Each has a ready-made message: copy it or send it as a text from your phone. Nothing is sent automatically.";
     public const string FollowUpsEmpty = "No follow-ups to do. Set one after you mark a booking completed (Bookings, Done).";
+    public const string ClosedDayKept = "Day off (kept from your earlier hours)";
     public const string OtherServiceName = "Other";
     public const string WalkInOtherLabel = "If Other: what does the customer need?";
     public const string OtherServicePrice = "The shop will tell you the price";
@@ -241,7 +242,7 @@ public static class Text
     public const string CheckEmailManual = "Your account is created. Email is not set up on this system yet, so please ask the administrator to confirm your account. Then you can sign in.";
     public const string ConfirmEmailTitle = "Confirm your email";
     public const string ConfirmDone = "Your email is confirmed. You can sign in now.";
-    public const string ConfirmLinkInvalid = "This link is not valid any more. Sign in to get a new one.";
+    public const string ConfirmLinkInvalid = "This link is not valid any more. If you already confirmed, just sign in. If not, sign in to get a new link.";
     public const string ConfirmEmailSubject = "Confirm your email address";
     public static string ConfirmEmailBody(string name, string link) =>
         $"Hi {name},\n\nThank you for signing up. Please confirm your email address to start using your shop:\n\n{link}\n\nThe link works for 48 hours. If you did not sign up, you can ignore this message.\n";

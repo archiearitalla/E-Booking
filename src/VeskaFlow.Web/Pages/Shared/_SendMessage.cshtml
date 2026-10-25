@@ -1,7 +1,10 @@
 @model VeskaFlow.Web.Pages.SendMessageModel
 @{
     var hasPhone = !DisplayFormat.IsPlaceholderPhone(Model.Phone);
-    var hasEmail = !string.IsNullOrWhiteSpace(Model.Email);
+    // Only a plain address becomes a mailto: link. A valid address can still contain "?" or "&", which in a mailto: link
+    // would add extra recipients or text, so anything unusual is shown as text only.
+    var hasEmail = !string.IsNullOrWhiteSpace(Model.Email)
+        && System.Text.RegularExpressions.Regex.IsMatch(Model.Email!, @"^[A-Za-z0-9._+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+$");
 }
 <div class="field">
     <label for="msg-@Model.Id">@Text.FollowUpReadyMessage</label>

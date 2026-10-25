@@ -158,7 +158,7 @@ The first two attempts failed: the connection string was pasted in URL form (Npg
 
 Still open: a registration and booking run on a real phone against the live link, the `pg_dump` backup and one restore, a first-request time after idle (not measured), and behaviour behind the Cloudflare proxy. The custom domain `flow.veskacode.com` is set up (DNS only) and answers over HTTPS.
 
-## Features added after Step 8 (all in `main`; Web tests 124 of 124 on PostgreSQL 16.11 unless noted)
+## Features added after Step 8 (all in `main`; Web tests 164 of 164 and Core self-check 65 of 65 on PostgreSQL 16.11 unless noted)
 
 | Feature | Rules | Verified | Not verified |
 |---|---|---|---|
@@ -171,5 +171,15 @@ Still open: a registration and booking run on a real phone against the live link
 | Closed days that repeat every week (on/off switch), one Closures page for both kinds | 6 | tests; migration `004_weekly_closure.sql` applied to the test database | the Closures page in a browser, Neon, live deploy |
 | Versioned CSS and JS URLs, so a deploy is never served stale files | | test | |
 | Name moved from every page to About; header bell for the trial | | tests, browser on localhost | |
+| Closures with time windows (one-off and every day / every weekday), refused outside opening hours; AM/PM time pickers | 6.x | tests; migration 004 | browser, phone, live deploy |
+| Opening hours in Settings: one range with a break for all days, copied to every staff, a hard limit on booking; kept day-offs become closures | 6.x | tests; migration 005 | browser, live deploy |
+| Suggested services per industry; collapsible services list; service dropdown on the booking page | 18.1 | tests | browser |
+| Follow-ups: date and service on a completed booking, Follow-ups page, reminders in the bell and a strip (days before is a setting), ready message with text, email, share, copy, save contact | 6.y | tests; migrations 006, 008 | sms:, mailto:, share sheet and .vcf import on a real phone; browser |
+| After the visit page (opens on Mark completed): optional medical record, follow-up, thank-you message; customer history | 6.y | tests; migration 007 | browser; access control is only "signed in to this business" (no staff roles yet) |
+| Mark completed / no-show only today and after the scheduled time (buttons hidden otherwise); staff cancel needs a reason; confirm before cancel, no-show, customer booking and cancel | 7 | tests, Core self-check | the confirm dialogs in a real browser |
+| Booking confirmation: copy link, add to calendar (.ics) | | tests | a real phone calendar |
+| Email confirmation before use; `/Platform` for the platform owner to switch shops on/off, confirm by hand, send a link; Resend HTTP email | 6.z | tests with a fake email sender; migration 009 applied to a database that already had a shop | **a real email through Resend**, the pages in a browser, live deploy |
+| "Other" service for visits not in the list (booking and walk-in) with a typed description | 6.w | tests; migration 010 applied to a database that already had a shop | browser |
+| `/ping` for a free uptime monitor (does not touch the database) | | test | the monitor itself |
 
 Not built yet: customer messages (confirmation and reminder links), customer list and export, reports, reschedule, MANAGER and STAFF roles, logo and cover photo, online payment, SMS.

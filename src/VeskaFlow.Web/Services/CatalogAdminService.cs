@@ -93,7 +93,8 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
 
         var have = (await db.Services.AsNoTracking().Where(s => s.BusinessId == businessId).Select(s => s.Name).ToListAsync(ct))
             .Select(n => n.Trim().ToLowerInvariant()).ToHashSet();
-        var nextSort = (await db.Services.Where(s => s.BusinessId == businessId).MaxAsync(s => (int?)s.SortOrder, ct) ?? -1) + 1;
+        // "Other" keeps the last place (sort order 1000), so new services are numbered after the ordinary ones only.
+        var nextSort = (await db.Services.Where(s => s.BusinessId == businessId && !s.IsOther).MaxAsync(s => (int?)s.SortOrder, ct) ?? -1) + 1;
         var staffIds = await db.StaffMembers.Where(s => s.BusinessId == businessId).Select(s => s.Id).ToListAsync(ct);
 
         var added = 0;
@@ -103,7 +104,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
             var service = new Service
             {
                 BusinessId = businessId, Name = suggestion.Name, DurationMinutes = suggestion.DurationMinutes,
-                Price = 0, SortOrder = Math.Min(nextSort++, 1000), FollowUpDays = suggestion.FollowUpDays,
+                Price = 0, SortOrder = Math.Min(nextSort++, 999), FollowUpDays = suggestion.FollowUpDays,
             };
             db.Services.Add(service);
             foreach (var staffId in staffIds)
@@ -296,7 +297,20 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         if (!await db.Businesses.AnyAsync(b => b.Id == businessId, ct)) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
         var staffIds = await db.StaffMembers.Where(s => s.BusinessId == businessId).Select(s => s.Id).ToListAsync(ct);
 
+        // The shop hours apply to all seven days, so a day that was closed until now (for example Sunday) would open by
+        // surprise. Keep it closed with a visible "every <day>" closure the owner can switch off to open that day.
+        var wasOpen = (await GetShopHoursAsync(businessId, ct)).Select(h => h.DayOfWeek).ToHashSet();
+        var alreadyClosed = (await db.WeeklyClosures.Where(c => c.BusinessId == businessId && c.StaffId == null && c.StartTime == null)
+            .Select(c => c.DayOfWeek).ToListAsync(ct)).ToHashSet();
+
         await using var tx = await db.Database.BeginTransactionAsync(ct);
+        if (wasOpen.Count > 0)
+            for (short day = 0; day <= 6; day++)
+            {
+                var willBeOpen = windows.Any(w => w.DayOfWeek == day);
+                if (!wasOpen.Contains(day) && willBeOpen && !alreadyClosed.Contains(day) && !alreadyClosed.Contains(null))
+                    db.WeeklyClosures.Add(new WeeklyClosure { BusinessId = businessId, DayOfWeek = day, Reason = Text.ClosedDayKept });
+            }
         await db.BusinessHours.Where(h => h.BusinessId == businessId).ExecuteDeleteAsync(ct);
         db.BusinessHours.AddRange(windows.Select(w => new BusinessHour { BusinessId = businessId, DayOfWeek = w.DayOfWeek, OpenTime = w.Open, CloseTime = w.Close }));
         await db.WorkingHours.Where(h => staffIds.Contains(h.StaffId)).ExecuteDeleteAsync(ct);

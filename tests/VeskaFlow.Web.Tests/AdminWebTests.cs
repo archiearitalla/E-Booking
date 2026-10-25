@@ -430,6 +430,18 @@ public class AdminWebTests
         Assert.Contains("It is time for your follow-up", page);
         Assert.Contains("sms:", page);
 
+        // Only a plain email address becomes a mailto: link: one with "?" or "&" could add recipients or text, so it is not linked.
+        await using (var emailCtx = owner.Db.CreateDbContext())
+        {
+            var customer = await emailCtx.Customers.SingleAsync(c => c.Id == emailCtx.Bookings.Where(b => b.Id == booking.Id).Select(b => b.CustomerId).First());
+            customer.Email = "eve?bcc=friend@other.com@example.com";
+            await emailCtx.SaveChangesAsync();
+            Assert.DoesNotContain("mailto:", Dec(await owner.Client.GetStringAsync("/Admin/FollowUps")));
+            customer.Email = "juan.delacruz@example.com";
+            await emailCtx.SaveChangesAsync();
+            Assert.Contains("mailto:juan.delacruz@example.com?subject=", Dec(await owner.Client.GetStringAsync("/Admin/FollowUps")));
+        }
+
         // Every way to reach the customer is on the page, and their contact card can be saved to the phone.
         Assert.Contains("Send as text", page);
         Assert.Contains(Text.SaveContact, page);

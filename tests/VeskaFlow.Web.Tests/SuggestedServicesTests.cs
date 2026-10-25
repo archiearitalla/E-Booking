@@ -29,6 +29,10 @@ public class SuggestedServicesTests
         Assert.Equal(suggested.Count + 1, names.Count); // the suggestions, plus the "Other" service every shop has
         Assert.Equal(names.Count, names.Select(n => n.ToLowerInvariant()).Distinct().Count());
 
+        // "Other" stays the last in the list, however many services are added after it.
+        var ordered = await catalog.ListServicesAsync(owner.BusinessId);
+        Assert.True(ordered[^1].IsOther);
+
         // New services are linked to the existing staff so they can be booked.
         await using var ctx = db.CreateDbContext();
         var staffId = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();

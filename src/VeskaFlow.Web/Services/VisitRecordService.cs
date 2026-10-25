@@ -1,4 +1,4 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +32,14 @@ public sealed class VisitRecordService(IDbContextFactory<AppDbContext> dbFactory
             return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.VisitNotesOnlyCompleted);
 
         booking.VisitNotes = clean;
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServiceResult<bool>.Fail(FailureKind.Stale, Text.BookingChanged);
+        }
         return ServiceResult<bool>.Ok(true);
     }
 

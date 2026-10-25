@@ -1,4 +1,4 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
@@ -105,7 +105,15 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
         booking.FollowUpNote = date is null ? null : cleanNote;
         booking.FollowUpService = date is null ? null : serviceName;
         booking.FollowUpDone = false;
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Someone changed this booking at the same moment (for example another device): ask to try again.
+            return ServiceResult<bool>.Fail(FailureKind.Stale, Text.BookingChanged);
+        }
         return ServiceResult<bool>.Ok(true);
     }
 
