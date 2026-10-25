@@ -37,6 +37,22 @@
         <dt>@Text.ManageStatus</dt><dd><span class="badge">@b.Status.Label()</span></dd>
     </dl>
 
+    @if (b.Status != VeskaFlow.Core.Domain.BookingStatus.Cancelled)
+    {
+        <div class="save-booking">
+            <h2>@Text.ManageSaveTitle</h2>
+            <p class="hint">@Text.ManageSaveHint</p>
+            <div class="field">
+                <label for="manage-link">@Text.ManageLinkLabel</label>
+                <input type="text" id="manage-link" readonly value="@Model.ManageUrl(b.ManageToken)" />
+            </div>
+            <div class="actions">
+                <button type="button" class="secondary" data-copy="manage-link" data-copied="@Text.FollowUpCopied">@Text.ManageCopyLink</button>
+                <a class="button" href="/booking/@b.ManageToken?handler=Calendar">@Text.ManageAddToCalendar</a>
+            </div>
+        </div>
+    }
+
     @if (d.CanCancel)
     {
         <form method="post" asp-page-handler="Cancel" asp-route-token="@b.ManageToken">

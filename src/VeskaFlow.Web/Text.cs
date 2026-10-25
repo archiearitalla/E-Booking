@@ -214,6 +214,11 @@ public static class Text
     public const string HintFollowUpDays = "For services that need a return visit, for example 14. After you mark a booking completed, this date is suggested. Leave empty if it does not apply.";
     public const string FollowUpsHint = "Customers who should come back. Each has a ready-made message: copy it or send it as a text from your phone. Nothing is sent automatically.";
     public const string FollowUpsEmpty = "No follow-ups to do. Set one after you mark a booking completed (Bookings, Done).";
+    public const string ManageSaveTitle = "Save your booking";
+    public const string ManageSaveHint = "Keep this link: it is the only way back to this page to see or cancel your booking. Copy it, or add the appointment to your phone's calendar.";
+    public const string ManageLinkLabel = "Your booking link";
+    public const string ManageCopyLink = "Copy link";
+    public const string ManageAddToCalendar = "Add to calendar";
     public const string FollowUpOpen = "Open follow-ups";
     public static string FollowUpAlertText(int overdue, int soon) => (overdue, soon) switch
     {

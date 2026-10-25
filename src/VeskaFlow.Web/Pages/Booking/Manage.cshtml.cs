@@ -7,7 +7,7 @@ namespace VeskaFlow.Web.Pages.Booking;
 
 [EnableRateLimiting(RateLimitPolicies.Booking)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public class ManageModel(BookingService booking) : PageModel
+public class ManageModel(BookingService booking, IConfiguration config) : PageModel
 {
     public BookingDetails? Details { get; private set; }
     public bool JustBooked { get; private set; }
@@ -20,6 +20,27 @@ public class ManageModel(BookingService booking) : PageModel
         JustBooked = confirmed == 1;
         Message = TempData[MessageKey] as string;
         return Page();
+    }
+
+    /// <summary>The address of this page: the private link the customer keeps to see or cancel the booking.</summary>
+    public string ManageUrl(string token)
+    {
+        var configured = config["App:PublicBaseUrl"];
+        var baseUrl = string.IsNullOrWhiteSpace(configured) ? $"{Request.Scheme}://{Request.Host}" : configured.Trim().TrimEnd('/');
+        return $"{baseUrl}/booking/{token}";
+    }
+
+    /// <summary>Downloads the booking as a calendar file (.ics) to add to the phone's calendar.</summary>
+    public async Task<IActionResult> OnGetCalendarAsync(string token, CancellationToken ct)
+    {
+        var details = await booking.GetByTokenAsync(token, ct);
+        if (details is null) return NotFound();
+        var b = details.Booking;
+        if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Cancelled) return NotFound();
+
+        var ics = CalendarFile.Ics(b.Id, details.BusinessName, b.ServiceName, b.StaffName, b.StartsAtUtc, b.EndsAtUtc,
+            ManageUrl(token), DateTime.UtcNow);
+        return File(System.Text.Encoding.UTF8.GetBytes(ics), "text/calendar; charset=utf-8", "booking.ics");
     }
 
     public async Task<IActionResult> OnPostCancelAsync(string token, CancellationToken ct)

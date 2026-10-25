@@ -112,6 +112,19 @@ public class PublicBookingTests
         Assert.Contains("Confirmed", manage);
         Assert.Equal(1, await CountBookingsAsync(shop));
 
+        // The customer can keep the private link and add the appointment to the phone calendar.
+        Assert.Contains(Text.ManageSaveTitle, manage);
+        Assert.Contains("id=\"manage-link\"", manage);
+        var token = location["/booking/".Length..location.IndexOf('?')];
+        var calendar = await client.GetAsync($"/booking/{token}?handler=Calendar");
+        Assert.Equal(HttpStatusCode.OK, calendar.StatusCode);
+        Assert.Equal("text/calendar", calendar.Content.Headers.ContentType!.MediaType);
+        var ics = await calendar.Content.ReadAsStringAsync();
+        Assert.Contains("BEGIN:VEVENT", ics);
+        Assert.Contains($"DTSTART:{start:yyyyMMdd'T'HHmmss'Z'}", ics);
+        Assert.Contains("SUMMARY:Haircut at Ben's Barbershop", ics);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/booking/no-such-token-0123456789?handler=Calendar")).StatusCode);
+
         await using var ctx = shop.Db.CreateDbContext();
         var row = await ctx.Bookings.SingleAsync(b => b.BusinessId == shop.BusinessId);
         Assert.Equal(start, DateTime.SpecifyKind(row.StartsAtUtc, DateTimeKind.Utc));
