@@ -440,6 +440,35 @@ public class AdminWebTests
         Assert.Contains(Text.FollowUpsEmpty, Dec(await owner.Client.GetStringAsync("/Admin/FollowUps")));
     }
 
+    [Fact]
+    public async Task The_booking_page_does_not_offer_days_the_shop_is_closed()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+
+        static List<DateOnly> Offered(string html) =>
+            System.Text.RegularExpressions.Regex.Matches(html, "name=\"date\" value=\"(\\d{4}-\\d{2}-\\d{2})\"")
+                .Select(m => DateOnly.ParseExact(m.Groups[1].Value, "yyyy-MM-dd")).ToList();
+
+        // The starter hours are Monday to Saturday, so Sundays are not offered.
+        var before = Offered(await owner.Client.GetStringAsync($"/b/{owner.Slug}"));
+        Assert.NotEmpty(before);
+        Assert.DoesNotContain(before, d => d.DayOfWeek == DayOfWeek.Sunday);
+        Assert.Contains(before, d => d.DayOfWeek == DayOfWeek.Tuesday);
+
+        // A whole-shop closure that repeats every Tuesday takes Tuesdays off the list; a lunch break does not close the day.
+        await using (var ctx = owner.Db.CreateDbContext())
+        {
+            ctx.WeeklyClosures.Add(new WeeklyClosure { BusinessId = owner.BusinessId, DayOfWeek = (short)DayOfWeek.Tuesday });
+            ctx.WeeklyClosures.Add(new WeeklyClosure { BusinessId = owner.BusinessId, DayOfWeek = (short)DayOfWeek.Wednesday, StartTime = new TimeOnly(12, 0), EndTime = new TimeOnly(13, 0) });
+            await ctx.SaveChangesAsync();
+        }
+        var after = Offered(await owner.Client.GetStringAsync($"/b/{owner.Slug}"));
+        Assert.DoesNotContain(after, d => d.DayOfWeek == DayOfWeek.Tuesday);
+        Assert.Contains(after, d => d.DayOfWeek == DayOfWeek.Wednesday);
+    }
+
     // ------------------------------------------------------------ staff, settings, about
 
     [Fact]
