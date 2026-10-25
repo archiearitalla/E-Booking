@@ -28,8 +28,7 @@
     <p class="hint">@Text.ShopHoursHint</p>
     <form method="post" asp-page-handler="Hours" novalidate>
         @if (Model.ErrorFor("hours") is { } he) { <div class="alert" role="alert">@he</div> }
-        @await Html.PartialAsync("_HoursGrid", Model.HourFields)
-        <p class="hint">@Text.HoursBlankClosed</p>
+        @await Html.PartialAsync("_HoursRange", Model.ShopRange)
         <button type="submit" class="primary">@Text.ShopHoursSave</button>
     </form>
 </div>

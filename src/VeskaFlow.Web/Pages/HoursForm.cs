@@ -25,6 +25,22 @@ public static class HoursForm
 
     public static Dictionary<short, DayFields> ReadFields(IFormCollection form) => DayOrder.ToDictionary(d => d, d => ReadDay(form, d));
 
+    /// <summary>The field-name suffix of the single range form used by Settings (one set of hours for every day).</summary>
+    public const string AllDays = "all";
+
+    public static DayFields ReadRange(IFormCollection form) => new(
+        TimeFields.Read(form, "open_" + AllDays), TimeFields.Read(form, "breakfrom_" + AllDays),
+        TimeFields.Read(form, "breakto_" + AllDays), TimeFields.Read(form, "close_" + AllDays));
+
+    /// <summary>One range (opens, closes, optional break) applied to all seven days. Days off are set as closures.</summary>
+    public static ReadResult ReadSingleRange(IFormCollection form)
+    {
+        var f = ReadRange(form);
+        if (f.Open.Length == 0 && f.Close.Length == 0)
+            return new ReadResult([], Incomplete: true, BadBreak: false); // the shop needs opening hours
+        return Build(f, DayOrder);
+    }
+
     public static ReadResult Read(IFormCollection form)
     {
         var windows = new List<HourWindow>();
@@ -35,22 +51,41 @@ public static class HoursForm
         {
             var f = ReadDay(form, day);
             if (f.Open.Length == 0 && f.Close.Length == 0 && f.BreakFrom.Length == 0 && f.BreakTo.Length == 0) continue;
-
-            if (!Time(f.Open, out var o) || !Time(f.Close, out var c)) { incomplete = true; continue; }
-
-            if (f.BreakFrom.Length == 0 && f.BreakTo.Length == 0)
-            {
-                windows.Add(new HourWindow(day, o, c));
-                continue;
-            }
-
-            // A break needs both times and must sit inside the opening hours of that day.
-            if (!Time(f.BreakFrom, out var bf) || !Time(f.BreakTo, out var bt)) { incomplete = true; continue; }
-            if (!(o < bf && bf < bt && bt < c)) { badBreak = true; continue; }
-            windows.Add(new HourWindow(day, o, bf));
-            windows.Add(new HourWindow(day, bt, c));
+            var one = Build(f, [day]);
+            windows.AddRange(one.Windows);
+            incomplete |= one.Incomplete;
+            badBreak |= one.BadBreak;
         }
         return new ReadResult(windows, incomplete, badBreak);
+    }
+
+    private static ReadResult Build(DayFields f, IEnumerable<short> days)
+    {
+        var windows = new List<HourWindow>();
+        if (!Time(f.Open, out var o) || !Time(f.Close, out var c)) return new ReadResult(windows, true, false);
+
+        if (f.BreakFrom.Length == 0 && f.BreakTo.Length == 0)
+        {
+            windows.AddRange(days.Select(d => new HourWindow(d, o, c)));
+            return new ReadResult(windows, false, false);
+        }
+
+        // A break needs both times and must sit inside the opening hours of that day.
+        if (!Time(f.BreakFrom, out var bf) || !Time(f.BreakTo, out var bt)) return new ReadResult(windows, true, false);
+        if (!(o < bf && bf < bt && bt < c)) return new ReadResult(windows, false, true);
+        foreach (var d in days)
+        {
+            windows.Add(new HourWindow(d, o, bf));
+            windows.Add(new HourWindow(d, bt, c));
+        }
+        return new ReadResult(windows, false, false);
+    }
+
+    /// <summary>The range to show for the shop: the first day (Monday first) that has hours, else empty fields.</summary>
+    public static DayFields FillRange(IReadOnlyList<HourWindow> hours)
+    {
+        var all = Fill(hours);
+        return DayOrder.Select(d => all[d]).FirstOrDefault(f => f.Open.Length > 0) ?? new DayFields("", "", "", "");
     }
 
     public static Dictionary<short, DayFields> Fill(IReadOnlyList<HourWindow> hours)

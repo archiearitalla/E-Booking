@@ -1,0 +1,16 @@
+@model VeskaFlow.Web.Pages.DayFields
+@{ var all = VeskaFlow.Web.Pages.HoursForm.AllDays; }
+<div class="hours-day">
+    <div class="hours-row">
+        <label for="open_@(all)_h">@Text.HoursOpen</label>
+        @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("open_" + all, Model.Open))
+        <label for="close_@(all)_h">@Text.HoursClose</label>
+        @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("close_" + all, Model.Close))
+    </div>
+    <div class="hours-row">
+        <label for="breakfrom_@(all)_h">@Text.HoursBreakFrom</label>
+        @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("breakfrom_" + all, Model.BreakFrom))
+        <label for="breakto_@(all)_h">@Text.HoursBreakTo</label>
+        @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("breakto_" + all, Model.BreakTo))
+    </div>
+</div>

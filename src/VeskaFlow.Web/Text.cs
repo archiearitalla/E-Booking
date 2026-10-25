@@ -231,7 +231,7 @@ public static class Text
     public const string HoursTitle = "Weekly hours";
     public const string HoursHint = "Times are in the shop's time zone ({0}). Add a break (for example lunch) with Break from and Break until, or leave them blank for no break. A closing time before the opening time runs past midnight.";
     public const string ShopHoursTitle = "Opening hours";
-    public const string ShopHoursHint = "Set the days and hours your shop is open, and a break such as lunch. Saving copies them to every staff member, so you only set it once. Use Closures for days off and one-time changes, and the Staff page if one person works different hours.";
+    public const string ShopHoursHint = "Set the time your shop opens and closes each day, and a break such as lunch. It applies to all 7 days and is copied to every staff member, so you only set it once. Set days off (for example every Sunday) and one-time changes in Closures, and use the Staff page if one person works different hours.";
     public const string ShopHoursSave = "Save opening hours";
     public const string ShopHoursSaved = "Opening hours saved for the whole shop.";
     public const string ShopHoursSavedAffected = "Opening hours saved. {0} upcoming booking(s) now fall outside these hours; they were not cancelled. Review them on the Bookings page.";

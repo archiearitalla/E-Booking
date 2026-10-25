@@ -444,6 +444,29 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 }
             }
 
+        // The shop's opening hours from Settings are a hard limit: whatever a staff member's own hours say, nothing outside
+        // them can be booked. Everything outside the shop windows becomes a blackout. Shops that never set them are unaffected.
+        var shopHours = await db.BusinessHours.AsNoTracking().Where(h => h.BusinessId == business.Id).ToListAsync(ct);
+        if (shopHours.Count > 0)
+        {
+            var allowed = new List<(DateTime Start, DateTime End)>();
+            foreach (var date in new[] { previous, localDate })
+                foreach (var h in shopHours.Where(h => h.DayOfWeek == (short)date.DayOfWeek))
+                {
+                    var from = date.ToDateTime(h.OpenTime);
+                    var to = h.CloseTime <= h.OpenTime ? date.AddDays(1).ToDateTime(h.CloseTime) : date.ToDateTime(h.CloseTime);
+                    allowed.Add((from, to));
+                }
+            var cursor = previous.ToDateTime(TimeOnly.MinValue);
+            var spanEnd = localDate.AddDays(1).ToDateTime(TimeOnly.MinValue);
+            foreach (var (from, to) in allowed.OrderBy(a => a.Start))
+            {
+                if (from > cursor) blackouts.Add(new TimeRange(LocalTime.ToUtc(cursor, zone), LocalTime.ToUtc(from, zone)));
+                if (to > cursor) cursor = to;
+            }
+            if (cursor < spanEnd) blackouts.Add(new TimeRange(LocalTime.ToUtc(cursor, zone), LocalTime.ToUtc(spanEnd, zone)));
+        }
+
         var days = new[] { (short)localDate.DayOfWeek, (short)previous.DayOfWeek };
         var hours = await db.WorkingHours.AsNoTracking()
             .Where(h => h.StaffId == staffId && days.Contains(h.DayOfWeek))

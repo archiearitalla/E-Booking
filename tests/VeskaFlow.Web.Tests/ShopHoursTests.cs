@@ -44,6 +44,33 @@ public class ShopHoursTests
     }
 
     [Fact]
+    public async Task Nothing_outside_the_shop_hours_can_be_booked_even_if_a_staff_member_has_wider_hours()
+    {
+        var (db, catalog, owner) = await SetupAsync();
+        var clock = new TestClock(BaseNow);
+        var bookings = new BookingService(db, clock);
+        await catalog.SaveShopHoursAsync(owner.BusinessId, WithLunch); // Tuesday 8 AM to 5 PM
+        await using var ctx = db.CreateDbContext();
+        var staffId = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+
+        // This person's own hours are wider than the shop's, but the shop hours win.
+        await catalog.SaveHoursAsync(owner.BusinessId, staffId, [new HourWindow(2, new TimeOnly(6, 0), new TimeOnly(20, 0))]);
+
+        Task<ServiceResult<CreateOutcome>> Book(int hour, string phone) => bookings.CreateAsync(new CreateBookingRequest(
+            owner.BusinessId, serviceId, staffId, Manila(5, hour), "Maria", phone, null, Id("k"), BookingActor.Customer("Maria")));
+
+        Assert.Equal(FailureKind.SlotTaken, (await Book(7, "09175550031")).Failure);   // before opening
+        Assert.Equal(FailureKind.SlotTaken, (await Book(18, "09175550032")).Failure);  // after closing
+        Assert.True((await Book(10, "09175550033")).IsSuccess);                        // inside
+
+        var free = (await bookings.GetFreeStartsAsync(owner.BusinessId, serviceId, null, new DateOnly(2030, 3, 5))).Value!;
+        Assert.All(free, t => Assert.InRange(LocalHour(t), 8, 16));
+    }
+
+    private static int LocalHour(DateTime utc) => utc.AddHours(8).Hour; // the test shop is in Asia/Manila
+
+    [Fact]
     public async Task A_new_staff_member_starts_with_the_shop_hours()
     {
         var (db, catalog, owner) = await SetupAsync();

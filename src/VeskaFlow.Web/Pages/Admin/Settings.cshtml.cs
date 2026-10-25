@@ -8,17 +8,17 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     [BindProperty] public SettingsForm Input { get; set; } = new();
 
     /// <summary>The shop's opening hours as the form shows them.</summary>
-    public Dictionary<short, DayFields> HourFields { get; private set; } = [];
+    public DayFields ShopRange { get; private set; } = new("", "", "", "");
     public bool HoursFormSubmitted { get; private set; }
 
     private async Task LoadHoursAsync(CancellationToken ct) =>
-        HourFields = HoursForm.Fill(await catalog.GetShopHoursAsync(BusinessId, ct));
+        ShopRange = HoursForm.FillRange(await catalog.GetShopHoursAsync(BusinessId, ct));
 
     /// <summary>Saves the opening hours and copies them to every staff member.</summary>
     public async Task<IActionResult> OnPostHoursAsync(CancellationToken ct)
     {
         HoursFormSubmitted = true;
-        var read = HoursForm.Read(Request.Form);
+        var read = HoursForm.ReadSingleRange(Request.Form);
 
         ServiceResult<SaveOutcome> result;
         if (read.Incomplete)
@@ -36,7 +36,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
             if (current is null) return NotFound();
             Apply(current);
             BuildQr();
-            HourFields = HoursForm.ReadFields(Request.Form); // keep what was picked
+            ShopRange = HoursForm.ReadRange(Request.Form); // keep what was picked
             return Page();
         }
 

@@ -377,6 +377,34 @@ public class AdminWebTests
         Assert.Contains("AM or PM", page);
     }
 
+    [Fact]
+    public async Task Settings_takes_one_opening_range_with_a_break_and_applies_it_to_all_days_and_staff()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+
+        var saved = await PostAsync(owner.Client, "/Admin/Settings", "/Admin/Settings?handler=Hours", new()
+        {
+            ["open_all_h"] = "10", ["open_all_m"] = "00", ["open_all_ap"] = "AM",
+            ["close_all_h"] = "6", ["close_all_m"] = "00", ["close_all_ap"] = "PM",
+            ["breakfrom_all_h"] = "12", ["breakfrom_all_m"] = "00", ["breakfrom_all_ap"] = "PM",
+            ["breakto_all_h"] = "1", ["breakto_all_m"] = "00", ["breakto_all_ap"] = "PM",
+        });
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+
+        await using var ctx = owner.Db.CreateDbContext();
+        Assert.Equal(14, await ctx.BusinessHours.CountAsync(h => h.BusinessId == owner.BusinessId)); // 7 days x 2 windows
+        Assert.Equal(14, await ctx.WorkingHours.CountAsync(h => h.StaffId == owner.StaffId));
+        var page = Dec(await owner.Client.GetStringAsync("/Admin/Settings"));
+        Assert.Contains("<option value=\"10\" selected", page);
+
+        // Leaving it blank is refused and nothing changes.
+        var blank = await PostAsync(owner.Client, "/Admin/Settings", "/Admin/Settings?handler=Hours", new());
+        Assert.Contains(Text.HoursIncomplete, Dec(await blank.Content.ReadAsStringAsync()));
+        Assert.Equal(14, await ctx.BusinessHours.CountAsync(h => h.BusinessId == owner.BusinessId));
+    }
+
     // ------------------------------------------------------------ staff, settings, about
 
     [Fact]
