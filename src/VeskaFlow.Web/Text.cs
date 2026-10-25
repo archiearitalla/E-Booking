@@ -33,7 +33,9 @@ public static class Text
     public const string IndustrySalon = "Salon";
     public const string IndustryClinic = "Clinic";
     public const string IndustryInvalid = "Choose one of the listed types.";
-    public const string TrialEndedTitle = "Your free trial has ended";
+    public const string AlreadyBookedThatTime = "This number already has a booking that overlaps this time. Pick another time, or cancel the other booking first.";
+    public const string TooManyActiveBookings = "This number already has {0} upcoming bookings with this shop. Cancel one first, or contact the shop.";
+    public const string TrialEndedTitle ="Your free trial has ended";
     public const string TrialEndedBody = "Online booking is closed and the back office is locked. Your data is kept. Contact us to keep using it.";
     public const string TrialEndedContact = "Contact us";
     public const string NotificationsLabel = "Notifications";

@@ -15,8 +15,10 @@ namespace VeskaFlow.Web.Services;
 /// <see cref="AvailabilityCalculator"/> and is re-derived here at confirmation; the database exclusion constraint
 /// <c>no_double_booking</c> is the final guarantee, and its violation (SQLSTATE 23P01) is a normal "slot taken" result.
 /// </summary>
-public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, BookingLimits? limits = null)
 {
+    private readonly BookingLimits caps = limits ?? new BookingLimits();
+
     private const string ExclusionViolation = "23P01";
     private const string UniqueViolation = "23505";
     private const string DeadlockDetected = "40P01";
@@ -101,6 +103,17 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 case InsertOutcome.Inserted:
                     return ServiceResult<CreateOutcome>.Ok(new CreateOutcome(
                         (await LoadSummaryAsync(business.Id, attempt.BookingId!.Value, ct))!, false));
+                case InsertOutcome.CustomerLimit:
+                    // A parallel request with this very key may have just created the booking that now "overlaps":
+                    // that is a double click or a retry, so return it instead of refusing.
+                    await using (var limitDb = await dbFactory.CreateDbContextAsync(ct))
+                    {
+                        var sameKey = await FindByIdempotencyKeyAsync(limitDb, business.Id, key, ct);
+                        if (sameKey is not null)
+                            return ServiceResult<CreateOutcome>.Ok(new CreateOutcome(sameKey, true));
+                    }
+                    // Otherwise it is the same person with an overlapping or too many open bookings: a field error on the phone.
+                    return ServiceResult<CreateOutcome>.Invalid(new Dictionary<string, string> { ["phone"] = attempt.Message! });
                 case InsertOutcome.Duplicate:
                     // A concurrent request with the same key won; return its booking.
                     await using (var winnerDb = await dbFactory.CreateDbContextAsync(ct))
@@ -128,9 +141,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         return ServiceResult<CreateOutcome>.Fail(FailureKind.SlotTaken, Text.SlotTaken);
     }
 
-    private enum InsertOutcome { Inserted, Conflict, Duplicate }
+    private enum InsertOutcome { Inserted, Conflict, Duplicate, CustomerLimit }
 
-    private sealed record InsertAttempt(InsertOutcome Outcome, Guid? BookingId);
+    private sealed record InsertAttempt(InsertOutcome Outcome, Guid? BookingId, string? Message = null);
 
     private async Task<InsertAttempt> TryInsertAsync(
         CreateBookingRequest request, Business business, Service service, Staff staff, DateTime start,
@@ -158,6 +171,24 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             var customerId = customerRows.Single();
 
             var end = start.AddMinutes(service.DurationMinutes);
+
+            // The online booking page is open to everyone, so one person cannot hoard or double-book time.
+            // Checked inside this transaction under a per-customer lock, so two parallel requests cannot both slip
+            // through. Staff-created bookings (walk-ins, phone-ins) are exempt: staff know the situation.
+            if (request.Actor.Kind != ActorKind.Staff)
+            {
+                await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"cust:" + customerId}, 0))", ct);
+
+                var active = db.Bookings.Where(b => b.BusinessId == business.Id && b.CustomerId == customerId
+                    && (b.Status == BookingStatus.Held || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed));
+
+                if (await active.AnyAsync(b => b.StartsAtUtc < end && b.EndsAtUtc > start, ct))
+                    return new InsertAttempt(InsertOutcome.CustomerLimit, null, Text.AlreadyBookedThatTime);
+
+                if (caps.MaxActivePerCustomer > 0 && await active.CountAsync(b => b.EndsAtUtc > now, ct) >= caps.MaxActivePerCustomer)
+                    return new InsertAttempt(InsertOutcome.CustomerLimit, null, string.Format(Text.TooManyActiveBookings, caps.MaxActivePerCustomer));
+            }
+
             var booking = new Booking
             {
                 BusinessId = business.Id,
@@ -433,7 +464,8 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         name = (r.CustomerName ?? "").Trim();
         if (name.Length is < 1 or > 80) errors["name"] = Text.NameInvalid;
 
-        phone = Regex.Replace(r.Phone ?? "", @"[\s\-().]", "");
+        // One canonical form, so the same person is recognised however the number was typed (+63 917…, 0917…).
+        phone = PhoneNumber.Normalize(Regex.Replace(r.Phone ?? "", @"[\s\-().]", ""));
         if (r.Actor.Kind == ActorKind.Staff && phone.Length == 0)
             phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N"); // a walk-in with no number: its own customer, never matched later
         else if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;

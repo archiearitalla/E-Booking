@@ -179,6 +179,15 @@ Console.WriteLine("Security & slugs");
     Check("hash is salted (two hashes differ)", PasswordHasher.Hash("x", 1000) != PasswordHasher.Hash("x", 1000));
     Check("garbage hash rejected, no exception", !PasswordHasher.Verify("x", "not-a-hash") && !PasswordHasher.Verify("x", "v1.1.@@.@@"));
     Check("slug from name", Slug.From("Maria's Salon & Barber!") == "marias-salon-barber", Slug.From("Maria's Salon & Barber!"));
+
+    // phone numbers: one canonical form per person
+    Check("phone: local format kept", PhoneNumber.Normalize("0917 123 4567") == "09171234567", PhoneNumber.Normalize("0917 123 4567"));
+    Check("phone: +63 becomes local", PhoneNumber.Normalize("+63 917-123-4567") == "09171234567", PhoneNumber.Normalize("+63 917-123-4567"));
+    Check("phone: 63 prefix becomes local", PhoneNumber.Normalize("639171234567") == "09171234567", PhoneNumber.Normalize("639171234567"));
+    Check("phone: 10 digits starting 9 becomes local", PhoneNumber.Normalize("(917) 123.4567") == "09171234567", PhoneNumber.Normalize("(917) 123.4567"));
+    Check("phone: foreign number unchanged", PhoneNumber.Normalize("+1 415 555 0172") == "+14155550172", PhoneNumber.Normalize("+1 415 555 0172"));
+    Check("phone: landline unchanged", PhoneNumber.Normalize("02 8123 4567") == "0281234567", PhoneNumber.Normalize("02 8123 4567"));
+    Check("phone: empty stays empty", PhoneNumber.Normalize("  ") == "", PhoneNumber.Normalize("  "));
     Check("slug validity", Slug.IsValid("salon-maria") && !Slug.IsValid("-bad") && !Slug.IsValid("ab") && !Slug.IsValid("Has Space"));
 }
 

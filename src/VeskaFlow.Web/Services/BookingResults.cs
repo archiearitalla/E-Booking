@@ -33,6 +33,9 @@ public sealed class ServiceResult<T>
 }
 
 /// <summary>Who performs an action. Customers have no id; they are identified by the manage token.</summary>
+/// <summary>Abuse limits for the open online booking page (BUSINESS_RULES 8.6). 0 turns the per-customer cap off.</summary>
+public sealed record BookingLimits(int MaxActivePerCustomer = 2);
+
 public sealed record BookingActor(ActorKind Kind, Guid? Id, string Label)
 {
     public static BookingActor Customer(string label) => new(ActorKind.Customer, null, label);

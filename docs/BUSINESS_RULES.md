@@ -211,6 +211,18 @@ No SMS gateway is used (it is the only provider cost with no free tier). Message
 - Needs new business settings, `contact_phone` and an optional `messenger_page` (the Page username, not a full URL), added by an additive migration `003_*` ⬜ (`002_brand_color.sql` already exists).
 - Message bodies must be URL-encoded, and phone numbers are shown only to signed-in staff of that business, never on public pages.
 
+### 8.6 Limits on the open booking page ✅
+
+The public booking page needs no account, so anyone can use it. One person must not be able to double-book or hoard time, and a bot must not be able to fill the day.
+
+- **Same person.** A person is recognised by phone number, in one canonical form: `0917 123 4567`, `+63 917 123 4567`, `63917 123 4567` and `917 123 4567` are all `09171234567` (`PhoneNumber.Normalize`). Other numbers keep their digits.
+- **No overlapping bookings.** A customer booking is refused when the same person already has an active booking (`HELD`, `PENDING` or `CONFIRMED`) that overlaps the requested time in this business, even with a different staff member or service.
+- **Cap on upcoming bookings.** A person may hold at most `Booking:MaxActivePerCustomer` (default 2) active bookings that have not ended. `0` turns the cap off. Cancelling one frees a place.
+- Both refusals appear as an error under the phone field, not as a "slot taken" message. They are checked inside the booking transaction under a per-customer lock, so parallel requests cannot slip past.
+- **Staff are exempt** (walk-ins and phone-ins), and a retry with the same idempotency key still returns the same booking.
+- **Bots.** The confirm form carries a hidden field that people never see; if it is filled, nothing is created and the visitor is sent back to the time list. Booking posts are also limited per client IP (`RateLimits:BookingPerMinute`, default 6).
+- **Known limit.** Someone who uses a different phone number for each booking is not caught by these rules; verifying a number needs SMS, which has no free option (section 17). The rate limit, the honeypot and the staff's ability to cancel are the remaining defences.
+
 ## 9. Tenancy, roles and authorization
 
 - All back-office data access is scoped by the signed-in user's `business_id`. It is taken from the authenticated principal, never from the request.

@@ -39,6 +39,9 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
     {
         if (!await LoadAsync(slug, Input.ServiceId, Input.StaffId, Input.Start, ct)) return NotFound();
 
+        // A bot filled the hidden field: answer as if nothing happened and create nothing.
+        if (!string.IsNullOrWhiteSpace(Input.Website)) return RedirectToPage("/Book/Index", new { slug = Shop!.Slug });
+
         // The business comes from the slug, never from the form. Price, duration and staff are derived by the server.
         var result = await booking.CreateAsync(new CreateBookingRequest(
             Shop!.Id, Service!.Id, Staff?.Id, StartUtc,
@@ -97,5 +100,8 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public string? IdempotencyKey { get; set; }
+
+        /// <summary>Honeypot: hidden from people, filled in by simple bots. Anything in it means no booking.</summary>
+        public string? Website { get; set; }
     }
 }

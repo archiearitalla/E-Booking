@@ -28,6 +28,7 @@ catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotF
 builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(new VeskaFlow.Web.Services.BookingLimits(builder.Configuration.GetValue("Booking:MaxActivePerCustomer", 2)));
 builder.Services.AddScoped<VeskaFlow.Web.Services.BookingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.OnboardingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AuthService>();
@@ -64,7 +65,7 @@ builder.Services.AddRazorPages(o => o.Conventions.AuthorizeFolder("/Admin"));
 
 // Rate limiting: per client IP. Policies are attached to endpoints with RequireRateLimiting("auth" | "booking").
 var authPerMinute = builder.Configuration.GetValue("RateLimits:AuthPerMinute", 10);
-var bookingPerMinute = builder.Configuration.GetValue("RateLimits:BookingPerMinute", 20);
+var bookingPerMinute = builder.Configuration.GetValue("RateLimits:BookingPerMinute", 6);
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

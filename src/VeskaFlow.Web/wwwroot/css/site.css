@@ -532,3 +532,6 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .timechip:hover { border-color: var(--brand); }
 .timechip:has(input:checked) { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
 .timechip:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Honeypot field on the public booking form: off screen, never shown, not reachable by keyboard */
+.hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
