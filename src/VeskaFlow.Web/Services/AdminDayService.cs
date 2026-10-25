@@ -15,8 +15,11 @@ public sealed record DayBooking(
 /// <summary>A customer's contact details for saving to the staff phone's contacts (a .vcf file).</summary>
 public sealed record CustomerContact(string Name, string Phone, string? Email);
 
-public sealed record DayView(DateOnly Date, string TimeZone, IReadOnlyList<DayBooking> Bookings)
+public sealed record DayView(DateOnly Date, string TimeZone, IReadOnlyList<DayBooking> Bookings, DateOnly Today = default)
 {
+    /// <summary>Only today's bookings can be marked completed or no-show.</summary>
+    public bool IsToday => Date == Today;
+
     public int ActiveCount => Bookings.Count(b => b.Status.OccupiesSlot());
 }
 
@@ -54,14 +57,14 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
         var bookings = rows.Select(r => new DayBooking(
             r.Id, r.StaffName, r.ServiceNameSnapshot, r.CustomerName, r.CustomerPhone,
             r.StartsAtUtc, r.EndsAtUtc, r.Status, r.PriceSnapshot, r.Version,
-            BookingPolicy.CanMarkCompleted(r.Status, r.StartsAtUtc, now).Allowed,
-            BookingPolicy.CanMarkNoShow(r.Status, r.StartsAtUtc, now).Allowed,
+            BookingPolicy.CanMarkCompleted(r.Status, r.StartsAtUtc, now, business.TimeZone).Allowed,
+            BookingPolicy.CanMarkNoShow(r.Status, r.StartsAtUtc, now, business.TimeZone).Allowed,
             BookingPolicy.CanCancel(r.Status, r.StartsAtUtc, now, ActorKind.Staff, business.CancelCutoffHours).Allowed,
             r.FollowUpOn, r.FollowUpNote, r.FollowUpDone,
             r.ServiceFollowUpDays is { } days ? LocalTime.LocalDateOf(r.StartsAtUtc, business.TimeZone).AddDays(days) : null,
             r.CustomerEmail, r.FollowUpService, r.VisitNotes, r.CustomerId)).ToList();
 
-        return new DayView(day, business.TimeZone, bookings);
+        return new DayView(day, business.TimeZone, bookings, LocalTime.LocalDateOf(now, business.TimeZone));
     }
 
     /// <summary>One booking of this business as the day view shows it, or null (unknown id, or another business's booking).</summary>

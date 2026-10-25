@@ -169,6 +169,19 @@ Console.WriteLine("Policy");
     Check("no-show needs the grace period",
         !BookingPolicy.CanMarkNoShow(BookingStatus.Confirmed, start, start.AddMinutes(10)).Allowed
         && BookingPolicy.CanMarkNoShow(BookingStatus.Confirmed, start, start.AddMinutes(15)).Allowed);
+    // With the business time zone, completed and no-show are for the day of the appointment only (Manila is UTC+8).
+    Check("complete and no-show work on the day of the appointment",
+        BookingPolicy.CanMarkCompleted(BookingStatus.Confirmed, start, start.AddMinutes(10), "Asia/Manila").Allowed
+        && BookingPolicy.CanMarkNoShow(BookingStatus.Confirmed, start, start.AddMinutes(20), "Asia/Manila").Allowed);
+    Check("cannot complete or mark no-show the next day",
+        !BookingPolicy.CanMarkCompleted(BookingStatus.Confirmed, start, start.AddDays(1), "Asia/Manila").Allowed
+        && !BookingPolicy.CanMarkNoShow(BookingStatus.Confirmed, start, start.AddDays(1), "Asia/Manila").Allowed);
+    Check("the day is the local day, not the UTC day",
+        // 23:30 UTC is already the next day in Manila, so an appointment at 15:00 UTC (23:00 Manila) is still "today" at 15:30 UTC.
+        BookingPolicy.CanMarkCompleted(BookingStatus.Confirmed, new DateTime(2030, 3, 4, 15, 0, 0, DateTimeKind.Utc),
+            new DateTime(2030, 3, 4, 15, 30, 0, DateTimeKind.Utc), "Asia/Manila").Allowed
+        && !BookingPolicy.CanMarkCompleted(BookingStatus.Confirmed, new DateTime(2030, 3, 4, 15, 0, 0, DateTimeKind.Utc),
+            new DateTime(2030, 3, 4, 16, 30, 0, DateTimeKind.Utc), "Asia/Manila").Allowed);
 }
 
 Console.WriteLine("Security & slugs");

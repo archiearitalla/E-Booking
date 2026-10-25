@@ -1,4 +1,4 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
@@ -282,11 +282,11 @@ public class BookingServiceTests
         var booking = (await svc.CreateAsync(Request(shop, Manila(5, 10)))).Value!.Booking;
         var staff = BookingActor.Staff(Guid.NewGuid(), "Owner");
 
-        var stale = await svc.TransitionAsync(shop.BusinessId, booking.Id, BookingStatus.Cancelled, staff, expectedVersion: booking.Version + 1);
+        var stale = await svc.TransitionAsync(shop.BusinessId, booking.Id, BookingStatus.Cancelled, staff, reason: "test", expectedVersion: booking.Version + 1);
         Assert.Equal(FailureKind.Stale, stale.Failure);
         Assert.Equal(BookingStatus.Confirmed, (await svc.LoadSummaryAsync(shop.BusinessId, booking.Id))!.Status);
 
-        Assert.True((await svc.TransitionAsync(shop.BusinessId, booking.Id, BookingStatus.Cancelled, staff, expectedVersion: booking.Version)).IsSuccess);
+        Assert.True((await svc.TransitionAsync(shop.BusinessId, booking.Id, BookingStatus.Cancelled, staff, reason: "test", expectedVersion: booking.Version)).IsSuccess);
     }
 
     [Fact]
@@ -298,7 +298,7 @@ public class BookingServiceTests
         var staff = BookingActor.Staff(Guid.NewGuid(), "Owner");
 
         var results = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ =>
-            Task.Run(() => svc.TransitionAsync(shop.BusinessId, booking.Id, BookingStatus.Cancelled, staff, expectedVersion: booking.Version))));
+            Task.Run(() => svc.TransitionAsync(shop.BusinessId, booking.Id, BookingStatus.Cancelled, staff, reason: "test", expectedVersion: booking.Version))));
 
         Assert.Equal(1, results.Count(r => r.IsSuccess));
         Assert.Equal(1, results.Count(r => r.Failure is FailureKind.Stale or FailureKind.PolicyViolation));
@@ -379,6 +379,6 @@ public class BookingServiceTests
         var customer = await db.Customers.SingleAsync(c => c.BusinessId == shop.BusinessId);
         Assert.Equal("Juan D.", customer.Name);
         Assert.Equal("juan@example.com", customer.Email);
-        Assert.Equal("09171234567", customer.Phone); // one canonical form: +63 917… is 0917…
+        Assert.Equal("09171234567", customer.Phone); // one canonical form: +63 917â€¦ is 0917â€¦
     }
 }

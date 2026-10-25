@@ -131,6 +131,10 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+// A plain "I am awake" answer that never touches the database. A free uptime monitor can call it every few minutes
+// so the hosting does not put the app to sleep, without keeping the database awake.
+app.MapGet("/ping", () => Results.Text("ok"));
+
 app.MapGet("/healthz", async (IDbContextFactory<AppDbContext> factory, CancellationToken ct) =>
 {
     using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);

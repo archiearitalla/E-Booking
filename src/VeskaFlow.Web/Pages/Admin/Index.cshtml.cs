@@ -74,7 +74,7 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
         if (result.Failure == FailureKind.NotFound) return NotFound();
 
         if (result.IsSuccess) Success = Text.BookingUpdated;
-        else Failure = result.Message;
+        else Failure = result.FieldErrors.GetValueOrDefault("reason") ?? result.Message;
 
         // Right after "Mark completed", open the page to message the customer, save the contact and set a follow-up.
         if (result.IsSuccess && target == BookingStatus.Completed) return RedirectToPage("/Admin/AfterVisit", new { id });

@@ -35,21 +35,36 @@ public static class BookingPolicy
         return PolicyResult.Ok();
     }
 
-    public static PolicyResult CanMarkCompleted(BookingStatus status, DateTime startsAtUtc, DateTime nowUtc)
+    public const string NotToday = "Only today's bookings can be marked. This booking is on another day.";
+
+    /// <summary>
+    /// Completed: only from confirmed, only after the start time, and (when the business time zone is given) only on the
+    /// day of the appointment: not the day before, not the day after.
+    /// </summary>
+    public static PolicyResult CanMarkCompleted(BookingStatus status, DateTime startsAtUtc, DateTime nowUtc, string? timeZone = null)
     {
         if (!BookingStateMachine.CanTransition(status, BookingStatus.Completed))
             return PolicyResult.No("Only confirmed bookings can be completed.");
+        if (timeZone is not null && !IsToday(startsAtUtc, nowUtc, timeZone))
+            return PolicyResult.No(NotToday);
         if (nowUtc < startsAtUtc)
             return PolicyResult.No("The appointment has not started yet.");
         return PolicyResult.Ok();
     }
 
-    public static PolicyResult CanMarkNoShow(BookingStatus status, DateTime startsAtUtc, DateTime nowUtc)
+    /// <summary>No-show: only from confirmed, 15 minutes after the start, and (with a time zone) only on the day of the appointment.</summary>
+    public static PolicyResult CanMarkNoShow(BookingStatus status, DateTime startsAtUtc, DateTime nowUtc, string? timeZone = null)
     {
         if (!BookingStateMachine.CanTransition(status, BookingStatus.NoShow))
             return PolicyResult.No("Only confirmed bookings can be marked as no-show.");
+        if (timeZone is not null && !IsToday(startsAtUtc, nowUtc, timeZone))
+            return PolicyResult.No(NotToday);
         if (nowUtc < startsAtUtc.AddMinutes(NoShowGraceMinutes))
             return PolicyResult.No($"Wait {NoShowGraceMinutes} minutes past the start time before marking a no-show.");
         return PolicyResult.Ok();
     }
+
+    /// <summary>True when the appointment starts on the same calendar day as now, in the business time zone.</summary>
+    public static bool IsToday(DateTime startsAtUtc, DateTime nowUtc, string timeZone) =>
+        LocalTime.LocalDateOf(startsAtUtc, timeZone) == LocalTime.LocalDateOf(nowUtc, timeZone);
 }

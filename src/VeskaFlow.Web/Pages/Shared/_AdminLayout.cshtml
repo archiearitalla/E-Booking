@@ -34,7 +34,7 @@
 @if (alert.Total > 0 && !onFollowUps)
 {
     <div class="notice" role="status">
-        <a href="/Admin/FollowUps">@Text.FollowUpAlertText(alert.Overdue, alert.Soon)</a>
+        <a href="/Admin/FollowUps">@Text.FollowUpAlertText(alert.Overdue, alert.Soon, alert.Days)</a>
     </div>
 }
 

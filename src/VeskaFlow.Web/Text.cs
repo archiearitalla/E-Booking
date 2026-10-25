@@ -175,7 +175,15 @@ public static class Text
     public const string DayEmptyCancelled = "No cancelled bookings on this day.";
     public const string DayEmptyDone = "Nothing has been completed on this day yet.";
     public const string DayCount = "{0} active of {1} booking(s) on this day.";
-    public const string CancelReason = "Reason (recommended)";
+    public const string CancelReason = "Reason (required)";
+    public const string CancelReasonRequired = "Write the reason for cancelling. The customer is affected and the reason is kept in the audit log.";
+    public const string ConfirmCancelStaff = "Cancel this booking? The time becomes free and the customer is not told automatically.";
+    public const string StatusOnlyToday = "Mark completed and Mark no-show are only for today's bookings, not for another day.";
+    public const string StatusLater = "Mark completed and Mark no-show turn on when the appointment starts.";
+    public const string NoShowLater = "Mark no-show turns on 15 minutes after the appointment starts.";
+    public const string ConfirmBooking = "Book this time? You can cancel later from your booking link.";
+    public const string ConfirmCancelCustomer = "Cancel your booking? This cannot be undone.";
+    public const string ConfirmNoShow = "Mark this customer as a no-show?";
     public const string BookingUpdated = "Booking updated.";
 
     public const string ReasonTooLong = "Keep the reason to 200 characters or fewer.";
@@ -250,12 +258,19 @@ public static class Text
     public const string FollowUpServiceSame = "Same service as this visit";
     public const string AfterVisitMessageHint = "Set the follow-up date below and save it: the message above will then mention the date.";
     public const string FollowUpOpen = "Open follow-ups";
-    public static string FollowUpAlertText(int overdue, int soon) => (overdue, soon) switch
+    public static string FollowUpAlertText(int overdue, int soon, int days = 3)
     {
-        (0, _) => $"{soon} follow-up(s) due in the next 3 days. Send the customers a message.",
-        (_, 0) => $"{overdue} follow-up(s) overdue. Send the customers a message.",
-        _ => $"{overdue} follow-up(s) overdue and {soon} due in the next 3 days. Send the customers a message.",
-    };
+        var window = days == 0 ? "due today" : days == 1 ? "due today or tomorrow" : $"due in the next {days} days";
+        return (overdue, soon) switch
+        {
+            (0, _) => $"{soon} follow-up(s) {window}. Send the customers a message.",
+            (_, 0) => $"{overdue} follow-up(s) overdue. Send the customers a message.",
+            _ => $"{overdue} follow-up(s) overdue and {soon} {window}. Send the customers a message.",
+        };
+    }
+    public const string LabelFollowUpNoticeDays = "Remind me about follow-ups (days before)";
+    public const string HintFollowUpNoticeDays = "How many days before a follow-up date to show the reminder, so you can send the customer a message in time. 0 means only on the day.";
+    public const string FollowUpNoticeDaysInvalid = "Enter 0 to 60 days.";
     public const string FollowUpOverdue = "Overdue";
     public const string FollowUpToday = "Today";
     public const string FollowUpVisitOn = "visit on {0}";

@@ -249,7 +249,7 @@ public class AdminWebTests
         var booking = await BookNextFreeAsync(owner);
 
         var response = await PostAsync(owner.Client, $"/Admin?date={DateOf(booking)}", "/Admin?handler=Transition",
-            new() { ["id"] = booking.Id.ToString(), ["version"] = (booking.Version + 7).ToString(), ["action"] = "cancel", ["date"] = DateOf(booking) });
+            new() { ["id"] = booking.Id.ToString(), ["version"] = (booking.Version + 7).ToString(), ["action"] = "cancel", ["reason"] = "Barber is sick", ["date"] = DateOf(booking) });
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains(Text.BookingChanged, Dec(await owner.Client.GetStringAsync($"/Admin?date={DateOf(booking)}")));
@@ -539,6 +539,43 @@ public class AdminWebTests
         var history = Dec(await owner.Client.GetStringAsync($"/Admin/History/{customerId}"));
         Assert.Contains("Allergic to penicillin.", history);
         Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync($"/Admin/History/{Guid.NewGuid()}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Staff_cannot_cancel_a_booking_without_a_reason_and_the_buttons_ask_first()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+        var booking = await BookNextFreeAsync(owner);
+
+        // The page asks "are you sure?" and makes the reason a required field.
+        var page = Dec(await owner.Client.GetStringAsync($"/Admin?date={DateOf(booking)}"));
+        Assert.Contains($"data-confirm=\"{Text.ConfirmCancelStaff}\"", page);
+        Assert.Contains("name=\"reason\" maxlength=\"200\" required", page);
+
+        // The status buttons are always there on a confirmed booking; before the start time they are off, with the reason shown.
+        Assert.Contains(Text.ActionComplete, page);
+        Assert.Contains(Text.ActionNoShow, page);
+        Assert.Contains("value=\"complete\" class=\"primary\" disabled", page);
+        Assert.Contains(Text.StatusOnlyToday, page); // the test booking is on a future day
+
+        // A blank (or spaces-only) reason is refused on the server too, and the booking stays confirmed.
+        foreach (var blank in new[] { "", "   " })
+        {
+            var refused = await PostAsync(owner.Client, $"/Admin?date={DateOf(booking)}", $"/Admin?handler=Transition",
+                new() { ["id"] = booking.Id.ToString(), ["action"] = "cancel", ["reason"] = blank, ["date"] = DateOf(booking) });
+            Assert.Equal(HttpStatusCode.Redirect, refused.StatusCode);
+            Assert.Contains(Text.CancelReasonRequired, Dec(await owner.Client.GetStringAsync($"/Admin?date={DateOf(booking)}")));
+            await using var ctx = owner.Db.CreateDbContext();
+            Assert.Equal(BookingStatus.Confirmed, (await ctx.Bookings.SingleAsync(b => b.Id == booking.Id)).Status);
+        }
+
+        // With a reason it goes through.
+        await PostAsync(owner.Client, $"/Admin?date={DateOf(booking)}", $"/Admin?handler=Transition",
+            new() { ["id"] = booking.Id.ToString(), ["action"] = "cancel", ["reason"] = "Barber is sick", ["date"] = DateOf(booking) });
+        await using var ctx2 = owner.Db.CreateDbContext();
+        Assert.Equal(BookingStatus.Cancelled, (await ctx2.Bookings.SingleAsync(b => b.Id == booking.Id)).Status);
     }
 
     // ------------------------------------------------------------ staff, settings, about

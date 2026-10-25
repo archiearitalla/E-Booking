@@ -58,16 +58,21 @@ else
                         @if (DisplayFormat.IsPlaceholderPhone(b.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@b.CustomerPhone">@b.CustomerPhone</a></text> }</dd>
                 </dl>
 
-                @if (b.CanComplete || b.CanNoShow)
+                @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Confirmed)
                 {
+                    @* The status buttons are always visible on a confirmed booking. Before the appointment time they are
+                       switched off with the reason next to them, so staff can see what comes next. *@
                     <form method="post" asp-page-handler="Transition" class="actions">
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="version" value="@b.Version" />
                         <input type="hidden" name="date" value="@dateParam" />
                         <input type="hidden" name="status" value="@filter" />
-                        @if (b.CanComplete) { <button type="submit" name="action" value="complete" class="primary">@Text.ActionComplete</button> }
-                        @if (b.CanNoShow) { <button type="submit" name="action" value="noshow" class="secondary">@Text.ActionNoShow</button> }
+                        <button type="submit" name="action" value="complete" class="primary" disabled="@(!b.CanComplete)">@Text.ActionComplete</button>
+                        <button type="submit" name="action" value="noshow" class="secondary" disabled="@(!b.CanNoShow)" data-confirm="@Text.ConfirmNoShow">@Text.ActionNoShow</button>
                     </form>
+                    @if (!view.IsToday) { <p class="hint">@Text.StatusOnlyToday</p> }
+                    else if (!b.CanComplete) { <p class="hint">@Text.StatusLater</p> }
+                    else if (!b.CanNoShow) { <p class="hint">@Text.NoShowLater</p> }
                 }
                 @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Completed)
                 {
@@ -91,8 +96,8 @@ else
                         <input type="hidden" name="date" value="@dateParam" />
                         <input type="hidden" name="status" value="@filter" />
                         <label for="reason-@b.Id">@Text.CancelReason</label>
-                        <input type="text" id="reason-@b.Id" name="reason" maxlength="200" />
-                        <button type="submit" name="action" value="cancel" class="danger">@Text.ActionCancel</button>
+                        <input type="text" id="reason-@b.Id" name="reason" maxlength="200" required />
+                        <button type="submit" name="action" value="cancel" class="danger" data-confirm="@Text.ConfirmCancelStaff">@Text.ActionCancel</button>
                     </form>
                 }
             </li>

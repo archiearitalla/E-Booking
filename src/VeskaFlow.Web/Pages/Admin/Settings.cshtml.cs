@@ -81,7 +81,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var result = await settings.SaveSettingsAsync(BusinessId,
-            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor), ct);
+            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -107,7 +107,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         {
             Name = s.Name, TimeZone = s.TimeZone, SlotMinutes = s.SlotMinutes,
             LeadTimeMinutes = s.LeadTimeMinutes, HorizonDays = s.HorizonDays, CancelCutoffHours = s.CancelCutoffHours,
-            BrandColor = s.BrandColor,
+            BrandColor = s.BrandColor, FollowUpNoticeDays = s.FollowUpNoticeDays,
         };
     }
 
@@ -120,5 +120,6 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         public int HorizonDays { get; set; } = 30;
         public int CancelCutoffHours { get; set; } = 2;
         public string? BrandColor { get; set; } = BrandColors.Default;
+        public int? FollowUpNoticeDays { get; set; } = 3;
     }
 }

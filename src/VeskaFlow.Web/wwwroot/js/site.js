@@ -1,6 +1,14 @@
+// Asks before an action that cannot be undone (cancel, no-show): a button or form with data-confirm shows that
+// question first, and nothing is sent unless the person says yes.
+document.addEventListener('submit', function (event) {
+  var message = (event.submitter && event.submitter.getAttribute('data-confirm')) || event.target.getAttribute('data-confirm');
+  if (message && !window.confirm(message)) event.preventDefault();
+});
+
 // Prevents double submission: the first submit disables the button. The server also treats a repeated
 // submit as the same booking (idempotency key), so this is a courtesy, not the guarantee.
 document.addEventListener('submit', function (event) {
+  if (event.defaultPrevented) return; // the person answered "no" to a confirmation
   var button = event.target.querySelector('button[type="submit"].once');
   if (!button) return;
   // Disable after the browser has captured the form data for this submit.

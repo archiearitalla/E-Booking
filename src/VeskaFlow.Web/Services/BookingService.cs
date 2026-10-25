@@ -249,6 +249,11 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
         if (booking is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        // Staff must say why they cancel: the customer is affected and the audit log keeps the reason.
+        if (to == BookingStatus.Cancelled && actor.Kind == ActorKind.Staff && string.IsNullOrWhiteSpace(reason))
+            return ServiceResult<BookingSummary>.Invalid(new Dictionary<string, string> { ["reason"] = Text.CancelReasonRequired });
+
         return await ApplyTransitionAsync(db, booking, to, actor, reason, expectedVersion, ct);
     }
 
@@ -281,9 +286,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         {
             BookingStatus.Cancelled => BookingPolicy.CanCancel(from, booking.StartsAtUtc, now, actor.Kind, cutoff),
             BookingStatus.Completed when actor.Kind == ActorKind.Customer => PolicyResult.No(Text.NotAllowed),
-            BookingStatus.Completed => BookingPolicy.CanMarkCompleted(from, booking.StartsAtUtc, now),
+            BookingStatus.Completed => BookingPolicy.CanMarkCompleted(from, booking.StartsAtUtc, now, booking.LocationTimeZone),
             BookingStatus.NoShow when actor.Kind == ActorKind.Customer => PolicyResult.No(Text.NotAllowed),
-            BookingStatus.NoShow => BookingPolicy.CanMarkNoShow(from, booking.StartsAtUtc, now),
+            BookingStatus.NoShow => BookingPolicy.CanMarkNoShow(from, booking.StartsAtUtc, now, booking.LocationTimeZone),
             _ when actor.Kind == ActorKind.Customer => PolicyResult.No(Text.NotAllowed),
             _ => BookingStateMachine.CanTransition(from, to) ? PolicyResult.Ok() : PolicyResult.No(Text.NotAllowed),
         };

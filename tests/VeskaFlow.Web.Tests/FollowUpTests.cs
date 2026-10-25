@@ -35,6 +35,63 @@ public class FollowUpTests
     }
 
     [Fact]
+    public async Task The_shop_chooses_how_many_days_before_a_follow_up_it_is_reminded()
+    {
+        var s = await SetupAsync();
+        var settings = new ShopSettingsService(s.Db, s.Clock);
+        var id = await CompletedBookingAsync(s, 10, "09175550071"); // the visit is on 2030-03-05; the clock is now that day
+        var today = new DateOnly(2030, 3, 5);
+        await s.FollowUps.SetAsync(s.Owner.BusinessId, id, today.AddDays(5), null);
+
+        // The default is 3 days, so a follow-up 5 days away is not announced yet.
+        Assert.Equal(new FollowUpAlert(0, 0, 3), await s.FollowUps.AlertAsync(s.Owner.BusinessId));
+
+        async Task<ServiceResult<bool>> Notice(int? days)
+        {
+            var current = (await settings.GetSettingsAsync(s.Owner.BusinessId))!;
+            return await settings.SaveSettingsAsync(s.Owner.BusinessId, new SettingsInput(current.Name, current.TimeZone, current.SlotMinutes,
+                current.LeadTimeMinutes, current.HorizonDays, current.CancelCutoffHours, null, days));
+        }
+
+        Assert.True((await Notice(7)).IsSuccess);
+        Assert.Equal(new FollowUpAlert(0, 1, 7), await s.FollowUps.AlertAsync(s.Owner.BusinessId));
+
+        Assert.True((await Notice(0)).IsSuccess); // only on the day itself
+        Assert.Equal(new FollowUpAlert(0, 0, 0), await s.FollowUps.AlertAsync(s.Owner.BusinessId));
+        s.Clock.Now = new DateTimeOffset(Manila(10, 9), TimeSpan.Zero); // the follow-up day
+        Assert.Equal(new FollowUpAlert(0, 1, 0), await s.FollowUps.AlertAsync(s.Owner.BusinessId));
+        s.Clock.Now = new DateTimeOffset(Manila(12, 9), TimeSpan.Zero); // two days late
+        Assert.Equal(new FollowUpAlert(1, 0, 0), await s.FollowUps.AlertAsync(s.Owner.BusinessId));
+
+        Assert.Contains("followUpNoticeDays", (await Notice(61)).FieldErrors.Keys);
+        Assert.Contains("followUpNoticeDays", (await Notice(-1)).FieldErrors.Keys);
+        Assert.True((await Notice(null)).IsSuccess); // null leaves it as it was
+        Assert.Equal(0, (await settings.GetSettingsAsync(s.Owner.BusinessId))!.FollowUpNoticeDays);
+    }
+
+    [Fact]
+    public async Task A_booking_can_be_marked_completed_or_no_show_only_on_its_own_day()
+    {
+        var s = await SetupAsync();
+        var staff = BookingActor.Staff(s.Owner.AdminUserId, "Dr A");
+        var booking = (await s.Bookings.CreateAsync(new CreateBookingRequest(s.Owner.BusinessId, s.ServiceId, s.StaffId, Manila(5, 10), "Maria Santos",
+            "09175550061", null, Id("k"), BookingActor.Customer("Maria")))).Value!.Booking;
+
+        s.Clock.Now = new DateTimeOffset(Manila(6, 9), TimeSpan.Zero); // the next day
+        var late = await s.Bookings.TransitionAsync(s.Owner.BusinessId, booking.Id, BookingStatus.Completed, staff);
+        Assert.Equal(FailureKind.PolicyViolation, late.Failure);
+        Assert.Contains("today", late.Message);
+        Assert.Equal(FailureKind.PolicyViolation, (await s.Bookings.TransitionAsync(s.Owner.BusinessId, booking.Id, BookingStatus.NoShow, staff)).Failure);
+
+        var view = (await new AdminDayService(s.Db, s.Clock).GetDayAsync(s.Owner.BusinessId, new DateOnly(2030, 3, 5)))!;
+        Assert.False(view.IsToday);
+        Assert.False(view.Bookings.Single().CanComplete);
+
+        s.Clock.Now = new DateTimeOffset(Manila(5, 10, 10), TimeSpan.Zero); // its own day
+        Assert.True((await s.Bookings.TransitionAsync(s.Owner.BusinessId, booking.Id, BookingStatus.Completed, staff)).IsSuccess);
+    }
+
+    [Fact]
     public async Task A_follow_up_can_be_set_on_a_completed_booking_listed_and_marked_done()
     {
         var s = await SetupAsync();

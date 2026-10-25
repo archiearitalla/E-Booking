@@ -38,7 +38,7 @@
                             @if (followUpAlert.Total > 0)
                             {
                                 <strong>@Text.AdminNavFollowUps</strong>
-                                <p>@Text.FollowUpAlertText(followUpAlert.Overdue, followUpAlert.Soon) <a href="/Admin/FollowUps">@Text.FollowUpOpen</a></p>
+                                <p>@Text.FollowUpAlertText(followUpAlert.Overdue, followUpAlert.Soon, followUpAlert.Days) <a href="/Admin/FollowUps">@Text.FollowUpOpen</a></p>
                             }
                             @if (trialEndsNow is not null)
                             {

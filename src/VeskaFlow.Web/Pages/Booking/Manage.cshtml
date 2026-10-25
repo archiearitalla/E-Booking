@@ -57,7 +57,7 @@
     {
         <form method="post" asp-page-handler="Cancel" asp-route-token="@b.ManageToken">
             <p class="hint">@string.Format(Text.ManageCancelHint, d.CancelCutoffHours)</p>
-            <button type="submit" class="danger once">@Text.ManageCancelButton</button>
+            <button type="submit" class="danger once" data-confirm="@Text.ConfirmCancelCustomer">@Text.ManageCancelButton</button>
         </form>
     }
     else if (d.CancelRefusal is not null)

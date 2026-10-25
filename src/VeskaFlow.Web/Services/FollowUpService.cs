@@ -11,7 +11,7 @@ public sealed record FollowUpRow(
     string? FollowUpServiceName = null);
 
 /// <summary>How many follow-ups need a message soon: overdue, and due today or within the next few days.</summary>
-public sealed record FollowUpAlert(int Overdue, int Soon)
+public sealed record FollowUpAlert(int Overdue, int Soon, int Days = 3)
 {
     public int Total => Overdue + Soon;
 
@@ -25,12 +25,18 @@ public sealed record FollowUpAlert(int Overdue, int Soon)
 /// </summary>
 public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
-    /// <summary>The number of follow-ups overdue and due within <paramref name="soonDays"/> days (today included), for the bell.</summary>
-    public async Task<FollowUpAlert> AlertAsync(Guid businessId, int soonDays = 3, CancellationToken ct = default)
+    /// <summary>
+    /// The number of follow-ups overdue and due within the shop's notice days (Settings, today included), for the bell and
+    /// the strip. With 0 notice days only follow-ups due today and overdue ones are announced.
+    /// </summary>
+    public async Task<FollowUpAlert> AlertAsync(Guid businessId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var tz = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
-        if (tz is null) return new FollowUpAlert(0, 0);
+        var shop = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
+            .Select(b => new { b.TimeZone, b.FollowUpNoticeDays }).FirstOrDefaultAsync(ct);
+        if (shop is null) return new FollowUpAlert(0, 0);
+        var soonDays = shop.FollowUpNoticeDays;
+        var tz = shop.TimeZone;
 
         var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, tz);
         var limit = today.AddDays(soonDays);
@@ -38,7 +44,7 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
             .Where(b => b.BusinessId == businessId && b.FollowUpOn != null && !b.FollowUpDone
                         && b.Status == BookingStatus.Completed && b.FollowUpOn <= limit)
             .Select(b => b.FollowUpOn!.Value).ToListAsync(ct);
-        return new FollowUpAlert(dates.Count(d => d < today), dates.Count(d => d >= today));
+        return new FollowUpAlert(dates.Count(d => d < today), dates.Count(d => d >= today), soonDays);
     }
 
     /// <summary>Follow-ups not yet done, soonest first (overdue ones come first).</summary>

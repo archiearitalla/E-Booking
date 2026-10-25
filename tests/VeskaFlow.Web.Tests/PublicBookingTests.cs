@@ -96,6 +96,8 @@ public class PublicBookingTests
         var (url, start) = await FindSlotAsync(client, shop);
         var form = await client.GetStringAsync(url);
         Assert.Contains(Text.BookConfirm, form);
+        Assert.Contains($"data-confirm=\"{Text.ConfirmBooking}\"", WebUtility.HtmlDecode(form)); // asks before booking
+        Assert.Equal("ok", await client.GetStringAsync("/ping")); // the keep-awake address answers without the database
 
         var response = await client.PostAsync(url, new FormUrlEncodedContent(Customer(HiddenFields(form))));
 
