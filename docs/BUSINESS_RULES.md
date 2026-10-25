@@ -223,6 +223,12 @@ The public booking page needs no account, so anyone can use it. One person must 
 - **Bots.** The confirm form carries a hidden field that people never see; if it is filled, nothing is created and the visitor is sent back to the time list. Booking posts are also limited per client IP (`RateLimits:BookingPerMinute`, default 6).
 - **Known limit.** Someone who uses a different phone number for each booking is not caught by these rules; verifying a number needs SMS, which has no free option (section 17). The rate limit, the honeypot and the staff's ability to cancel are the remaining defences.
 
+### 8.7 QR code for the booking link ✅
+
+- Settings shows a QR code for the shop's own booking page (`/b/{slug}`), with a download as an SVG file and a Print button whose print layout shows only the code. The signed-in business id decides the shop; a request cannot ask for another shop's code.
+- The address in the code is `App:PublicBaseUrl` when set (production: `https://flow.veskacode.com`), otherwise the address the page was opened on. The code is generated on the server with no external service and the same address always gives the same image.
+
+
 ## 9. Tenancy, roles and authorization
 
 - All back-office data access is scoped by the signed-in user's `business_id`. It is taken from the authenticated principal, never from the request.

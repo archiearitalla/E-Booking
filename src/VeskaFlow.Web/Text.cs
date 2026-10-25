@@ -33,6 +33,11 @@ public static class Text
     public const string IndustrySalon = "Salon";
     public const string IndustryClinic = "Clinic";
     public const string IndustryInvalid = "Choose one of the listed types.";
+    public const string QrTitle = "QR code for your booking page";
+    public const string QrHelp = "Customers scan this with their phone camera to open your booking page. Print it for the counter, the door or a flyer.";
+    public const string QrDownload = "Download QR (SVG)";
+    public const string QrPrint = "Print";
+    public const string QrAlt = "QR code that opens {0}";
     public const string AlreadyBookedThatTime = "This number already has a booking that overlaps this time. Pick another time, or cancel the other booking first.";
     public const string TooManyActiveBookings = "This number already has {0} upcoming bookings with this shop. Cancel one first, or contact the shop.";
     public const string TrialEndedTitle ="Your free trial has ended";

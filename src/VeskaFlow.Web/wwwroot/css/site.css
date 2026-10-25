@@ -535,3 +535,18 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 
 /* Honeypot field on the public booking form: off screen, never shown, not reachable by keyboard */
 .hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+/* Booking page QR code (Settings) */
+
+.qr-box { width: min(18rem, 100%); margin: 0.75rem auto; padding: 0.5rem; background: #ffffff; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.qr-box svg { display: block; width: 100%; height: auto; }
+.qr-url { text-align: center; overflow-wrap: anywhere; margin-bottom: 0.75rem; }
+.qr-actions { justify-content: center; }
+
+@media print {
+  body * { visibility: hidden; }
+  .qr-print, .qr-print * { visibility: visible; }
+  .qr-print { position: absolute; left: 0; top: 0; width: 100%; border: 0; box-shadow: none; background: #ffffff; color: #000000; text-align: center; }
+  .qr-print .muted, .qr-actions { display: none; }
+  .qr-box { width: 14cm; border: 0; }
+}

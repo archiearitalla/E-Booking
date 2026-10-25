@@ -12,6 +12,17 @@
     </dl>
 </div>
 
+<div class="card qr-print">
+    <h2>@Text.QrTitle</h2>
+    <p class="muted">@Text.QrHelp</p>
+    <div class="qr-box" role="img" aria-label="@string.Format(Text.QrAlt, Model.BookingUrl)">@Html.Raw(Model.QrSvg)</div>
+    <p class="qr-url"><code>@Model.BookingUrl</code></p>
+    <div class="actions qr-actions">
+        <a class="button" href="/Admin/Settings?handler=Qr">@Text.QrDownload</a>
+        <button type="button" class="secondary" data-print>@Text.QrPrint</button>
+    </div>
+</div>
+
 <div class="card">
     <form method="post" novalidate>
         @if (Model.Errors.Count > 0) { <div class="alert" role="alert">@Text.ValidationFailed</div> }

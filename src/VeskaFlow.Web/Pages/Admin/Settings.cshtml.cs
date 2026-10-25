@@ -3,19 +3,40 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin;
 
-public class SettingsModel(ShopSettingsService settings) : AdminPageModel
+public class SettingsModel(ShopSettingsService settings, IConfiguration config) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();
 
     public string Slug { get; private set; } = "";
     public string Plan { get; private set; } = "";
 
+    /// <summary>The shop's booking page address and its QR code (an SVG that scales to any size).</summary>
+    public string BookingUrl { get; private set; } = "";
+    public string QrSvg { get; private set; } = "";
+
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         var current = await settings.GetSettingsAsync(BusinessId, ct);
         if (current is null) return NotFound();
         Apply(current);
+        BuildQr();
         return Page();
+    }
+
+    /// <summary>Downloads the QR code as an SVG file for printing (signage, flyers, a table card).</summary>
+    public async Task<IActionResult> OnGetQrAsync(CancellationToken ct)
+    {
+        var current = await settings.GetSettingsAsync(BusinessId, ct);
+        if (current is null) return NotFound();
+        Apply(current);
+        BuildQr();
+        return File(System.Text.Encoding.UTF8.GetBytes(QrSvg), "image/svg+xml", $"{Slug}-booking-qr.svg");
+    }
+
+    private void BuildQr()
+    {
+        BookingUrl = QrCodes.BookingUrl(config["App:PublicBaseUrl"], Request.Scheme, Request.Host.Value, Slug);
+        QrSvg = QrCodes.Svg(BookingUrl);
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
@@ -30,6 +51,7 @@ public class SettingsModel(ShopSettingsService settings) : AdminPageModel
             var current = await settings.GetSettingsAsync(BusinessId, ct);
             Slug = current?.Slug ?? "";
             Plan = current?.Plan ?? "";
+            BuildQr();
             return Page(); // keep what was typed
         }
 

@@ -14,5 +14,7 @@ services:
         value: "true"
       - key: Trial__Days
         value: "30"
+      - key: App__PublicBaseUrl
+        value: "https://flow.veskacode.com"   # the address printed in QR codes; leave blank to use the address the page was opened on
       - key: Database__MigrateOnStartup
         value: "true"

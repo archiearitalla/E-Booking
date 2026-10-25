@@ -29,3 +29,8 @@ document.addEventListener('keydown', function (event) {
   if (event.key !== 'Escape') return;
   document.querySelectorAll('details.bell[open]').forEach(function (d) { d.removeAttribute('open'); });
 });
+
+// "Print" button on the Settings page (the print stylesheet shows only the QR code).
+document.addEventListener('click', function (event) {
+  if (event.target.closest('[data-print]')) window.print();
+});
