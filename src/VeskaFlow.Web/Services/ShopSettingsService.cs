@@ -167,6 +167,10 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
             && !await db.StaffMembers.AnyAsync(s => s.Id == staffId && s.BusinessId == businessId, ct))
             return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
+        if (input.StartTime is { } ws && input.EndTime is { } we && input.FromDate == input.ToDate
+            && !await TouchesOpeningHoursAsync(db, businessId, input.StaffId, [(short)input.FromDate.DayOfWeek], ws, we, ct))
+            return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["startTime"] = Text.ClosureOutsideHours });
+
         var zone = LocalTime.Zone(business.TimeZone);
         var start = input.StartTime is { } s
             ? LocalTime.ToUtc(input.FromDate.ToDateTime(s), zone)
@@ -245,6 +249,10 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.StaffId is { } staffId && !await db.StaffMembers.AnyAsync(s => s.Id == staffId && s.BusinessId == businessId, ct))
             return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
+        if (input.StartTime is { } ws && input.EndTime is { } we
+            && !await TouchesOpeningHoursAsync(db, businessId, input.StaffId, input.DayOfWeek is { } d ? [(short)d] : null, ws, we, ct))
+            return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["startTime"] = Text.ClosureOutsideHours });
+
         var rule = new WeeklyClosure { BusinessId = businessId, StaffId = input.StaffId, DayOfWeek = (short?)input.DayOfWeek, Reason = reason, StartTime = input.StartTime, EndTime = input.EndTime };
         db.WeeklyClosures.Add(rule);
         try
@@ -274,6 +282,28 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var removed = await db.WeeklyClosures.Where(c => c.Id == id && c.BusinessId == businessId).ExecuteDeleteAsync(ct);
         return removed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(true);
+    }
+
+    /// <summary>
+    /// True when the time window overlaps the opening hours of the chosen person (or of anyone in the shop) on one of the
+    /// given weekdays (any weekday when null). A closure outside the opening hours would close nothing, so it is refused.
+    /// </summary>
+    private static async Task<bool> TouchesOpeningHoursAsync(
+        AppDbContext db, Guid businessId, Guid? staffId, short[]? days, TimeOnly start, TimeOnly end, CancellationToken ct)
+    {
+        var query = db.WorkingHours.AsNoTracking()
+            .Where(h => db.StaffMembers.Any(s => s.Id == h.StaffId && s.BusinessId == businessId && (staffId == null || s.Id == staffId)));
+        if (days is not null) query = query.Where(h => days.Contains(h.DayOfWeek));
+        var windows = await query.Select(h => new { h.OpenTime, h.CloseTime }).ToListAsync(ct);
+
+        static int Minutes(TimeOnly t) => t.Hour * 60 + t.Minute;
+        return windows.Any(w =>
+        {
+            var open = Minutes(w.OpenTime);
+            var close = Minutes(w.CloseTime);
+            if (close <= open) close += 1440; // runs past midnight
+            return Minutes(start) < close && Minutes(end) > open;
+        });
     }
 
     private static Task<int> CountAffectedAsync(AppDbContext db, Guid businessId, Guid? staffId, DateTime start, DateTime end, CancellationToken ct) =>

@@ -278,6 +278,7 @@ public static class Text
     public const string ClosureFromTime = "From (time, optional)";
     public const string ClosureToTime = "Until (time, optional)";
     public const string ClosureTimeHint = "Leave both times empty to close the whole day. Fill both to close only that part of the day, for example a lunch break.";
+    public const string ClosureOutsideHours = "That time is outside your opening hours, so it would not close anything. Choose a time inside your opening hours (see Settings).";
     public const string ClosureTimesBoth = "Fill in both times, or leave both empty.";
     public const string ClosureTimesOrder = "The end time must be after the start time.";
     public const string ClosureTurnOn = "Turn on";

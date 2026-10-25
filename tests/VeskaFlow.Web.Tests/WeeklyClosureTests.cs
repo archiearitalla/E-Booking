@@ -141,6 +141,25 @@ public class WeeklyClosureTests
     }
 
     [Fact]
+    public async Task A_closure_time_outside_the_opening_hours_is_refused()
+    {
+        var s = await SetupAsync(); // starter hours are Monday to Saturday 9 AM to 6 PM
+        var night = await s.Settings.AddWeeklyClosureAsync(s.Owner.BusinessId,
+            new WeeklyClosureInput(null, null, null, new TimeOnly(1, 0), new TimeOnly(7, 0)));
+        Assert.Contains("startTime", night.FieldErrors.Keys);
+
+        // Sunday has no opening hours at all, so a window on Sunday closes nothing either.
+        Assert.Contains("startTime", (await s.Settings.AddWeeklyClosureAsync(s.Owner.BusinessId,
+            new WeeklyClosureInput(null, (int)DayOfWeek.Sunday, null, new TimeOnly(10, 0), new TimeOnly(12, 0)))).FieldErrors.Keys);
+        Assert.Contains("startTime", (await s.Settings.AddClosureAsync(s.Owner.BusinessId,
+            new ClosureInput(null, Tuesday, Tuesday, null, new TimeOnly(1, 0), new TimeOnly(7, 0)))).FieldErrors.Keys);
+
+        // A window that overlaps the opening hours, even partly, is fine.
+        Assert.True((await s.Settings.AddWeeklyClosureAsync(s.Owner.BusinessId,
+            new WeeklyClosureInput(null, null, null, new TimeOnly(7, 0), new TimeOnly(10, 0)))).IsSuccess);
+    }
+
+    [Fact]
     public async Task A_one_off_closure_can_be_a_time_window_and_times_are_validated()
     {
         var s = await SetupAsync();
