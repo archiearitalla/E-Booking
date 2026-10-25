@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record ServiceRow(Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder);
+public sealed record ServiceRow(Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null);
 
-public sealed record ServiceInput(Guid? Id, string? Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder);
+public sealed record ServiceInput(Guid? Id, string? Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null);
 
 public sealed record StaffRow(Guid Id, string Name, bool IsActive, int SortOrder, IReadOnlyList<string> ServiceNames);
 
@@ -40,7 +40,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Services.AsNoTracking().Where(s => s.BusinessId == businessId && s.Id == id)
-            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder))
+            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -53,6 +53,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         if (input.BufferMinutes is < 0 or > 240) errors["bufferMinutes"] = Text.BufferInvalid;
         if (input.Price < 0 || input.Price > 1_000_000m) errors["price"] = Text.PriceInvalid;
         if (input.SortOrder is < 0 or > 1000) errors["sortOrder"] = Text.SortOrderInvalid;
+        if (input.FollowUpDays is < 1 or > 730) errors["followUpDays"] = Text.FollowUpDaysInvalid;
         if (errors.Count > 0) return ServiceResult<Guid>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -75,6 +76,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         service.Price = Math.Round(input.Price, 2);
         service.IsActive = input.IsActive;
         service.SortOrder = input.SortOrder;
+        service.FollowUpDays = input.FollowUpDays;
         await db.SaveChangesAsync(ct);
         return ServiceResult<Guid>.Ok(service.Id);
     }
@@ -101,7 +103,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
             var service = new Service
             {
                 BusinessId = businessId, Name = suggestion.Name, DurationMinutes = suggestion.DurationMinutes,
-                Price = 0, SortOrder = Math.Min(nextSort++, 1000),
+                Price = 0, SortOrder = Math.Min(nextSort++, 1000), FollowUpDays = suggestion.FollowUpDays,
             };
             db.Services.Add(service);
             foreach (var staffId in staffIds)
@@ -115,7 +117,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     private static Task<List<ServiceRow>> ServiceRows(AppDbContext db, Guid businessId, CancellationToken ct) =>
         db.Services.AsNoTracking().Where(s => s.BusinessId == businessId)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder))
+            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays))
             .ToListAsync(ct);
 
     // ------------------------------------------------------------------ staff

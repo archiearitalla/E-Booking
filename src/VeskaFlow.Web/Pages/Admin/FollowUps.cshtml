@@ -1,0 +1,55 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.FollowUpsModel
+@{
+    ViewData["Title"] = Text.AdminNavFollowUps;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+}
+<h1>@Text.AdminNavFollowUps</h1>
+<p class="hint">@Text.FollowUpsHint</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card empty"><p>@Text.FollowUpsEmpty</p></div>
+}
+else
+{
+    <ul class="bookings">
+        @foreach (var r in Model.Rows)
+        {
+            var message = Model.MessageFor(r);
+            var hasPhone = !DisplayFormat.IsPlaceholderPhone(r.CustomerPhone);
+            <li class="card">
+                <div class="booking-head">
+                    <strong>@r.FollowUpOn.ToString("ddd, MMM d, yyyy", invariant)</strong>
+                    @if (r.Overdue) { <span class="badge off">@Text.FollowUpOverdue</span> }
+                    else if (r.DueToday) { <span class="badge">@Text.FollowUpToday</span> }
+                </div>
+                <dl class="facts">
+                    <dt>@Text.ManageWho</dt>
+                    <dd>@r.CustomerName
+                        @if (hasPhone) { <text>&middot; <a href="tel:@r.CustomerPhone">@r.CustomerPhone</a></text> }
+                        else { <span class="muted">&middot; @Text.WalkInNoPhone</span> }
+                    </dd>
+                    <dt>@Text.ManageService</dt><dd>@r.ServiceName &middot; @string.Format(Text.FollowUpVisitOn, r.VisitDate.ToString("MMM d, yyyy", invariant))</dd>
+                    @if (!string.IsNullOrEmpty(r.Note)) { <dt>@Text.FollowUpNote</dt><dd>@r.Note</dd> }
+                </dl>
+
+                <div class="field">
+                    <label for="msg-@r.BookingId">@Text.FollowUpReadyMessage</label>
+                    <textarea id="msg-@r.BookingId" rows="4" readonly>@message</textarea>
+                </div>
+                <div class="actions">
+                    <button type="button" class="secondary" data-copy="msg-@r.BookingId" data-copied="@Text.FollowUpCopied">@Text.FollowUpCopy</button>
+                    @if (hasPhone)
+                    {
+                        <a class="button" href="sms:@r.CustomerPhone?&body=@Uri.EscapeDataString(message)">@Text.FollowUpSendText</a>
+                    }
+                    <form method="post" asp-page-handler="Done">
+                        <input type="hidden" name="id" value="@r.BookingId" />
+                        <button type="submit" class="secondary">@Text.FollowUpMarkDone<span class="sr-only"> @r.CustomerName</span></button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}

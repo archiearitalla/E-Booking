@@ -30,6 +30,24 @@ document.addEventListener('keydown', function (event) {
   document.querySelectorAll('details.bell[open]').forEach(function (d) { d.removeAttribute('open'); });
 });
 
+// "Copy message" button on the Follow-ups page: copies the ready-made message next to it.
+document.addEventListener('click', function (event) {
+  var button = event.target.closest('[data-copy]');
+  if (!button) return;
+  var source = document.getElementById(button.getAttribute('data-copy'));
+  if (!source) return;
+  var done = function () {
+    var label = button.getAttribute('data-copied');
+    if (label) { var old = button.textContent; button.textContent = label; setTimeout(function () { button.textContent = old; }, 2000); }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(source.value).then(done, function () { source.select(); });
+  } else {
+    source.select();
+    try { document.execCommand('copy'); done(); } catch (e) { /* the text is selected; the person can copy it by hand */ }
+  }
+});
+
 // "Print" button on the Settings page (the print stylesheet shows only the QR code).
 document.addEventListener('click', function (event) {
   if (event.target.closest('[data-print]')) window.print();

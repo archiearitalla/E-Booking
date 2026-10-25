@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>Day view of bookings with complete, no-show and cancel. All rules live in BookingService.</summary>
-public class IndexModel(AdminDayService days, BookingService bookings) : AdminPageModel
+public class IndexModel(AdminDayService days, BookingService bookings, FollowUpService followUps) : AdminPageModel
 {
     public const string Confirmed = "confirmed";
     public const string Cancelled = "cancelled";
@@ -36,6 +36,31 @@ public class IndexModel(AdminDayService days, BookingService bookings) : AdminPa
     {
         View = await days.GetDayAsync(BusinessId, Date, ct);
         return View is null ? NotFound() : Page();
+    }
+
+    /// <summary>Sets or clears the follow-up date of a completed booking.</summary>
+    public async Task<IActionResult> OnPostFollowUpAsync(
+        Guid id, string? followUpOn, string? followUpNote, string? clear, DateOnly? date, string? status, CancellationToken ct)
+    {
+        var back = new { date = date?.ToString("yyyy-MM-dd"), status = status is Cancelled or Done ? status : null };
+
+        DateOnly? when = null;
+        if (clear is null)
+        {
+            if (!DateOnly.TryParseExact(followUpOn, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var parsed))
+            {
+                Failure = Text.FollowUpDateInvalid;
+                return RedirectToPage(back);
+            }
+            when = parsed;
+        }
+
+        var result = await followUps.SetAsync(BusinessId, id, when, followUpNote, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = when is null ? Text.FollowUpCleared : Text.FollowUpSaved;
+        else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;
+        return RedirectToPage(back);
     }
 
     public async Task<IActionResult> OnPostTransitionAsync(

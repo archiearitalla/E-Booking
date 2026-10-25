@@ -405,6 +405,36 @@ public class AdminWebTests
         Assert.Equal(14, await ctx.BusinessHours.CountAsync(h => h.BusinessId == owner.BusinessId));
     }
 
+    [Fact]
+    public async Task The_follow_ups_page_lists_a_follow_up_with_a_ready_message_and_marking_it_done_removes_it()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+
+        var empty = Dec(await owner.Client.GetStringAsync("/Admin/FollowUps"));
+        Assert.Contains(Text.FollowUpsEmpty, empty);
+
+        var booking = await BookNextFreeAsync(owner);
+        await using (var ctx = owner.Db.CreateDbContext())
+        {
+            var row = await ctx.Bookings.SingleAsync(x => x.Id == booking.Id);
+            row.Status = BookingStatus.Completed;
+            row.FollowUpOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10));
+            row.FollowUpNote = "Check the wound";
+            await ctx.SaveChangesAsync();
+        }
+
+        var page = Dec(await owner.Client.GetStringAsync("/Admin/FollowUps"));
+        Assert.Contains("Check the wound", page);
+        Assert.Contains("It is time for your follow-up", page);
+        Assert.Contains("sms:", page);
+
+        var done = await PostAsync(owner.Client, "/Admin/FollowUps", "/Admin/FollowUps?handler=Done", new() { ["id"] = booking.Id.ToString() });
+        Assert.Equal(HttpStatusCode.Redirect, done.StatusCode);
+        Assert.Contains(Text.FollowUpsEmpty, Dec(await owner.Client.GetStringAsync("/Admin/FollowUps")));
+    }
+
     // ------------------------------------------------------------ staff, settings, about
 
     [Fact]

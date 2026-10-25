@@ -54,6 +54,8 @@ public class Service
     public decimal Price { get; set; }
     public bool IsActive { get; set; } = true;
     public int SortOrder { get; set; }
+    /// <summary>Suggested days until a follow-up visit after this service. Null means no follow-up is suggested.</summary>
+    public int? FollowUpDays { get; set; }
 }
 
 public class StaffService
@@ -145,6 +147,10 @@ public class Booking
     public DateTime? CancelledAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    /// <summary>Local date (business time zone) the customer should come back. Set by staff after a completed visit.</summary>
+    public DateOnly? FollowUpOn { get; set; }
+    public string? FollowUpNote { get; set; }
+    public bool FollowUpDone { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;

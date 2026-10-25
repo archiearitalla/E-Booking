@@ -8,7 +8,8 @@ namespace VeskaFlow.Web.Services;
 public sealed record DayBooking(
     Guid Id, string StaffName, string ServiceName, string CustomerName, string CustomerPhone,
     DateTime StartsAtUtc, DateTime EndsAtUtc, BookingStatus Status, decimal Price, uint Version,
-    bool CanComplete, bool CanNoShow, bool CanCancel);
+    bool CanComplete, bool CanNoShow, bool CanCancel,
+    DateOnly? FollowUpOn = null, string? FollowUpNote = null, bool FollowUpDone = false, DateOnly? SuggestedFollowUp = null);
 
 public sealed record DayView(DateOnly Date, string TimeZone, IReadOnlyList<DayBooking> Bookings)
 {
@@ -41,6 +42,7 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
                 b.Id, StaffName = b.Staff.Name, b.ServiceNameSnapshot, CustomerName = b.Customer.Name,
                 CustomerPhone = b.Customer.Phone, b.StartsAtUtc, b.EndsAtUtc, b.Status, b.PriceSnapshot,
                 Version = EF.Property<uint>(b, "xmin"),
+                b.FollowUpOn, b.FollowUpNote, b.FollowUpDone, ServiceFollowUpDays = b.Service.FollowUpDays,
             })
             .ToListAsync(ct);
 
@@ -49,7 +51,9 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
             r.StartsAtUtc, r.EndsAtUtc, r.Status, r.PriceSnapshot, r.Version,
             BookingPolicy.CanMarkCompleted(r.Status, r.StartsAtUtc, now).Allowed,
             BookingPolicy.CanMarkNoShow(r.Status, r.StartsAtUtc, now).Allowed,
-            BookingPolicy.CanCancel(r.Status, r.StartsAtUtc, now, ActorKind.Staff, business.CancelCutoffHours).Allowed)).ToList();
+            BookingPolicy.CanCancel(r.Status, r.StartsAtUtc, now, ActorKind.Staff, business.CancelCutoffHours).Allowed,
+            r.FollowUpOn, r.FollowUpNote, r.FollowUpDone,
+            r.ServiceFollowUpDays is { } days ? LocalTime.LocalDateOf(r.StartsAtUtc, business.TimeZone).AddDays(days) : null)).ToList();
 
         return new DayView(day, business.TimeZone, bookings);
     }

@@ -34,6 +34,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.OnboardingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AuthService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopCatalogService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AdminDayService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.FollowUpService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
 

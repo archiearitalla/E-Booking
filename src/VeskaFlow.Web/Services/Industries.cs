@@ -27,7 +27,7 @@ public static class Industries
 
     public static string StarterService(string key) => All.First(i => i.Key == key).StarterService;
 
-    public sealed record SuggestedService(string Name, int DurationMinutes);
+    public sealed record SuggestedService(string Name, int DurationMinutes, int? FollowUpDays = null);
 
     /// <summary>The usual services for each kind of shop. Prices stay 0 until the owner sets them.</summary>
     public static IReadOnlyList<SuggestedService> Suggested(string? key) => key switch
@@ -39,8 +39,8 @@ public static class Industries
         ],
         "clinic" =>
         [
-            new("Consultation", 30), new("Follow-up check-up", 20), new("Dental cleaning", 45), new("Tooth extraction", 45),
-            new("Dental filling", 60), new("Braces adjustment", 30), new("Teeth whitening", 60), new("Medical certificate", 15),
+            new("Consultation", 30, 14), new("Follow-up check-up", 20), new("Dental cleaning", 45, 180), new("Tooth extraction", 45, 7),
+            new("Dental filling", 60), new("Braces adjustment", 30, 30), new("Teeth whitening", 60), new("Medical certificate", 15),
         ],
         _ =>
         [

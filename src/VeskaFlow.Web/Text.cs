@@ -198,6 +198,34 @@ public static class Text
     public const string ClosureTooLong = "A closure can last at most one year.";
     public const string ClosureDatesRequired = "Choose both a first and a last day.";
 
+    public const string AdminNavFollowUps = "Follow-ups";
+    public const string FollowUpTitle = "Follow-up visit";
+    public const string FollowUpSuggested = "Suggested from this service. Change the date or save it as it is.";
+    public const string FollowUpDate = "Come back on";
+    public const string FollowUpNote = "Note (optional)";
+    public const string FollowUpSave = "Save follow-up";
+    public const string FollowUpRemove = "Remove follow-up";
+    public const string FollowUpSaved = "Follow-up saved. It is on the Follow-ups page.";
+    public const string FollowUpCleared = "Follow-up removed.";
+    public const string FollowUpDateInvalid = "Choose a follow-up date that is not before the visit and within 2 years.";
+    public const string FollowUpOnlyCompleted = "A follow-up can only be set on a completed booking.";
+    public const string FollowUpDaysInvalid = "Enter 1 to 730 days, or leave it empty.";
+    public const string LabelFollowUpDays = "Suggested follow-up after (days, optional)";
+    public const string HintFollowUpDays = "For services that need a return visit, for example 14. After you mark a booking completed, this date is suggested. Leave empty if it does not apply.";
+    public const string FollowUpsHint = "Customers who should come back. Each has a ready-made message: copy it or send it as a text from your phone. Nothing is sent automatically.";
+    public const string FollowUpsEmpty = "No follow-ups to do. Set one after you mark a booking completed (Bookings, Done).";
+    public const string FollowUpOverdue = "Overdue";
+    public const string FollowUpToday = "Today";
+    public const string FollowUpVisitOn = "visit on {0}";
+    public const string FollowUpReadyMessage = "Ready message";
+    public const string FollowUpCopy = "Copy message";
+    public const string FollowUpCopied = "Copied";
+    public const string FollowUpSendText = "Send as text";
+    public const string FollowUpMarkDone = "Mark done";
+    public const string FollowUpDoneSaved = "Follow-up marked done.";
+    public static string FollowUpMessage(string firstName, string shop, string service, string date, string bookingUrl) =>
+        $"Hi {firstName}, this is {shop}. It is time for your follow-up for {service}, around {date}. You can pick a time that works for you here: {bookingUrl} Thank you!";
+
     public const string ServicesSuggestedAdd = "Add suggested services";
     public const string ServicesSuggestedHint = "Adds the usual services for your kind of shop. Ones you already have are skipped.";
     public const string ServicesSuggestedNone = "You already have all the suggested services.";

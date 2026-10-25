@@ -21,6 +21,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         {
             Name = row.Name, DurationMinutes = row.DurationMinutes, BufferMinutes = row.BufferMinutes,
             Price = row.Price.ToString("0.00", CultureInfo.InvariantCulture), IsActive = row.IsActive, SortOrder = row.SortOrder,
+            FollowUpDays = row.FollowUpDays,
         };
         return Page();
     }
@@ -35,7 +36,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         }
 
         var result = await catalog.SaveServiceAsync(BusinessId,
-            new ServiceInput(id, Input.Name, Input.DurationMinutes, Input.BufferMinutes, price, Input.IsActive, Input.SortOrder), ct);
+            new ServiceInput(id, Input.Name, Input.DurationMinutes, Input.BufferMinutes, price, Input.IsActive, Input.SortOrder, Input.FollowUpDays), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -57,5 +58,6 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         public string? Price { get; set; } = "0.00";
         public bool IsActive { get; set; } = true;
         public int SortOrder { get; set; }
+        public int? FollowUpDays { get; set; }
     }
 }

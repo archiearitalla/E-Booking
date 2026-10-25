@@ -379,6 +379,13 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Opening hours are set once in Settings as ONE range (opens, closes, optional break) that applies to all 7 days (`business_hour`, same shape as `working_hour`; a break is two windows on one day). Days off, such as every Sunday, are set as closures. Saving copies the range to every staff member's weekly hours, replacing them, and new staff start with it. A person's own hours can still be changed on the Staff page afterwards; later Settings saves overwrite those again.
 - The shop's opening hours are a hard limit: nothing outside them can be booked or shown as free, for customers and for walk-ins, even if a staff member's own hours are wider. A time closure outside them is refused because it would close nothing. Shops that never set opening hours (no `business_hour` rows) are not limited this way. Times are picked with hour, minute and AM/PM dropdowns (stored as 24-hour `HH:mm`).
 
+### 6.y Follow-up visits
+
+- A service may carry "suggested follow-up after N days" (1 to 730, empty = not applicable). It only suggests a date.
+- Staff can set a follow-up date (and a note up to 200 characters) on a **completed** booking, in Bookings under Done. The date may not be before the visit or more than 2 years after it. Removing it clears it. Other statuses cannot have one.
+- Admin → Follow-ups lists follow-ups not yet done, soonest first, with Overdue and Today badges. Each has a ready-made message (customer first name, shop, service, date, booking link). Staff copy it or send it as a text from their own phone (`sms:` link). The system never sends anything by itself. "Mark done" takes it off the list. All of it is scoped to the signed-in business.
+- Schema: `service.follow_up_days`, `booking.follow_up_on`, `follow_up_note`, `follow_up_done` (migration 006, additive).
+
 ### 18.2 Sign-up and the 30-day trial
 
 - Each sign-up creates its own tenant: its own business, owner login and booking link `/b/{slug}` (the slug is the public key, the owner login is the private one). Tenant isolation is unchanged.

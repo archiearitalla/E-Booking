@@ -69,6 +69,29 @@ else
                         @if (b.CanNoShow) { <button type="submit" name="action" value="noshow" class="secondary">@Text.ActionNoShow</button> }
                     </form>
                 }
+                @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Completed)
+                {
+                    <form method="post" asp-page-handler="FollowUp" class="followup-form">
+                        <input type="hidden" name="id" value="@b.Id" />
+                        <input type="hidden" name="date" value="@dateParam" />
+                        <input type="hidden" name="status" value="@filter" />
+                        @{ var fuValue = (b.FollowUpOn ?? b.SuggestedFollowUp) is { } fuDate ? DisplayFormat.DateParam(fuDate) : ""; }
+                        <h3>@Text.FollowUpTitle</h3>
+                        @if (b.FollowUpOn is null && b.SuggestedFollowUp is not null) { <p class="hint">@Text.FollowUpSuggested</p> }
+                        <div class="field">
+                            <label for="fu-@b.Id">@Text.FollowUpDate</label>
+                            <input type="date" id="fu-@b.Id" name="followUpOn" value="@fuValue" />
+                        </div>
+                        <div class="field">
+                            <label for="fun-@b.Id">@Text.FollowUpNote</label>
+                            <input type="text" id="fun-@b.Id" name="followUpNote" value="@b.FollowUpNote" maxlength="200" />
+                        </div>
+                        <div class="actions">
+                            <button type="submit" class="primary">@Text.FollowUpSave</button>
+                            @if (b.FollowUpOn is not null) { <button type="submit" name="clear" value="1" class="secondary">@Text.FollowUpRemove</button> }
+                        </div>
+                    </form>
+                }
                 @if (b.CanCancel)
                 {
                     <form method="post" asp-page-handler="Transition" class="actions cancel-form">
