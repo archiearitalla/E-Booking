@@ -5,8 +5,27 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>Day view of bookings with complete, no-show and cancel. All rules live in BookingService.</summary>
-public class IndexModel(AdminDayService days, BookingService bookings, FollowUpService followUps) : AdminPageModel
+public class IndexModel(AdminDayService days, BookingService bookings, FollowUpService followUps, ShopSettingsService settings, IConfiguration config) : AdminPageModel
 {
+    public string ShopName { get; private set; } = "";
+    public string BookingUrl { get; private set; } = "";
+
+    /// <summary>The thank-you message staff can send after a visit (first name only, so it reads naturally).</summary>
+    public string ThankYouFor(DayBooking b)
+    {
+        var first = b.CustomerName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? b.CustomerName;
+        return Text.ThankYouMessage(first, ShopName, b.ServiceName, BookingUrl);
+    }
+
+    /// <summary>Downloads the customer as a contact card (.vcf) to save to the phone's contacts.</summary>
+    public async Task<IActionResult> OnGetContactAsync(Guid id, CancellationToken ct)
+    {
+        var contact = await days.GetContactAsync(BusinessId, id, ct);
+        var shop = await settings.GetSettingsAsync(BusinessId, ct);
+        if (contact is null || shop is null) return NotFound(); // unknown id and another business's id look the same
+        return File(System.Text.Encoding.UTF8.GetBytes(ContactFile.Vcf(contact.Name, contact.Phone, contact.Email, shop.Name)),
+            "text/vcard; charset=utf-8", ContactFile.FileName(contact.Name));
+    }
     public const string Confirmed = "confirmed";
     public const string Cancelled = "cancelled";
     public const string Done = "done";
@@ -35,7 +54,11 @@ public class IndexModel(AdminDayService days, BookingService bookings, FollowUpS
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         View = await days.GetDayAsync(BusinessId, Date, ct);
-        return View is null ? NotFound() : Page();
+        var shop = await settings.GetSettingsAsync(BusinessId, ct);
+        if (View is null || shop is null) return NotFound();
+        ShopName = shop.Name;
+        BookingUrl = QrCodes.BookingUrl(config["App:PublicBaseUrl"], Request.Scheme, Request.Host.Value, shop.Slug);
+        return Page();
     }
 
     /// <summary>Sets or clears the follow-up date of a completed booking.</summary>

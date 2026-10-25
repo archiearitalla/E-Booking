@@ -219,6 +219,15 @@ public static class Text
     public const string ManageLinkLabel = "Your booking link";
     public const string ManageCopyLink = "Copy link";
     public const string ManageAddToCalendar = "Add to calendar";
+    public const string AfterVisitTitle = "After the visit";
+    public const string AfterVisitHint = "Send a thank-you from your own phone, and save the customer's contact so they are easy to find when you follow up.";
+    public const string SendByEmail = "Send by email";
+    public const string SendShare = "Share to another app";
+    public const string SaveContact = "Save contact";
+    public static string ThankYouSubject(string shop) => $"Thank you from {shop}";
+    public static string FollowUpSubject(string shop) => $"Your follow-up visit at {shop}";
+    public static string ThankYouMessage(string firstName, string shop, string service, string bookingUrl) =>
+        $"Hi {firstName}, thank you for visiting {shop} for {service}. We hope to see you again! You can book your next visit anytime here: {bookingUrl}";
     public const string FollowUpOpen = "Open follow-ups";
     public static string FollowUpAlertText(int overdue, int soon) => (overdue, soon) switch
     {

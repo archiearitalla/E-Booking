@@ -1,0 +1,26 @@
+@model VeskaFlow.Web.Pages.SendMessageModel
+@{
+    var hasPhone = !DisplayFormat.IsPlaceholderPhone(Model.Phone);
+    var hasEmail = !string.IsNullOrWhiteSpace(Model.Email);
+}
+<div class="field">
+    <label for="msg-@Model.Id">@Text.FollowUpReadyMessage</label>
+    <textarea id="msg-@Model.Id" rows="4" readonly>@Model.Message</textarea>
+</div>
+<div class="actions send-actions">
+    <button type="button" class="secondary" data-copy="msg-@Model.Id" data-copied="@Text.FollowUpCopied">@Text.FollowUpCopy</button>
+    @if (hasPhone)
+    {
+        <a class="button" href="sms:@Model.Phone?&body=@Uri.EscapeDataString(Model.Message)">@Text.FollowUpSendText</a>
+    }
+    @if (hasEmail)
+    {
+        <a class="button" href="mailto:@Model.Email?subject=@Uri.EscapeDataString(Model.Subject)&body=@Uri.EscapeDataString(Model.Message)">@Text.SendByEmail</a>
+    }
+    <button type="button" class="secondary" data-share="msg-@Model.Id" hidden>@Text.SendShare</button>
+    @if (hasPhone || hasEmail)
+    {
+        <a class="button secondary" href="@Model.ContactUrl">@Text.SaveContact</a>
+    }
+</div>
+@if (!hasPhone && !hasEmail) { <p class="hint">@Text.WalkInNoPhone</p> }

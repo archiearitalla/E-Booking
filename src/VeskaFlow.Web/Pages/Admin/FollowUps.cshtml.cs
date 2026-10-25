@@ -4,8 +4,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>Customers who should come back (follow-up visits), with a ready-made message for each. Nothing is sent automatically.</summary>
-public class FollowUpsModel(FollowUpService followUps, ShopSettingsService settings, IConfiguration config) : AdminPageModel
+public class FollowUpsModel(FollowUpService followUps, ShopSettingsService settings, AdminDayService days, IConfiguration config) : AdminPageModel
 {
+    /// <summary>Downloads the customer as a contact card (.vcf) to save to the phone's contacts.</summary>
+    public async Task<IActionResult> OnGetContactAsync(Guid id, CancellationToken ct)
+    {
+        var contact = await days.GetContactAsync(BusinessId, id, ct);
+        var shop = await settings.GetSettingsAsync(BusinessId, ct);
+        if (contact is null || shop is null) return NotFound();
+        return File(System.Text.Encoding.UTF8.GetBytes(ContactFile.Vcf(contact.Name, contact.Phone, contact.Email, shop.Name)),
+            "text/vcard; charset=utf-8", ContactFile.FileName(contact.Name));
+    }
+
     public IReadOnlyList<FollowUpRow> Rows { get; private set; } = [];
     public string ShopName { get; private set; } = "";
     public string BookingUrl { get; private set; } = "";

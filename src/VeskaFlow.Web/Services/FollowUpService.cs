@@ -7,7 +7,7 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record FollowUpRow(
     Guid BookingId, string CustomerName, string CustomerPhone, string ServiceName,
-    DateOnly VisitDate, DateOnly FollowUpOn, string? Note, bool Overdue, bool DueToday);
+    DateOnly VisitDate, DateOnly FollowUpOn, string? Note, bool Overdue, bool DueToday, string? CustomerEmail = null);
 
 /// <summary>How many follow-ups need a message soon: overdue, and due today or within the next few days.</summary>
 public sealed record FollowUpAlert(int Overdue, int Soon)
@@ -51,13 +51,13 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
         var rows = await db.Bookings.AsNoTracking()
             .Where(b => b.BusinessId == businessId && b.FollowUpOn != null && !b.FollowUpDone && b.Status == BookingStatus.Completed)
             .OrderBy(b => b.FollowUpOn).ThenBy(b => b.StartsAtUtc)
-            .Select(b => new { b.Id, CustomerName = b.Customer.Name, CustomerPhone = b.Customer.Phone, b.ServiceNameSnapshot, b.StartsAtUtc, b.FollowUpOn, b.FollowUpNote })
+            .Select(b => new { b.Id, CustomerName = b.Customer.Name, CustomerPhone = b.Customer.Phone, CustomerEmail = b.Customer.Email, b.ServiceNameSnapshot, b.StartsAtUtc, b.FollowUpOn, b.FollowUpNote })
             .ToListAsync(ct);
 
         return rows.Select(r => new FollowUpRow(
             r.Id, r.CustomerName, r.CustomerPhone, r.ServiceNameSnapshot,
             LocalTime.LocalDateOf(r.StartsAtUtc, tz), r.FollowUpOn!.Value, r.FollowUpNote,
-            r.FollowUpOn.Value < today, r.FollowUpOn.Value == today)).ToList();
+            r.FollowUpOn.Value < today, r.FollowUpOn.Value == today, r.CustomerEmail)).ToList();
     }
 
     /// <summary>

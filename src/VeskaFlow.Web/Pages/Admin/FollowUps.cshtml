@@ -34,16 +34,10 @@ else
                     @if (!string.IsNullOrEmpty(r.Note)) { <dt>@Text.FollowUpNote</dt><dd>@r.Note</dd> }
                 </dl>
 
-                <div class="field">
-                    <label for="msg-@r.BookingId">@Text.FollowUpReadyMessage</label>
-                    <textarea id="msg-@r.BookingId" rows="4" readonly>@message</textarea>
-                </div>
+                @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
+                    r.BookingId.ToString("N"), message, r.CustomerPhone, r.CustomerEmail, Text.FollowUpSubject(Model.ShopName),
+                    $"/Admin/FollowUps?handler=Contact&id={r.BookingId}"))
                 <div class="actions">
-                    <button type="button" class="secondary" data-copy="msg-@r.BookingId" data-copied="@Text.FollowUpCopied">@Text.FollowUpCopy</button>
-                    @if (hasPhone)
-                    {
-                        <a class="button" href="sms:@r.CustomerPhone?&body=@Uri.EscapeDataString(message)">@Text.FollowUpSendText</a>
-                    }
                     <form method="post" asp-page-handler="Done">
                         <input type="hidden" name="id" value="@r.BookingId" />
                         <button type="submit" class="secondary">@Text.FollowUpMarkDone<span class="sr-only"> @r.CustomerName</span></button>

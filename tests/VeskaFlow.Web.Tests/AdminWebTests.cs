@@ -430,6 +430,25 @@ public class AdminWebTests
         Assert.Contains("It is time for your follow-up", page);
         Assert.Contains("sms:", page);
 
+        // Every way to reach the customer is on the page, and their contact card can be saved to the phone.
+        Assert.Contains("Send as text", page);
+        Assert.Contains(Text.SaveContact, page);
+        var card = await owner.Client.GetAsync($"/Admin/FollowUps?handler=Contact&id={booking.Id}");
+        Assert.Equal(HttpStatusCode.OK, card.StatusCode);
+        Assert.Equal("text/vcard", card.Content.Headers.ContentType!.MediaType);
+        var vcf = await card.Content.ReadAsStringAsync();
+        Assert.Contains("FN:Juan Dela Cruz", vcf);
+        Assert.Contains("TEL;TYPE=CELL:09170000001", vcf);
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync($"/Admin/FollowUps?handler=Contact&id={Guid.NewGuid()}")).StatusCode);
+
+        // The same message tools are under a completed booking in the day view.
+        var doneView = Dec(await owner.Client.GetStringAsync($"/Admin?date={DateOf(booking)}&status=done"));
+        Assert.Contains(Text.AfterVisitTitle, doneView);
+        Assert.Contains("thank you for visiting", doneView);
+        Assert.Contains($"/Admin?handler=Contact&id={booking.Id}", doneView);
+        var card2 = await owner.Client.GetAsync($"/Admin?handler=Contact&id={booking.Id}");
+        Assert.Equal(HttpStatusCode.OK, card2.StatusCode);
+
         // A follow-up due within 3 days is announced on every back-office page and in the bell.
         var bookings = Dec(await owner.Client.GetStringAsync("/Admin"));
         Assert.Contains("1 follow-up(s) due in the next 3 days", bookings);

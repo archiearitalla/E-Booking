@@ -48,6 +48,18 @@ document.addEventListener('click', function (event) {
   }
 });
 
+// "Share to another app": only phones and browsers that support sharing show the button; the share sheet lists
+// Messenger, Viber, WhatsApp, email and so on.
+document.querySelectorAll('[data-share]').forEach(function (button) {
+  if (navigator.share) button.hidden = false;
+});
+document.addEventListener('click', function (event) {
+  var button = event.target.closest('[data-share]');
+  if (!button) return;
+  var source = document.getElementById(button.getAttribute('data-share'));
+  if (source && navigator.share) navigator.share({ text: source.value }).catch(function () { /* cancelled */ });
+});
+
 // "Print" button on the Settings page (the print stylesheet shows only the QR code).
 document.addEventListener('click', function (event) {
   if (event.target.closest('[data-print]')) window.print();

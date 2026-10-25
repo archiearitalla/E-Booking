@@ -589,3 +589,9 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .timepick { display: inline-flex; gap: 0.25rem; align-items: center; flex-wrap: nowrap; }
 .timepick select { width: auto; min-width: 0; }
 .hours-row { grid-template-columns: auto 1fr; }
+
+/* Message tools (copy, text, email, share, save contact) and the "hidden" attribute on buttons. */
+[hidden] { display: none !important; }
+.send-actions { flex-wrap: wrap; }
+.after-visit { border-top: 1px solid var(--line); margin-top: 0.75rem; padding-top: 0.75rem; }
+.after-visit textarea { width: 100%; }

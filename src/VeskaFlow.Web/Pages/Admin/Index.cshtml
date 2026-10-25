@@ -71,6 +71,13 @@ else
                 }
                 @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Completed)
                 {
+                    <div class="after-visit">
+                        <h3>@Text.AfterVisitTitle</h3>
+                        <p class="hint">@Text.AfterVisitHint</p>
+                        @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
+                            "t" + b.Id.ToString("N"), Model.ThankYouFor(b), b.CustomerPhone, b.CustomerEmail, Text.ThankYouSubject(Model.ShopName),
+                            $"/Admin?handler=Contact&id={b.Id}"))
+                    </div>
                     <form method="post" asp-page-handler="FollowUp" class="followup-form">
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="date" value="@dateParam" />
