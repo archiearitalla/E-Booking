@@ -84,6 +84,23 @@ public class Blackout
     public string? Reason { get; set; }
 }
 
+public class WeeklyClosure
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    /// <summary>Null means the whole shop.</summary>
+    public Guid? StaffId { get; set; }
+    /// <summary>0 = Sunday ... 6 = Saturday, as System.DayOfWeek. Null means every day.</summary>
+    public short? DayOfWeek { get; set; }
+    /// <summary>Local times in the business time zone. Both null means the whole day.</summary>
+    public TimeOnly? StartTime { get; set; }
+    public TimeOnly? EndTime { get; set; }
+    public string? Reason { get; set; }
+    /// <summary>Switched off, the rule stays but closes nothing.</summary>
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
 public class Customer
 {
     public Guid Id { get; set; } = Guid.NewGuid();

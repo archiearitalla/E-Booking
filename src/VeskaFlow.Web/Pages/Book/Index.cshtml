@@ -4,6 +4,7 @@
     ViewData["Title"] = Model.Shop?.Name ?? Text.BookTitle;
     var shop = Model.Shop!;
     ViewData["Theme"] = shop.BrandColor;
+    ViewData["Public"] = true;
     var invariant = System.Globalization.CultureInfo.InvariantCulture;
     var stripDays = Math.Min(shop.HorizonDays + 1, 14);
 }

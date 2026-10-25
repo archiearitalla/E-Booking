@@ -79,6 +79,39 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         return ServiceResult<Guid>.Ok(service.Id);
     }
 
+    /// <summary>
+    /// Adds the suggested services for the shop's industry that it does not have yet (matched by name, ignoring case).
+    /// New ones are linked to every current staff member so they can be booked at once. Returns how many were added.
+    /// </summary>
+    public async Task<int> AddSuggestedServicesAsync(Guid businessId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var industry = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.Industry).FirstOrDefaultAsync(ct);
+        if (industry is null) return 0;
+
+        var have = (await db.Services.AsNoTracking().Where(s => s.BusinessId == businessId).Select(s => s.Name).ToListAsync(ct))
+            .Select(n => n.Trim().ToLowerInvariant()).ToHashSet();
+        var nextSort = (await db.Services.Where(s => s.BusinessId == businessId).MaxAsync(s => (int?)s.SortOrder, ct) ?? -1) + 1;
+        var staffIds = await db.StaffMembers.Where(s => s.BusinessId == businessId).Select(s => s.Id).ToListAsync(ct);
+
+        var added = 0;
+        foreach (var suggestion in Industries.Suggested(industry))
+        {
+            if (!have.Add(suggestion.Name.ToLowerInvariant())) continue;
+            var service = new Service
+            {
+                BusinessId = businessId, Name = suggestion.Name, DurationMinutes = suggestion.DurationMinutes,
+                Price = 0, SortOrder = Math.Min(nextSort++, 1000),
+            };
+            db.Services.Add(service);
+            foreach (var staffId in staffIds)
+                db.StaffServices.Add(new StaffService { StaffId = staffId, ServiceId = service.Id, BusinessId = businessId });
+            added++;
+        }
+        if (added > 0) await db.SaveChangesAsync(ct);
+        return added;
+    }
+
     private static Task<List<ServiceRow>> ServiceRows(AppDbContext db, Guid businessId, CancellationToken ct) =>
         db.Services.AsNoTracking().Where(s => s.BusinessId == businessId)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)

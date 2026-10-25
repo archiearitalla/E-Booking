@@ -377,6 +377,44 @@ public class AdminWebTests
     }
 
     [Fact]
+    public async Task The_owner_adds_a_weekly_closure_switches_it_off_and_on_and_removes_it_on_the_one_closures_page()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+
+        var add = await PostAsync(owner.Client, "/Admin/Closures", "/Admin/Closures?handler=Add",
+            new() { ["Input.Repeat"] = "weekly", ["Input.Weekday"] = "0", ["Input.StaffId"] = "", ["Input.Reason"] = "Day off" });
+        Assert.Equal(HttpStatusCode.Redirect, add.StatusCode);
+
+        var page = Dec(await owner.Client.GetStringAsync("/Admin/Closures"));
+        Assert.Contains("Every Sunday", page);
+        Assert.Contains("Day off", page);
+        Assert.Contains(Text.ClosureTurnOff, page);
+
+        await using var ctx = owner.Db.CreateDbContext();
+        var id = await ctx.WeeklyClosures.Where(c => c.BusinessId == owner.BusinessId).Select(c => c.Id).SingleAsync();
+
+        await PostAsync(owner.Client, "/Admin/Closures", "/Admin/Closures?handler=ToggleWeekly", new() { ["id"] = id.ToString(), ["on"] = "false" });
+        var off = Dec(await owner.Client.GetStringAsync("/Admin/Closures"));
+        Assert.Contains(Text.ClosureTurnOn, off);
+        Assert.Contains(">" + Text.ClosureWeeklyOff + "<", off);
+        Assert.False(await ctx.WeeklyClosures.Where(c => c.Id == id).Select(c => c.IsActive).SingleAsync());
+
+        await PostAsync(owner.Client, "/Admin/Closures", "/Admin/Closures?handler=ToggleWeekly", new() { ["id"] = id.ToString(), ["on"] = "true" });
+        Assert.True(await ctx.WeeklyClosures.Where(c => c.Id == id).Select(c => c.IsActive).SingleAsync());
+
+        // No weekday chosen: a clear error, nothing is created.
+        var bad = await PostAsync(owner.Client, "/Admin/Closures", "/Admin/Closures?handler=Add",
+            new() { ["Input.Repeat"] = "weekly", ["Input.Weekday"] = "", ["Input.StaffId"] = "" });
+        Assert.Equal(HttpStatusCode.OK, bad.StatusCode);
+        Assert.Contains(Text.ClosureWeekdayInvalid, Dec(await bad.Content.ReadAsStringAsync()));
+
+        await PostAsync(owner.Client, "/Admin/Closures", "/Admin/Closures?handler=DeleteWeekly", new() { ["id"] = id.ToString() });
+        Assert.Equal(0, await ctx.WeeklyClosures.CountAsync(c => c.BusinessId == owner.BusinessId));
+    }
+
+    [Fact]
     public async Task Settings_can_be_saved_and_invalid_values_are_refused()
     {
         var (factory, _) = await HttpApp.StartAsync();

@@ -2,14 +2,28 @@
 @model VeskaFlow.Web.Pages.Admin.ClosuresModel
 @{
     ViewData["Title"] = Text.AdminNavClosures;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+    var weekly = Model.Input.Repeat == ClosuresModel.EveryWeek;
 }
 <h1>@Text.AdminNavClosures</h1>
 
 <div class="card">
     <h2>@Text.ClosureAdd</h2>
     <p class="hint">@Text.ClosureHint</p>
-    <form method="post" asp-page-handler="Add" novalidate>
+    <form method="post" asp-page-handler="Add" novalidate class="closure-form">
         @if (Model.Errors.Count > 0) { <div class="alert" role="alert">@Text.ValidationFailed</div> }
+
+        <fieldset class="field">
+            <legend>@Text.ClosureType</legend>
+            <label class="choice">
+                <input type="radio" name="Input.Repeat" value="@ClosuresModel.OnDates" checked="@(!weekly)" />
+                <span><strong>@Text.ClosureTypeDates</strong></span>
+            </label>
+            <label class="choice">
+                <input type="radio" name="Input.Repeat" value="@ClosuresModel.EveryWeek" checked="@weekly" />
+                <span><strong>@Text.ClosureTypeWeekly</strong></span>
+            </label>
+        </fieldset>
 
         <div class="field">
             <label for="StaffId">@Text.ClosureWho</label>
@@ -21,16 +35,46 @@
                 }
             </select>
         </div>
+
+        <div class="when-dates">
+            <div class="field">
+                <label for="FromDate">@Text.ClosureFrom</label>
+                <input type="date" id="FromDate" name="Input.FromDate" value="@Model.Input.FromDate" />
+            </div>
+            <div class="field">
+                <label for="ToDate">@Text.ClosureTo</label>
+                <input type="date" id="ToDate" name="Input.ToDate" value="@Model.Input.ToDate"
+                       aria-invalid="@(Model.ErrorFor("toDate") is null ? "false" : "true")" aria-describedby="ToDate-error" />
+                @if (Model.ErrorFor("toDate") is { } e1) { <p class="error" id="ToDate-error">@e1</p> }
+            </div>
+        </div>
+
+        <div class="when-weekly field">
+            <label for="Weekday">@Text.ClosureWeekday</label>
+            <select id="Weekday" name="Input.Weekday" aria-invalid="@(Model.ErrorFor("weekday") is null ? "false" : "true")" aria-describedby="Weekday-error">
+                <option value="@ClosuresModel.AllDays" selected="@(Model.Input.Weekday == ClosuresModel.AllDays)">@Text.ClosureEveryDay</option>
+                @foreach (var (value, label) in ClosuresModel.Weekdays)
+                {
+                    <option value="@value" selected="@(Model.Input.Weekday == value.ToString())">@label</option>
+                }
+            </select>
+            @if (Model.ErrorFor("weekday") is { } e3) { <p class="error" id="Weekday-error">@e3</p> }
+        </div>
+
+        <p class="hint">@Text.ClosureTimeHint</p>
         <div class="field">
-            <label for="FromDate">@Text.ClosureFrom</label>
-            <input type="date" id="FromDate" name="Input.FromDate" value="@Model.Input.FromDate" required />
+            <label for="StartTime">@Text.ClosureFromTime</label>
+            <input type="time" id="StartTime" name="Input.StartTime" value="@Model.Input.StartTime"
+                   aria-invalid="@(Model.ErrorFor("startTime") is null ? "false" : "true")" aria-describedby="StartTime-error" />
+            @if (Model.ErrorFor("startTime") is { } e4) { <p class="error" id="StartTime-error">@e4</p> }
         </div>
         <div class="field">
-            <label for="ToDate">@Text.ClosureTo</label>
-            <input type="date" id="ToDate" name="Input.ToDate" value="@Model.Input.ToDate" required
-                   aria-invalid="@(Model.ErrorFor("toDate") is null ? "false" : "true")" aria-describedby="ToDate-error" />
-            @if (Model.ErrorFor("toDate") is { } e1) { <p class="error" id="ToDate-error">@e1</p> }
+            <label for="EndTime">@Text.ClosureToTime</label>
+            <input type="time" id="EndTime" name="Input.EndTime" value="@Model.Input.EndTime"
+                   aria-invalid="@(Model.ErrorFor("endTime") is null ? "false" : "true")" aria-describedby="EndTime-error" />
+            @if (Model.ErrorFor("endTime") is { } e5) { <p class="error" id="EndTime-error">@e5</p> }
         </div>
+
         <div class="field">
             <label for="Reason">@Text.ClosureReason</label>
             <input type="text" id="Reason" name="Input.Reason" value="@Model.Input.Reason" maxlength="120"
@@ -41,20 +85,48 @@
     </form>
 </div>
 
-<h2>@Text.ClosureUpcoming</h2>
-@if (Model.Rows.Count == 0)
+<h2>@Text.ClosuresListTitle</h2>
+@if (Model.Rows.Count == 0 && Model.WeeklyRows.Count == 0)
 {
     <div class="card empty"><p>@Text.ClosuresEmpty</p></div>
 }
 else
 {
     <ul class="bookings">
+        @foreach (var w in Model.WeeklyRows)
+        {
+            <li class="card @(w.IsActive ? "" : "inactive")">
+                <div class="booking-head">
+                    <strong>@string.Format(Text.ClosureWeeklyBadge, ClosuresModel.DayName(w.DayOfWeek))</strong>
+                    <span class="badge">@(w.StaffName ?? Text.ClosureWholeShop)</span>
+                    @if (w.StartTime is not null) { <span class="badge">@ClosuresModel.TimeText(w.StartTime, w.EndTime)</span> }
+                    @if (!w.IsActive) { <span class="badge off">@Text.ClosureWeeklyOff</span> }
+                </div>
+                @if (!string.IsNullOrEmpty(w.Reason)) { <p class="muted">@w.Reason</p> }
+                @if (w.AffectedBookings > 0)
+                {
+                    <p class="warn" role="status">@string.Format(Text.ClosureWeeklyAffected, w.AffectedBookings) <a href="/Admin">@Text.ClosureReview</a></p>
+                }
+                <div class="actions">
+                    <form method="post" asp-page-handler="ToggleWeekly">
+                        <input type="hidden" name="id" value="@w.Id" />
+                        <input type="hidden" name="on" value="@((!w.IsActive).ToString().ToLowerInvariant())" />
+                        <button type="submit" class="secondary">@(w.IsActive ? Text.ClosureTurnOff : Text.ClosureTurnOn)<span class="sr-only"> @ClosuresModel.DayName(w.DayOfWeek)</span></button>
+                    </form>
+                    <form method="post" asp-page-handler="DeleteWeekly">
+                        <input type="hidden" name="id" value="@w.Id" />
+                        <button type="submit" class="secondary">@Text.ClosureRemove<span class="sr-only"> @ClosuresModel.DayName(w.DayOfWeek)</span></button>
+                    </form>
+                </div>
+            </li>
+        }
         @foreach (var c in Model.Rows)
         {
             <li class="card">
                 <div class="booking-head">
-                    <strong>@c.FromDate.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)@(c.ToDate != c.FromDate ? " – " + c.ToDate.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture) : "")</strong>
+                    <strong>@c.FromDate.ToString("MMM d, yyyy", invariant)@(c.ToDate != c.FromDate ? " – " + c.ToDate.ToString("MMM d, yyyy", invariant) : "")</strong>
                     <span class="badge">@(c.StaffName ?? Text.ClosureWholeShop)</span>
+                    @if (c.StartTime is not null) { <span class="badge">@ClosuresModel.TimeText(c.StartTime, c.EndTime)</span> }
                 </div>
                 @if (!string.IsNullOrEmpty(c.Reason)) { <p class="muted">@c.Reason</p> }
                 @if (c.AffectedBookings > 0)
@@ -66,7 +138,7 @@ else
                 }
                 <form method="post" asp-page-handler="Delete">
                     <input type="hidden" name="id" value="@c.Id" />
-                    <button type="submit" class="secondary">@Text.ClosureRemove<span class="sr-only"> @c.FromDate.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture)</span></button>
+                    <button type="submit" class="secondary">@Text.ClosureRemove<span class="sr-only"> @c.FromDate.ToString("MMM d", invariant)</span></button>
                 </form>
             </li>
         }

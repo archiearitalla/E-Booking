@@ -135,7 +135,7 @@ Configurable per business unless noted. Defaults apply to new businesses.
 **How a free slot is decided** (all must be true):
 
 1. The start is inside one of the staff member's windows for that weekday, and `start + duration` fits before the window closes. The buffer may extend past closing time.
-2. It does not overlap a blackout (shop-wide or this staff member).
+2. It does not overlap a blackout (shop-wide or this staff member). A blackout is either a one-off closure (a date range) or a **weekly closure**: a closed weekday that repeats every week, for the whole shop or one staff member, with an on/off switch. A weekly closure that is on closes that whole local day (walk-ins included); switched off it closes nothing but stays in the list. Closing a day never cancels bookings; the page says how many upcoming bookings fall on it. One page (Closures) lists both kinds together.
 3. `[start, start + duration + buffer)` does not overlap any active booking's occupied range. Back-to-back is allowed: a range ending exactly when another starts is not an overlap.
 4. `start ≥ now + lead time` and `start ≤ now + horizon`.
 5. The staff member is active and offers the service.
@@ -369,6 +369,13 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 - A business has an `industry`: `barbershop`, `salon` or `clinic`, chosen at sign-up.
 - The industry only chooses the starter service (Haircut, Haircut and styling, Consultation). It never changes the booking rules in sections 5 to 8 or the invariants in section 4. Everything can be edited afterwards.
+- Admin → Services has "Add suggested services": it adds the usual services for the industry that the shop does not have yet (matched by name, ignoring case; prices start at 0), links them to all current staff, and never changes or removes existing ones. Running it twice adds nothing the second time.
+
+### 6.x Closure times (added with weekly closures)
+
+- A one-off closure can have a start and an end time (both or neither): it then runs from the first day at the start time to the last day at the end time (business time zone). Without times it closes whole days.
+- A repeating closure can be for one weekday or every day, and for the whole day or a time window such as 12:00 to 13:00 (a lunch break). It can be switched off and on. Times are local wall-clock times in the business time zone.
+- Existing bookings are never cancelled; the owner is told how many fall inside.
 
 ### 18.2 Sign-up and the 30-day trial
 

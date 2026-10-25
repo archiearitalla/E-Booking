@@ -156,4 +156,20 @@ Deployed to Render (free, Singapore, built from the `Dockerfile`) with Neon (Fre
 
 The first two attempts failed: the connection string was pasted in URL form (Npgsql cannot read it, and the old code echoed it into the log, so the Neon password was reset), and the service had been created in Oregon instead of Singapore. Both are fixed and recorded in `docs/DEPLOY.md`. Blueprint Auto Sync is set to No, so a push does not redeploy by itself; use Manual Deploy or Manual sync.
 
-Still open: the custom domain `book.<domain>` and the Cloudflare record, a registration and booking run on a real phone against the live link, the `pg_dump` backup and one restore, a first-request time after idle (not measured), and behaviour behind the Cloudflare proxy.
+Still open: a registration and booking run on a real phone against the live link, the `pg_dump` backup and one restore, a first-request time after idle (not measured), and behaviour behind the Cloudflare proxy. The custom domain `flow.veskacode.com` is set up (DNS only) and answers over HTTPS.
+
+## Features added after Step 8 (all in `main`; Web tests 124 of 124 on PostgreSQL 16.11 unless noted)
+
+| Feature | Rules | Verified | Not verified |
+|---|---|---|---|
+| Trial lapse: after the 30 days the back office is locked and the public page closed; nothing deleted | 18.2 | tests, browser on localhost | live deploy |
+| A trial has no staff limit | 18.2, 12 | tests | live deploy |
+| Walk-in form at `/Admin/WalkIn`, phone optional | 8.2 | tests, browser on localhost | Safari, real phone |
+| Limits on the open booking page: one person, overlap, cap of 2, honeypot, rate limit | 8.6 | tests including parallel requests, real app on localhost | a person using a different number each time is not caught |
+| QR code for the booking link in Settings (download SVG, print) | 8.7 | tests | scanning a printed code with a real phone |
+| Bookings filter: Confirmed (default), Cancelled, Done | | tests, browser on localhost | live deploy |
+| Closed days that repeat every week (on/off switch), one Closures page for both kinds | 6 | tests; migration `004_weekly_closure.sql` applied to the test database | the Closures page in a browser, Neon, live deploy |
+| Versioned CSS and JS URLs, so a deploy is never served stale files | | test | |
+| Name moved from every page to About; header bell for the trial | | tests, browser on localhost | |
+
+Not built yet: customer messages (confirmation and reminder links), customer list and export, reports, reschedule, MANAGER and STAFF roles, logo and cover photo, online payment, SMS.

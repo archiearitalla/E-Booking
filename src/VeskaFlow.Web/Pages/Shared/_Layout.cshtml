@@ -13,7 +13,11 @@
     <header class="site-header">
         <a class="brand" href="/">@Text.AppName</a>
         <nav aria-label="Main">
-            @if (User.Identity?.IsAuthenticated == true)
+            @if (ViewData["Public"] is true)
+            {
+                @* Customer pages: never show the owner's Dashboard or Sign out, even on a device where the owner is signed in. *@
+            }
+            else if (User.Identity?.IsAuthenticated == true)
             {
                 @if (User.TrialEndsForBell(Context.Items) is { } trialEnds)
                 {

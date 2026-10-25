@@ -31,9 +31,20 @@ public static class BrandColors
     public static string Normalize(string? key) => IsValid(key) ? key! : Default;
 }
 
-public sealed record ClosureRow(Guid Id, Guid? StaffId, string? StaffName, DateOnly FromDate, DateOnly ToDate, string? Reason, int AffectedBookings);
+/// <summary>A one-off closure. With <c>StartTime</c>/<c>EndTime</c> it runs from the first day at the start time to the last day at the end time; without them it closes whole days.</summary>
+public sealed record ClosureRow(Guid Id, Guid? StaffId, string? StaffName, DateOnly FromDate, DateOnly ToDate, string? Reason, int AffectedBookings,
+    TimeOnly? StartTime = null, TimeOnly? EndTime = null);
 
-public sealed record ClosureInput(Guid? StaffId, DateOnly FromDate, DateOnly ToDate, string? Reason);
+public sealed record ClosureInput(Guid? StaffId, DateOnly FromDate, DateOnly ToDate, string? Reason, TimeOnly? StartTime = null, TimeOnly? EndTime = null);
+
+/// <summary>
+/// A closure that repeats: on one weekday or every day (<c>DayOfWeek</c> null), for the whole day or a time window
+/// (<c>StartTime</c>/<c>EndTime</c>). <c>AffectedBookings</c> counts upcoming active bookings inside it (never cancelled).
+/// </summary>
+public sealed record WeeklyClosureRow(Guid Id, Guid? StaffId, string? StaffName, short? DayOfWeek, string? Reason, bool IsActive, int AffectedBookings,
+    TimeOnly? StartTime = null, TimeOnly? EndTime = null);
+
+public sealed record WeeklyClosureInput(Guid? StaffId, int? DayOfWeek, string? Reason, TimeOnly? StartTime = null, TimeOnly? EndTime = null);
 
 /// <summary>Business settings and closures (blackouts). Business id always comes from the signed-in user.</summary>
 public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
@@ -120,9 +131,14 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         foreach (var r in rows)
         {
             var affected = await CountAffectedAsync(db, businessId, r.StaffId, r.StartsAtUtc, r.EndsAtUtc, ct);
+            var localStart = LocalTime.ToLocal(r.StartsAtUtc, business.TimeZone);
+            var localEnd = LocalTime.ToLocal(r.EndsAtUtc, business.TimeZone);
+            // A closure that does not begin and end at midnight is a time window.
+            var isWindow = localStart.TimeOfDay != TimeSpan.Zero || localEnd.TimeOfDay != TimeSpan.Zero;
             result.Add(new ClosureRow(r.Id, r.StaffId, r.StaffName,
-                LocalTime.LocalDateOf(r.StartsAtUtc, business.TimeZone),
-                LocalTime.LocalDateOf(r.EndsAtUtc.AddMinutes(-1), business.TimeZone), r.Reason, affected));
+                DateOnly.FromDateTime(localStart),
+                DateOnly.FromDateTime(isWindow ? localEnd : localEnd.AddMinutes(-1)), r.Reason, affected,
+                isWindow ? TimeOnly.FromDateTime(localStart) : null, isWindow ? TimeOnly.FromDateTime(localEnd) : null));
         }
         return result;
     }
@@ -138,6 +154,9 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (reason is { Length: > 120 }) errors["reason"] = Text.ReasonTooLong;
         if (input.ToDate < input.FromDate) errors["toDate"] = Text.ClosureRangeInvalid;
         else if (input.ToDate.DayNumber - input.FromDate.DayNumber > 365) errors["toDate"] = Text.ClosureTooLong;
+        if ((input.StartTime is null) != (input.EndTime is null)) errors["startTime"] = Text.ClosureTimesBoth;
+        else if (input.StartTime is { } st && input.EndTime is { } et && input.FromDate == input.ToDate && et <= st)
+            errors["endTime"] = Text.ClosureTimesOrder;
         if (errors.Count > 0) return ServiceResult<SaveOutcome>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -148,8 +167,13 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
             && !await db.StaffMembers.AnyAsync(s => s.Id == staffId && s.BusinessId == businessId, ct))
             return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
-        var start = LocalTime.DayRangeUtc(input.FromDate, business.TimeZone).StartUtc;
-        var end = LocalTime.DayRangeUtc(input.ToDate, business.TimeZone).EndUtc;
+        var zone = LocalTime.Zone(business.TimeZone);
+        var start = input.StartTime is { } s
+            ? LocalTime.ToUtc(input.FromDate.ToDateTime(s), zone)
+            : LocalTime.DayRangeUtc(input.FromDate, business.TimeZone).StartUtc;
+        var end = input.EndTime is { } e
+            ? LocalTime.ToUtc(input.ToDate.ToDateTime(e), zone)
+            : LocalTime.DayRangeUtc(input.ToDate, business.TimeZone).EndUtc;
         var blackout = new Blackout { BusinessId = businessId, StaffId = input.StaffId, StartsAtUtc = start, EndsAtUtc = end, Reason = reason };
         db.Blackouts.Add(blackout);
         await db.SaveChangesAsync(ct);
@@ -161,6 +185,94 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var removed = await db.Blackouts.Where(b => b.Id == id && b.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        return removed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(true);
+    }
+
+    // ------------------------------------------------------------------ weekly closures (closed every Sunday, and so on)
+
+    /// <summary>All weekly closures, Monday first, switched-off ones included (they show as off).</summary>
+    public async Task<IReadOnlyList<WeeklyClosureRow>> ListWeeklyClosuresAsync(Guid businessId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var business = await db.Businesses.AsNoTracking().FirstOrDefaultAsync(b => b.Id == businessId, ct);
+        if (business is null) return [];
+
+        var rules = await db.WeeklyClosures.AsNoTracking().Where(c => c.BusinessId == businessId)
+            .Select(c => new
+            {
+                c.Id, c.StaffId, c.DayOfWeek, c.Reason, c.IsActive, c.StartTime, c.EndTime,
+                StaffName = c.StaffId == null ? null : db.StaffMembers.Where(s => s.Id == c.StaffId).Select(s => s.Name).FirstOrDefault(),
+            })
+            .ToListAsync(ct);
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var upcoming = await db.Bookings.AsNoTracking()
+            .Where(b => b.BusinessId == businessId && b.StartsAtUtc > now
+                && (b.Status == BookingStatus.Held || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
+            .Select(b => new { b.StaffId, b.StartsAtUtc, b.EndsAtUtc })
+            .ToListAsync(ct);
+        var local = upcoming.Select(b =>
+        {
+            var s = LocalTime.ToLocal(b.StartsAtUtc, business.TimeZone);
+            var e = LocalTime.ToLocal(b.EndsAtUtc, business.TimeZone);
+            return (b.StaffId, Day: (short)s.DayOfWeek, Start: TimeOnly.FromDateTime(s), End: e.Date == s.Date ? TimeOnly.FromDateTime(e) : TimeOnly.MaxValue);
+        }).ToList();
+
+        return rules
+            .OrderBy(r => r.DayOfWeek is null ? -1 : (r.DayOfWeek.Value + 6) % 7).ThenBy(r => r.StartTime).ThenBy(r => r.StaffName ?? "")
+            .Select(r => new WeeklyClosureRow(r.Id, r.StaffId, r.StaffName, r.DayOfWeek, r.Reason, r.IsActive,
+                r.IsActive
+                    ? local.Count(w => (r.DayOfWeek is null || w.Day == r.DayOfWeek) && (r.StaffId == null || w.StaffId == r.StaffId)
+                        && (r.StartTime is null || (w.Start < r.EndTime && w.End > r.StartTime)))
+                    : 0,
+                r.StartTime, r.EndTime))
+            .ToList();
+    }
+
+    /// <summary>Adds a closed day that repeats every week. Existing bookings are not cancelled; the outcome says how many fall on that day.</summary>
+    public async Task<ServiceResult<SaveOutcome>> AddWeeklyClosureAsync(Guid businessId, WeeklyClosureInput input, CancellationToken ct = default)
+    {
+        var errors = new Dictionary<string, string>();
+        var reason = string.IsNullOrWhiteSpace(input.Reason) ? null : input.Reason.Trim();
+        if (reason is { Length: > 120 }) errors["reason"] = Text.ReasonTooLong;
+        if (input.DayOfWeek is < 0 or > 6) errors["weekday"] = Text.ClosureWeekdayInvalid;
+        if ((input.StartTime is null) != (input.EndTime is null)) errors["startTime"] = Text.ClosureTimesBoth;
+        else if (input.StartTime is { } st && input.EndTime is { } et && et <= st) errors["endTime"] = Text.ClosureTimesOrder;
+        if (errors.Count > 0) return ServiceResult<SaveOutcome>.Invalid(errors);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Businesses.AnyAsync(b => b.Id == businessId, ct)) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (input.StaffId is { } staffId && !await db.StaffMembers.AnyAsync(s => s.Id == staffId && s.BusinessId == businessId, ct))
+            return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        var rule = new WeeklyClosure { BusinessId = businessId, StaffId = input.StaffId, DayOfWeek = (short?)input.DayOfWeek, Reason = reason, StartTime = input.StartTime, EndTime = input.EndTime };
+        db.WeeklyClosures.Add(rule);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+        {
+            return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["weekday"] = Text.ClosureWeeklyDuplicate });
+        }
+
+        var row = (await ListWeeklyClosuresAsync(businessId, ct)).First(r => r.Id == rule.Id);
+        return ServiceResult<SaveOutcome>.Ok(new SaveOutcome(rule.Id, row.AffectedBookings));
+    }
+
+    /// <summary>Switches a weekly closure on or off without deleting it. Another business's id is "not found".</summary>
+    public async Task<ServiceResult<bool>> SetWeeklyClosureActiveAsync(Guid businessId, Guid id, bool active, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var changed = await db.WeeklyClosures.Where(c => c.Id == id && c.BusinessId == businessId)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsActive, active), ct);
+        return changed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(active);
+    }
+
+    public async Task<ServiceResult<bool>> DeleteWeeklyClosureAsync(Guid businessId, Guid id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var removed = await db.WeeklyClosures.Where(c => c.Id == id && c.BusinessId == businessId).ExecuteDeleteAsync(ct);
         return removed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(true);
     }
 

@@ -425,6 +425,25 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             .ToListAsync(ct);
 
         var previous = localDate.AddDays(-1);
+
+        // Closures that repeat (and are switched on) block the whole local day or just their time window, like a one-off closure.
+        var repeating = await db.WeeklyClosures.AsNoTracking()
+            .Where(c => c.BusinessId == business.Id && c.IsActive && (c.StaffId == null || c.StaffId == staffId))
+            .ToListAsync(ct);
+        var zone = LocalTime.Zone(business.TimeZone);
+        foreach (var date in new[] { previous, localDate })
+            foreach (var rule in repeating.Where(r => r.DayOfWeek == null || r.DayOfWeek == (short)date.DayOfWeek))
+            {
+                if (rule.StartTime is { } from && rule.EndTime is { } to)
+                    blackouts.Add(new TimeRange(
+                        LocalTime.ToUtc(date.ToDateTime(from), zone), LocalTime.ToUtc(date.ToDateTime(to), zone)));
+                else
+                {
+                    var (closedStart, closedEnd) = LocalTime.DayRangeUtc(date, business.TimeZone);
+                    blackouts.Add(new TimeRange(closedStart, closedEnd));
+                }
+            }
+
         var days = new[] { (short)localDate.DayOfWeek, (short)previous.DayOfWeek };
         var hours = await db.WorkingHours.AsNoTracking()
             .Where(h => h.StaffId == staffId && days.Contains(h.DayOfWeek))

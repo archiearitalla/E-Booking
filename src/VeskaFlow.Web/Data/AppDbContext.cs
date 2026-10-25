@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StaffService> StaffServices => Set<StaffService>();
     public DbSet<WorkingHour> WorkingHours => Set<WorkingHour>();
     public DbSet<Blackout> Blackouts => Set<Blackout>();
+    public DbSet<WeeklyClosure> WeeklyClosures => Set<WeeklyClosure>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
@@ -35,6 +36,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<Staff>().HasMany(s => s.StaffServices).WithOne().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.Cascade);
         m.Entity<Staff>().HasMany(s => s.WorkingHours).WithOne().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.Cascade);
         m.Entity<Blackout>().HasOne<Staff>().WithMany().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.NoAction);
+        m.Entity<WeeklyClosure>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
+        m.Entity<WeeklyClosure>().HasOne<Staff>().WithMany().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.NoAction);
 
         m.Entity<Booking>().Property(b => b.Status)
             .HasConversion(v => v.ToDb(), v => BookingStatusExtensions.FromDb(v));

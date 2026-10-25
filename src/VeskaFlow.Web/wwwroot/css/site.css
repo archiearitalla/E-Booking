@@ -571,3 +571,9 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .seg a[aria-current="true"] { background: var(--brand); color: var(--brand-ink); }
 .seg .count { font-size: 0.75rem; font-weight: 700; min-width: 1.25rem; padding: 0.05rem 0.4rem; text-align: center; background: rgba(0, 0, 0, 0.12); border-radius: 999px; }
 .seg a[aria-current="true"] .count { background: rgba(255, 255, 255, 0.25); }
+
+/* Closures form: show only the fields that belong to the chosen kind (dates or every week) */
+
+.closure-form:has(input[value="weekly"]:checked) .when-dates { display: none; }
+.closure-form:not(:has(input[value="weekly"]:checked)) .when-weekly { display: none; }
+.badge.off { background: var(--soft); color: var(--muted); }

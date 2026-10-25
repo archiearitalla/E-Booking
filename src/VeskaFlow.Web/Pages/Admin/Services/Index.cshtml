@@ -5,6 +5,10 @@
 }
 <h1>@Text.AdminNavServices</h1>
 <p><a class="button" href="/Admin/Services/Edit">@Text.ServiceAdd</a></p>
+<form method="post" asp-page-handler="Suggested" class="card">
+    <p class="muted">@Text.ServicesSuggestedHint</p>
+    <button type="submit" class="button secondary">@Text.ServicesSuggestedAdd</button>
+</form>
 
 @if (Model.Rows.Count == 0)
 {

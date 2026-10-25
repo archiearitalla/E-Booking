@@ -197,6 +197,11 @@ public static class Text
     public const string ClosureTooLong = "A closure can last at most one year.";
     public const string ClosureDatesRequired = "Choose both a first and a last day.";
 
+    public const string ServicesSuggestedAdd = "Add suggested services";
+    public const string ServicesSuggestedHint = "Adds the usual services for your kind of shop. Ones you already have are skipped.";
+    public const string ServicesSuggestedNone = "You already have all the suggested services.";
+    public static string ServicesSuggestedAdded(int n) => n == 1 ? "Added 1 service." : $"Added {n} services.";
+
     public const string ServiceAdd = "Add a service";
     public const string ServiceEdit = "Edit service";
     public const string ServicesEmpty = "No services yet.";
@@ -247,6 +252,28 @@ public static class Text
     public const string ClosureSaved = "Closure added. No existing bookings are affected.";
     public const string ClosureSavedAffected = "Closure added. {0} existing booking(s) fall in these days; they were not cancelled. Review and handle each one on the Bookings page.";
     public const string ClosureRemoved = "Closure removed.";
+    public const string ClosureType = "What do you want to close?";
+    public const string ClosureTypeDates = "Specific dates";
+    public const string ClosureTypeWeekly = "Every week";
+    public const string ClosureWeekday = "Closed every";
+    public const string ClosureWeekdayInvalid = "Choose a day of the week.";
+    public const string ClosureWeeklyDuplicate = "That day is already closed every week for this person or the whole shop. Switch it on or off in the list below.";
+    public const string ClosureWeeklySaved = "Closed every {0}. You can switch it off any time.";
+    public const string ClosureWeeklySavedAffected = "Closed every {0}. {1} upcoming booking(s) fall on that day; they were not cancelled. Review and handle each one on the Bookings page.";
+    public const string ClosureWeeklyTurnedOn = "Weekly closure turned on.";
+    public const string ClosureWeeklyTurnedOff = "Weekly closure turned off. That day is open again.";
+    public const string ClosureWeeklyBadge = "Every {0}";
+    public const string ClosureWeeklyOff = "Off";
+    public const string ClosureWeeklyAffected = "{0} upcoming booking(s) fall on this day. They were not cancelled.";
+    public const string ClosureEveryDay = "Every day";
+    public const string ClosureFromTime = "From (time, optional)";
+    public const string ClosureToTime = "Until (time, optional)";
+    public const string ClosureTimeHint = "Leave both times empty to close the whole day. Fill both to close only that part of the day, for example a lunch break.";
+    public const string ClosureTimesBoth = "Fill in both times, or leave both empty.";
+    public const string ClosureTimesOrder = "The end time must be after the start time.";
+    public const string ClosureTurnOn = "Turn on";
+    public const string ClosureTurnOff = "Turn off";
+    public const string ClosuresListTitle = "Closed days";
 
     public const string SettingsAddress = "Booking page";
     public const string SettingsOpenPage = "Open";
