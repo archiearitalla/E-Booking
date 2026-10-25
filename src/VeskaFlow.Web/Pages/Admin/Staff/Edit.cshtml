@@ -62,16 +62,19 @@
             {
                 <fieldset class="hours-day">
                     <legend>@EditModel.DayName(day)</legend>
-                    @for (var n = 0; n < EditModel.WindowsPerDay; n++)
-                    {
-                        var window = Model.HourFields[(day, n)];
-                        <div class="hours-row">
-                            <label for="open_@(day)_@n">@Text.HoursOpen<span class="sr-only"> @EditModel.DayName(day) @(n + 1)</span></label>
-                            <input type="time" id="open_@(day)_@n" name="open_@(day)_@n" value="@window.Open" />
-                            <label for="close_@(day)_@n">@Text.HoursClose<span class="sr-only"> @EditModel.DayName(day) @(n + 1)</span></label>
-                            <input type="time" id="close_@(day)_@n" name="close_@(day)_@n" value="@window.Close" />
-                        </div>
-                    }
+                    @{ var f = Model.HourFields[day]; }
+                    <div class="hours-row">
+                        <label for="open_@day">@Text.HoursOpen<span class="sr-only"> @EditModel.DayName(day)</span></label>
+                        <input type="time" id="open_@day" name="open_@day" value="@f.Open" />
+                        <label for="close_@day">@Text.HoursClose<span class="sr-only"> @EditModel.DayName(day)</span></label>
+                        <input type="time" id="close_@day" name="close_@day" value="@f.Close" />
+                    </div>
+                    <div class="hours-row">
+                        <label for="breakfrom_@day">@Text.HoursBreakFrom<span class="sr-only"> @EditModel.DayName(day)</span></label>
+                        <input type="time" id="breakfrom_@day" name="breakfrom_@day" value="@f.BreakFrom" />
+                        <label for="breakto_@day">@Text.HoursBreakTo<span class="sr-only"> @EditModel.DayName(day)</span></label>
+                        <input type="time" id="breakto_@day" name="breakto_@day" value="@f.BreakTo" />
+                    </div>
                 </fieldset>
             }
             <p class="hint">@Text.HoursBlankClosed</p>

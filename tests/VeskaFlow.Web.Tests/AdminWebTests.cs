@@ -172,7 +172,7 @@ public class AdminWebTests
         Assert.Equal(HttpStatusCode.NotFound, editStaff.StatusCode);
 
         var hours = await PostAsync(a.Client, "/Admin/Staff/Edit", $"/Admin/Staff/Edit/{b.StaffId}?handler=Hours",
-            new() { ["open_1_0"] = "00:00", ["close_1_0"] = "23:00" });
+            new() { ["open_1"] = "00:00", ["close_1"] = "23:00" });
         Assert.Equal(HttpStatusCode.NotFound, hours.StatusCode);
 
         var transition = await PostAsync(a.Client, "/Admin", "/Admin?handler=Transition",
@@ -293,7 +293,7 @@ public class AdminWebTests
 
         // Work Sundays only: the starter hours were Monday to Saturday, so the booking is now outside the hours.
         var response = await PostAsync(owner.Client, $"/Admin/Staff/Edit/{owner.StaffId}", $"/Admin/Staff/Edit/{owner.StaffId}?handler=Hours",
-            new() { ["open_0_0"] = "09:00", ["close_0_0"] = "10:00" });
+            new() { ["open_0"] = "09:00", ["close_0"] = "10:00" });
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
 
         var page = Dec(await owner.Client.GetStringAsync($"/Admin/Staff/Edit/{owner.StaffId}"));
@@ -311,12 +311,43 @@ public class AdminWebTests
         var owner = await RegisterOwnerAsync(factory);
 
         var response = await PostAsync(owner.Client, $"/Admin/Staff/Edit/{owner.StaffId}", $"/Admin/Staff/Edit/{owner.StaffId}?handler=Hours",
-            new() { ["open_1_0"] = "09:00", ["close_1_0"] = "" });
+            new() { ["open_1"] = "09:00", ["close_1"] = "" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains(Text.HoursIncomplete, Dec(await response.Content.ReadAsStringAsync()));
         await using var ctx = owner.Db.CreateDbContext();
         Assert.Equal(6, await ctx.WorkingHours.CountAsync(h => h.StaffId == owner.StaffId));
+    }
+
+    [Fact]
+    public async Task A_break_in_the_daily_hours_is_saved_as_two_windows_and_shown_again()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+        var url = $"/Admin/Staff/Edit/{owner.StaffId}";
+
+        var saved = await PostAsync(owner.Client, url, $"{url}?handler=Hours",
+            new() { ["open_1"] = "09:00", ["close_1"] = "18:00", ["breakfrom_1"] = "12:00", ["breakto_1"] = "13:00" });
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+
+        await using (var ctx = owner.Db.CreateDbContext())
+        {
+            var monday = await ctx.WorkingHours.Where(h => h.StaffId == owner.StaffId && h.DayOfWeek == 1).OrderBy(h => h.OpenTime).ToListAsync();
+            Assert.Equal([(new TimeOnly(9, 0), new TimeOnly(12, 0)), (new TimeOnly(13, 0), new TimeOnly(18, 0))],
+                monday.Select(h => (h.OpenTime, h.CloseTime)).ToArray());
+        }
+        var page = Dec(await owner.Client.GetStringAsync(url));
+        Assert.Contains("value=\"12:00\"", page);
+        Assert.Contains("value=\"13:00\"", page);
+
+        // A break outside the opening hours, or with only one time, is refused and nothing changes.
+        var outside = await PostAsync(owner.Client, url, $"{url}?handler=Hours",
+            new() { ["open_1"] = "09:00", ["close_1"] = "12:00", ["breakfrom_1"] = "12:30", ["breakto_1"] = "13:00" });
+        Assert.Contains(Text.HoursBreakInvalid, Dec(await outside.Content.ReadAsStringAsync()));
+        var half = await PostAsync(owner.Client, url, $"{url}?handler=Hours",
+            new() { ["open_1"] = "09:00", ["close_1"] = "18:00", ["breakfrom_1"] = "12:00", ["breakto_1"] = "" });
+        Assert.Contains(Text.HoursIncomplete, Dec(await half.Content.ReadAsStringAsync()));
     }
 
     // ------------------------------------------------------------ staff, settings, about

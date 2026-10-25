@@ -6,8 +6,6 @@ namespace VeskaFlow.Web.Pages.Admin.Staff;
 
 public class EditModel(CatalogAdminService catalog) : AdminPageModel
 {
-    public const int WindowsPerDay = 2; // two windows per day allow a split shift (lunch break)
-
     /// <summary>Monday first; the database uses 0 = Sunday.</summary>
     public static readonly short[] DayOrder = [1, 2, 3, 4, 5, 6, 0];
 
@@ -20,7 +18,10 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
     public Guid? StaffId { get; private set; }
     public string TimeZone { get; private set; } = "";
     public IReadOnlyList<ServiceRow> AllServices { get; private set; } = [];
-    public Dictionary<(short Day, int Index), (string Open, string Close)> HourFields { get; private set; } = [];
+    public Dictionary<short, DayFields> HourFields { get; private set; } = [];
+
+    /// <summary>One day as the form shows it: opens, optional break (from/until), closes. A break is stored as two windows.</summary>
+    public sealed record DayFields(string Open, string BreakFrom, string BreakTo, string Close);
 
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
@@ -68,24 +69,36 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         HoursFormSubmitted = true;
         var windows = new List<HourWindow>();
         var parseError = false;
+        var breakError = false;
+
+        static bool Time(string s, out TimeOnly t) =>
+            TimeOnly.TryParseExact(s, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out t);
 
         foreach (var day in DayOrder)
-        for (var n = 0; n < WindowsPerDay; n++)
         {
-            var open = Request.Form[$"open_{day}_{n}"].ToString().Trim();
-            var close = Request.Form[$"close_{day}_{n}"].ToString().Trim();
-            if (open.Length == 0 && close.Length == 0) continue;
+            var f = ReadDay(day);
+            if (f.Open.Length == 0 && f.Close.Length == 0 && f.BreakFrom.Length == 0 && f.BreakTo.Length == 0) continue;
 
-            if (TimeOnly.TryParseExact(open, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var o)
-                && TimeOnly.TryParseExact(close, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var c))
+            if (!Time(f.Open, out var o) || !Time(f.Close, out var c)) { parseError = true; continue; }
+
+            if (f.BreakFrom.Length == 0 && f.BreakTo.Length == 0)
+            {
                 windows.Add(new HourWindow(day, o, c));
-            else
-                parseError = true; // one of the two times is blank or malformed
+                continue;
+            }
+
+            // A break needs both times and must sit inside the opening hours of that day.
+            if (!Time(f.BreakFrom, out var bf) || !Time(f.BreakTo, out var bt)) { parseError = true; continue; }
+            if (!(o < bf && bf < bt && bt < c)) { breakError = true; continue; }
+            windows.Add(new HourWindow(day, o, bf));
+            windows.Add(new HourWindow(day, bt, c));
         }
 
         ServiceResult<SaveOutcome> result;
         if (parseError)
             result = ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["hours"] = Text.HoursIncomplete });
+        else if (breakError)
+            result = ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["hours"] = Text.HoursBreakInvalid });
         else
             result = await catalog.SaveHoursAsync(BusinessId, id, windows, ct);
 
@@ -129,25 +142,28 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
 
     private void FillHours(IReadOnlyList<HourWindow> hours)
     {
+        static string T(TimeOnly t) => t.ToString("HH:mm", CultureInfo.InvariantCulture);
         HourFields = [];
         foreach (var day in DayOrder)
         {
             var windows = hours.Where(h => h.DayOfWeek == day).OrderBy(h => h.Open).ToList();
-            for (var n = 0; n < WindowsPerDay; n++)
-                HourFields[(day, n)] = n < windows.Count
-                    ? (windows[n].Open.ToString("HH:mm", CultureInfo.InvariantCulture), windows[n].Close.ToString("HH:mm", CultureInfo.InvariantCulture))
-                    : ("", "");
+            HourFields[day] = windows.Count switch
+            {
+                0 => new DayFields("", "", "", ""),
+                1 => new DayFields(T(windows[0].Open), "", "", T(windows[0].Close)),
+                // Two windows with a gap between them are shown as one day with a break.
+                _ when windows[0].Close < windows[1].Open =>
+                    new DayFields(T(windows[0].Open), T(windows[0].Close), T(windows[1].Open), T(windows[^1].Close)),
+                _ => new DayFields(T(windows[0].Open), "", "", T(windows[^1].Close)),
+            };
         }
     }
 
-    private Dictionary<(short Day, int Index), (string Open, string Close)> ReadHourFieldsFromForm()
-    {
-        var fields = new Dictionary<(short, int), (string, string)>();
-        foreach (var day in DayOrder)
-            for (var n = 0; n < WindowsPerDay; n++)
-                fields[(day, n)] = (Request.Form[$"open_{day}_{n}"].ToString(), Request.Form[$"close_{day}_{n}"].ToString());
-        return fields;
-    }
+    private DayFields ReadDay(short day) => new(
+        Request.Form[$"open_{day}"].ToString().Trim(), Request.Form[$"breakfrom_{day}"].ToString().Trim(),
+        Request.Form[$"breakto_{day}"].ToString().Trim(), Request.Form[$"close_{day}"].ToString().Trim());
+
+    private Dictionary<short, DayFields> ReadHourFieldsFromForm() => DayOrder.ToDictionary(d => d, ReadDay);
 
     public class StaffForm
     {

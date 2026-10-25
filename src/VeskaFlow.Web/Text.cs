@@ -229,7 +229,10 @@ public static class Text
     public const string StaffSavedAffected = "Saved. {0} upcoming booking(s) remain for this person; they were not cancelled. Review them on the Bookings page.";
 
     public const string HoursTitle = "Weekly hours";
-    public const string HoursHint = "Times are in the shop's time zone ({0}). Use a second row for a split shift. A closing time before the opening time runs past midnight.";
+    public const string HoursHint = "Times are in the shop's time zone ({0}). Add a break (for example lunch) with Break from and Break until, or leave them blank for no break. A closing time before the opening time runs past midnight.";
+    public const string HoursBreakFrom = "Break from";
+    public const string HoursBreakTo = "Break until";
+    public const string HoursBreakInvalid = "A break needs both times, and must be after opening and before closing, for example 12:00 to 13:00.";
     public const string HoursOpen = "Opens";
     public const string HoursClose = "Closes";
     public const string HoursBlankClosed = "Leave a day blank to mark it closed.";
