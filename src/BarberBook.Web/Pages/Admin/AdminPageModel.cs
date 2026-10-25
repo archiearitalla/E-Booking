@@ -30,12 +30,17 @@ public abstract class AdminPageModel : FormPageModel
     /// </summary>
     public override async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
     {
-        if (User.BusinessId() is { } id
-            && await context.HttpContext.RequestServices.GetRequiredService<ShopSettingsService>()
-                .TrialEndedAsync(id, context.HttpContext.RequestAborted))
+        if (User.BusinessId() is { } id)
         {
-            context.Result = RedirectToPage("/Admin/TrialEnded");
-            return;
+            var settings = context.HttpContext.RequestServices.GetRequiredService<ShopSettingsService>();
+            var ends = await settings.TrialEndsAtAsync(id, context.HttpContext.RequestAborted);
+            // The header bell shows what the database says now, not the date frozen in the cookie at sign-in.
+            context.HttpContext.Items[UserClaims.TrialEndsItemKey] = ends;
+            if (settings.IsEnded(ends))
+            {
+                context.Result = RedirectToPage("/Admin/TrialEnded");
+                return;
+            }
         }
         await base.OnPageHandlerExecutionAsync(context, next);
     }

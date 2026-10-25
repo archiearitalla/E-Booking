@@ -149,3 +149,27 @@ public class WalkInWebTests
         Assert.Contains("/Login", response.Headers.Location!.OriginalString);
     }
 }
+
+/// <summary>Bugs found by clicking through the app by hand, kept as tests.</summary>
+public class CancelAuditLabelTests
+{
+    [Fact]
+    public async Task A_customer_cancellation_is_audited_under_the_customers_name_not_a_generic_label()
+    {
+        var shop = await Seed.CreateShopAsync();
+        var db = new TestDbFactory(shop.ConnectionString);
+        var svc = new BookingService(db, new TestClock(BaseNow));
+        var created = await svc.CreateAsync(new CreateBookingRequest(
+            shop.BusinessId, shop.ServiceId, shop.StaffIds[0], Manila(5, 10), "Maria Santos", "09175550123", null,
+            "k" + Guid.NewGuid().ToString("N")[..10], BookingActor.Customer("Maria Santos")));
+        Assert.True(created.IsSuccess, created.Message);
+
+        var cancelled = await svc.CancelByTokenAsync(created.Value!.Booking.ManageToken);
+
+        Assert.True(cancelled.IsSuccess, cancelled.Message);
+        await using var ctx = db.CreateDbContext();
+        var label = await ctx.AuditLogs.Where(a => a.BookingId == created.Value.Booking.Id && a.Action == "CANCELLED")
+            .Select(a => a.ActorLabel).SingleAsync();
+        Assert.Equal("Maria Santos", label);
+    }
+}

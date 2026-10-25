@@ -231,7 +231,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var booking = await db.Bookings.FirstOrDefaultAsync(b => b.ManageToken == manageToken, ct);
         if (booking is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
-        return await ApplyTransitionAsync(db, booking, BookingStatus.Cancelled, BookingActor.Customer("Customer"),
+        // The audit trail names the customer the same way creation did, not a generic "Customer".
+        var who = await db.Customers.Where(c => c.Id == booking.CustomerId).Select(c => c.Name).FirstOrDefaultAsync(ct) ?? "Customer";
+        return await ApplyTransitionAsync(db, booking, BookingStatus.Cancelled, BookingActor.Customer(who),
             null, expectedVersion, ct);
     }
 

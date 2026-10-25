@@ -5,7 +5,7 @@ namespace BarberBook.Web;
 /// <summary>Single source of truth for the version shown in the footer, About page and /healthz.</summary>
 public static class AppInfo
 {
-    public const string Name = "BarberBook";
+    public const string Name = "VeskaFlow";
 
     public static string Version { get; } =
         typeof(AppInfo).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()

@@ -16,8 +16,11 @@ public class TrialEndedModel(ShopSettingsService settings, IConfiguration config
     {
         if (User.BusinessId() is not { } id) return Forbid();
 
+        var ends = await settings.TrialEndsAtAsync(id, ct);
+        HttpContext.Items[UserClaims.TrialEndsItemKey] = ends; // the header bell reads the database value
+
         // Someone whose trial is still running has nothing to see here.
-        if (!await settings.TrialEndedAsync(id, ct)) return Redirect("/Admin");
+        if (!settings.IsEnded(ends)) return Redirect("/Admin");
         return Page();
     }
 }

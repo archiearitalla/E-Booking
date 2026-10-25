@@ -78,6 +78,25 @@ public class TrialLapseWebTests
     }
 
     [Fact]
+    public async Task The_header_bell_follows_the_database_not_the_date_frozen_in_the_cookie()
+    {
+        var (factory, _) = await StartAsync();
+        using var _f = factory;
+        var (client, businessId, db) = await RegisteredOwnerAsync(factory);
+        Assert.Contains("bell-badge", await client.GetStringAsync("/Admin"));
+
+        // The operator lifts the trial: the cookie still says 30 days, but the bell goes away.
+        await using (var ctx = db.CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == businessId).ExecuteUpdateAsync(s => s.SetProperty(b => b.TrialEndsAtUtc, (DateTime?)null));
+        Assert.DoesNotContain("bell-badge", await client.GetStringAsync("/Admin"));
+
+        // The trial ends: the notice page shows the red exclamation mark, not the stale day count.
+        await EndTrialAsync(db, businessId);
+        var ended = await client.GetStringAsync("/Admin/TrialEnded");
+        Assert.Contains("bell-badge end", ended);
+    }
+
+    [Fact]
     public async Task A_lapsed_business_can_still_sign_out_and_its_public_page_says_it_is_closed()
     {
         var (factory, _) = await StartAsync();

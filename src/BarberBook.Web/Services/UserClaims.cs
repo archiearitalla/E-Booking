@@ -10,6 +10,13 @@ public static class UserClaims
     public const string BusinessIdType = "business_id";
     public const string TrialEndsType = "trial_ends_utc";
 
+    /// <summary>Request item set by back-office pages with the trial end read from the database; the layout prefers it to the cookie.</summary>
+    public const string TrialEndsItemKey = "trial_ends_from_db";
+
+    /// <summary>The trial end for the header bell: the database value when a back-office page loaded it, otherwise the cookie.</summary>
+    public static DateTime? TrialEndsForBell(this ClaimsPrincipal user, IDictionary<object, object?> items) =>
+        items.TryGetValue(TrialEndsItemKey, out var fromDb) ? fromDb as DateTime? : user.TrialEndsUtc();
+
     /// <summary>When the trial ends, from the cookie. For the banner only; null when there is no trial.</summary>
     public static DateTime? TrialEndsUtc(this ClaimsPrincipal user) =>
         DateTime.TryParse(user.FindFirstValue(TrialEndsType), null,

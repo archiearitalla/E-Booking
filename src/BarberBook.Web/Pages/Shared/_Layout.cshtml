@@ -15,7 +15,7 @@
         <nav aria-label="Main">
             @if (User.Identity?.IsAuthenticated == true)
             {
-                @if (User.TrialEndsUtc() is { } trialEnds)
+                @if (User.TrialEndsForBell(Context.Items) is { } trialEnds)
                 {
                     var daysLeft = (int)Math.Ceiling((trialEnds - DateTime.UtcNow).TotalDays);
                     <details class="bell">
