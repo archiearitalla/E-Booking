@@ -22,6 +22,10 @@ public class LoginModel(AuthService auth) : FormPageModel
     [BindProperty(SupportsGet = true)]
     public bool Disabled { get; set; }
 
+    /// <summary>Set when the email was just confirmed (the "check your email" page sends people here).</summary>
+    [BindProperty(SupportsGet = true)]
+    public bool Confirmed { get; set; }
+
     /// <summary>Set after sign-up when the platform owner still has to switch the shop on.</summary>
     [BindProperty(SupportsGet = true)]
     public bool Pending { get; set; }

@@ -6,6 +6,7 @@
 <div class="card">
     <h1>@Text.LoginTitle</h1>
     @if (Model.Disabled) { <div class="alert" role="alert">@Text.ShopDisabled</div> }
+    @if (Model.Confirmed) { <div class="notice" role="status">@Text.ConfirmDone</div> }
     @if (Model.Pending) { <div class="notice" role="status">@Text.SignupPending</div> }
     <form method="post" novalidate>
         @if (Model.Errors.Count > 0)

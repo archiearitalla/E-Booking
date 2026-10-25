@@ -1,4 +1,4 @@
-# Deploying VeskaFlow on free tiers
+﻿# Deploying VeskaFlow on free tiers
 
 Target: Render (the app, built from the `Dockerfile`), Neon (PostgreSQL 16), Cloudflare (DNS in front). Everything here is free; limits and costs are in `BUSINESS_RULES.md` section 17 and in the cost notes at the end.
 
@@ -46,7 +46,8 @@ Who may use the system (all optional, set in the same place; never commit secret
 | `Platform__AdminEmails` | Your own email (comma separated for more than one). Sign in with it and open `/Platform`: the list of shops with Switch on / Switch off, Confirm email now and Send confirmation link. Everyone else gets "not found". Needs an account with that email, already confirmed |
 | `Signup__RequireEmailConfirmation` | `true` (default): a new owner cannot sign in until they open the link in the email. `false` for a client's own deployment |
 | `Signup__RequireApproval` | `true`: a new shop stays switched off until you switch it on in `/Platform`. Default `false` |
-| `Email__ResendApiKey` and `Email__From` | Sends the confirmation email through Resend's HTTP API (free tier; Render's free plan blocks SMTP). `Email__From` must be an address on a domain you verified in Resend (add the DNS records it shows in Cloudflare). Without both, nothing is emailed: use `/Platform` to confirm an owner by hand or copy a link to send yourself |
+| `Email__BrevoApiKey`, `Email__From` and `Email__FromName` | Sends the confirmation email through Brevo's HTTP API (free, about 300 emails a day, no domain setup, and Render's free plan blocks SMTP). It is the same Brevo account the veskacode.com contact form uses: copy `BREVO_API_KEY` from the Cloudflare Pages project into `Email__BrevoApiKey`, `VERIFY_FROM_EMAIL` (a sender validated in Brevo) into `Email__From`, and `VERIFY_FROM_NAME` into `Email__FromName`. Without a key and sender nothing is emailed: use `/Platform` to confirm an owner by hand or copy a link to send yourself |
+| `Email__ResendApiKey` and `Email__From` | Alternative to Brevo (needs a domain verified in Resend). Used only when Brevo is not configured |
 
 Existing accounts were marked confirmed by migration 009, so they keep working. To keep a free uptime monitor from letting the app sleep, point it at `/ping` (it never touches the database); `/healthz` does touch it.
 

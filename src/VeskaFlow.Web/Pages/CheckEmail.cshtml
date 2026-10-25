@@ -16,7 +16,8 @@
     else
     {
         <p>@(string.IsNullOrEmpty(Model.Email) ? Text.CheckEmailSentNoAddress : string.Format(Text.CheckEmailSent, Model.Email))</p>
-        <p class="hint">@Text.CheckEmailHint</p>
+        <p class="hint">@Text.CheckEmailHint @Text.CheckEmailAuto</p>
+        @if (!string.IsNullOrEmpty(Model.Email)) { <div data-poll-confirmed="/CheckEmail?handler=Status" data-poll-to="/Login?confirmed=true" hidden></div> }
     }
     @if (!string.IsNullOrEmpty(Model.Email) && !Model.ManualOnly)
     {

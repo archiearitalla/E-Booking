@@ -12,11 +12,11 @@ namespace VeskaFlow.Web.Tests;
 public sealed class CapturingEmailSender : IEmailSender
 {
     public bool IsConfigured => true;
-    public List<(string To, string Subject, string Body)> Sent { get; } = [];
+    public List<(string To, string Subject, string Body, string? Html)> Sent { get; } = [];
 
-    public Task<bool> SendAsync(string to, string subject, string body, CancellationToken ct = default)
+    public Task<bool> SendAsync(string to, string subject, string body, string? html = null, CancellationToken ct = default)
     {
-        Sent.Add((to, subject, body));
+        Sent.Add((to, subject, body, html));
         return Task.FromResult(true);
     }
 }
@@ -174,6 +174,63 @@ public class AccountControlTests
             .SendConfirmationAsync(new IssuedConfirmation("t", "a@b.c", "A"), "https://x")); // no email service: not sent
     }
 
+    // ------------------------------------------------------------ Brevo (the same service the veskacode.com form uses)
+
+    private sealed class RecordingHandler(HttpStatusCode status, bool fail = false) : HttpMessageHandler
+    {
+        public List<(string Url, string? ApiKey, string Body)> Calls { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Calls.Add((request.RequestUri!.ToString(), request.Headers.TryGetValues("api-key", out var key) ? key.Single() : null,
+                request.Content is null ? "" : await request.Content.ReadAsStringAsync(ct)));
+            if (fail) throw new HttpRequestException("network down");
+            return new HttpResponseMessage(status);
+        }
+    }
+
+    private static IConfiguration BrevoConfig(bool configured = true) => new ConfigurationBuilder().AddInMemoryCollection(
+        new Dictionary<string, string?>
+        {
+            ["Email:BrevoApiKey"] = configured ? "secret-key" : "", ["Email:From"] = configured ? "me@example.com" : "", ["Email:FromName"] = "VeskaFlow",
+        }).Build();
+
+    [Fact]
+    public async Task Brevo_gets_the_request_it_expects_and_a_delivery_problem_is_a_false_never_an_exception()
+    {
+        var ok = new RecordingHandler(HttpStatusCode.Created);
+        var sender = new BrevoEmailSender(new HttpClient(ok), BrevoConfig(), Microsoft.Extensions.Logging.Abstractions.NullLogger<BrevoEmailSender>.Instance);
+        Assert.True(sender.IsConfigured);
+        Assert.True(await sender.SendAsync("owner@example.com", "Confirm", "plain text", "<b>html</b>"));
+
+        var call = Assert.Single(ok.Calls);
+        Assert.Equal("https://api.brevo.com/v3/smtp/email", call.Url);
+        Assert.Equal("secret-key", call.ApiKey);
+        Assert.Contains("\"email\":\"me@example.com\"", call.Body);
+        Assert.Contains("\"name\":\"VeskaFlow\"", call.Body);
+        Assert.Contains("\"to\":[{\"email\":\"owner@example.com\"}]", call.Body);
+        Assert.Contains("\"textContent\":\"plain text\"", call.Body);
+        Assert.Contains("\"htmlContent\":\"\\u003Cb\\u003Ehtml\\u003C/b\\u003E\"", call.Body);
+
+        var refused = new BrevoEmailSender(new HttpClient(new RecordingHandler(HttpStatusCode.BadRequest)), BrevoConfig(), Microsoft.Extensions.Logging.Abstractions.NullLogger<BrevoEmailSender>.Instance);
+        Assert.False(await refused.SendAsync("owner@example.com", "Confirm", "x"));
+
+        var down = new BrevoEmailSender(new HttpClient(new RecordingHandler(HttpStatusCode.OK, fail: true)), BrevoConfig(), Microsoft.Extensions.Logging.Abstractions.NullLogger<BrevoEmailSender>.Instance);
+        Assert.False(await down.SendAsync("owner@example.com", "Confirm", "x"));
+    }
+
+    [Fact]
+    public async Task Brevo_without_a_key_or_sender_sends_nothing()
+    {
+        var handler = new RecordingHandler(HttpStatusCode.Created);
+        var sender = new BrevoEmailSender(new HttpClient(handler), BrevoConfig(configured: false), Microsoft.Extensions.Logging.Abstractions.NullLogger<BrevoEmailSender>.Instance);
+
+        Assert.False(sender.IsConfigured);
+        Assert.False(await sender.SendAsync("owner@example.com", "Confirm", "x"));
+        Assert.Empty(handler.Calls);
+        await Task.CompletedTask;
+    }
+
     // ------------------------------------------------------------ in the running app
 
     private static HttpClient ClientWith(AppFactory factory, IEmailSender sender) =>
@@ -212,12 +269,18 @@ public class AccountControlTests
         Assert.Contains(Text.EmailNotConfirmed, tooEarlyHtml);
         Assert.Contains(Text.ConfirmResend, tooEarlyHtml);
 
-        // The email holds the link; opening it confirms the account.
+        // The "check your email" page asks the server whether the link was opened; the address never appears in the URL.
+        Assert.Contains("\"confirmed\":false", await client.GetStringAsync("/CheckEmail?handler=Status"));
+        Assert.Contains("data-poll-confirmed", await client.GetStringAsync("/CheckEmail"));
+
+        // The email holds the link (and a button for email programs that show HTML); opening it confirms the account.
         var mail = Assert.Single(sender.Sent);
+        Assert.Contains("Confirm my email", mail.Html);
         var link = mail.Body.Split('\n').Single(l => l.Contains("/ConfirmEmail?token="));
         var path = new Uri(link.Trim()).PathAndQuery;
         var confirmed = WebUtility.HtmlDecode(await client.GetStringAsync(path));
         Assert.Contains(Text.ConfirmDone, confirmed);
+        Assert.Contains("\"confirmed\":true", await client.GetStringAsync("/CheckEmail?handler=Status")); // the page moves on by itself
         Assert.Contains(Text.ConfirmLinkInvalid, WebUtility.HtmlDecode(await client.GetStringAsync(path))); // single use
 
         var signedIn = await HttpApp.PostFormAsync(client, "/Login", new() { ["Input.Email"] = email, ["Input.Password"] = "correct-horse-1" });

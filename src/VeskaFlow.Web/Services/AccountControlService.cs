@@ -63,7 +63,17 @@ public sealed class AccountControlService(
 
     /// <summary>Emails the confirmation link. False when no email service is set up or the email was not accepted.</summary>
     public Task<bool> SendConfirmationAsync(IssuedConfirmation issued, string baseUrl, CancellationToken ct = default) =>
-        email.SendAsync(issued.Email, Text.ConfirmEmailSubject, Text.ConfirmEmailBody(issued.Name, ConfirmUrl(baseUrl, issued.Token)), ct);
+        email.SendAsync(issued.Email, Text.ConfirmEmailSubject, Text.ConfirmEmailBody(issued.Name, ConfirmUrl(baseUrl, issued.Token)),
+            Text.ConfirmEmailHtml(issued.Name, ConfirmUrl(baseUrl, issued.Token)), ct);
+
+    /// <summary>True when the email address of this account is confirmed. Used by the "check your email" page to continue by itself.</summary>
+    public async Task<bool> IsEmailConfirmedAsync(string? emailAddress, CancellationToken ct = default)
+    {
+        var normalized = (emailAddress ?? "").Trim();
+        if (normalized.Length is < 3 or > 120) return false;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.AdminUsers.AsNoTracking().AnyAsync(u => u.Email.ToLower() == normalized.ToLower() && u.EmailConfirmedAtUtc != null, ct);
+    }
 
     public static string ConfirmUrl(string baseUrl, string token) => $"{baseUrl.TrimEnd('/')}/ConfirmEmail?token={Uri.EscapeDataString(token)}";
 

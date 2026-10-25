@@ -246,9 +246,22 @@ public static class Text
     public const string ConfirmEmailSubject = "Confirm your email address";
     public static string ConfirmEmailBody(string name, string link) =>
         $"Hi {name},\n\nThank you for signing up. Please confirm your email address to start using your shop:\n\n{link}\n\nThe link works for 48 hours. If you did not sign up, you can ignore this message.\n";
+    /// <summary>The same message with a "Confirm my email" button, for email programs that show HTML.</summary>
+    public static string ConfirmEmailHtml(string name, string link)
+    {
+        var n = System.Net.WebUtility.HtmlEncode(name);
+        var l = System.Net.WebUtility.HtmlEncode(link);
+        return "<div style=\"font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0d1220\">"
+            + "<h2 style=\"font-size:20px;margin:0 0 12px\">Confirm your email</h2>"
+            + $"<p style=\"color:#5c6678;font-size:15px;line-height:1.6;margin:0 0 20px\">Hi {n}, thank you for signing up. Please confirm your email address to start using your shop. Just tap the button below.</p>"
+            + $"<a href=\"{l}\" style=\"display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-weight:600;padding:13px 26px;border-radius:10px\">Confirm my email</a>"
+            + $"<p style=\"color:#5c6678;font-size:13px;line-height:1.6;margin:22px 0 0\">Or paste this link in your browser:<br><span style=\"word-break:break-all\">{l}</span></p>"
+            + "<p style=\"color:#9aa3b5;font-size:12px;margin:22px 0 0\">The link works for 48 hours. If you did not sign up, you can ignore this email.</p></div>";
+    }
+    public const string CheckEmailAuto = "This page continues by itself once you confirm.";
     public const string PlatformTitle = "Shops";
     public const string PlatformHint = "Every shop that signed up. Switch a shop off to stop its owner signing in and close its online booking; switch it on again any time. Nothing is deleted.";
-    public const string PlatformNoEmail = "Email is not set up (Email:ResendApiKey and Email:From), so confirmation links are not emailed. Use \"Confirm email now\", or \"Send confirmation link\" to copy a link and send it yourself.";
+    public const string PlatformNoEmail = "Email is not set up (Email:BrevoApiKey and Email:From), so confirmation links are not emailed. Use \"Confirm email now\", or \"Send confirmation link\" to copy a link and send it yourself.";
     public const string PlatformEmpty = "No shops yet.";
     public const string PlatformOn = "On";
     public const string PlatformOff = "Off";

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Threading.RateLimiting;
 using VeskaFlow.Web;
 using VeskaFlow.Web.Data;
@@ -35,11 +35,15 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.AuthService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopCatalogService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AdminDayService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.FollowUpService>();
+builder.Services.AddHttpClient<VeskaFlow.Web.Services.BrevoEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.ResendEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
 {
+    // Brevo first (no domain needed), then Resend. With neither the platform owner confirms by hand.
+    var brevo = sp.GetRequiredService<VeskaFlow.Web.Services.BrevoEmailSender>();
+    if (brevo.IsConfigured) return brevo;
     var resend = sp.GetRequiredService<VeskaFlow.Web.Services.ResendEmailSender>();
-    return resend.IsConfigured ? resend : new VeskaFlow.Web.Services.NoEmailSender(); // no email service: the platform owner confirms by hand
+    return resend.IsConfigured ? resend : new VeskaFlow.Web.Services.NoEmailSender();
 });
 builder.Services.AddScoped<VeskaFlow.Web.Services.AccountControlService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();

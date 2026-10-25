@@ -23,6 +23,17 @@ public class CheckEmailModel(AccountControlService accounts, IConfiguration conf
         return Page();
     }
 
+    /// <summary>
+    /// Asked every few seconds by the page itself, so it can move on once the link is opened (in this tab or on another device).
+    /// The address stays in TempData on the server: it is never put in a URL. Says only yes or no.
+    /// </summary>
+    public async Task<IActionResult> OnGetStatusAsync(CancellationToken ct)
+    {
+        var email = TempData.Peek("ConfirmEmailAddress") as string;
+        TempData.Keep("ConfirmEmailAddress");
+        return new JsonResult(new { confirmed = await accounts.IsEmailConfirmedAsync(email, ct) });
+    }
+
     /// <summary>Sends the link again. The answer is the same whether or not the email belongs to an account.</summary>
     public async Task<IActionResult> OnPostResendAsync(string? email, CancellationToken ct)
     {

@@ -68,6 +68,20 @@ document.addEventListener('click', function (event) {
   if (source && navigator.share) navigator.share({ text: source.value }).catch(function () { /* cancelled */ });
 });
 
+// "Check your email" page: ask the server every few seconds whether the link was opened, then go to sign-in by itself.
+(function () {
+  var marker = document.querySelector('[data-poll-confirmed]');
+  if (!marker) return;
+  var tries = 0;
+  var timer = setInterval(function () {
+    if (++tries > 150) { clearInterval(timer); return; } // stop after about 10 minutes
+    fetch(marker.getAttribute('data-poll-confirmed'), { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.confirmed) { clearInterval(timer); location.href = marker.getAttribute('data-poll-to'); } })
+      .catch(function () { /* a network blip: try again on the next tick */ });
+  }, 4000);
+})();
+
 // "Print" button on the Settings page (the print stylesheet shows only the QR code).
 document.addEventListener('click', function (event) {
   if (event.target.closest('[data-print]')) window.print();
