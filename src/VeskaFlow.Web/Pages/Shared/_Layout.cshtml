@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - @Text.AppName</title>
-    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @await RenderSectionAsync("Head", required: false)
-    <script src="~/js/site.js" defer></script>
+    <script src="~/js/site.js" defer asp-append-version="true"></script>
 </head>
 <body data-theme="@VeskaFlow.Web.Services.BrandColors.Normalize(ViewData["Theme"] as string)">
     <a class="skip-link" href="#main">@Text.SkipToContent</a>

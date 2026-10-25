@@ -6,6 +6,8 @@
 <h1>@Text.AdminNavAbout</h1>
 <div class="card">
     <dl class="facts">
+        <dt>@Text.AboutSignedInAs</dt><dd>@User.DisplayName()</dd>
+        <dt>@Text.AboutRole</dt><dd><span class="badge" title="@Text.AdminRoleTitle">@User.Role()</span></dd>
         <dt>@Text.AboutApp</dt><dd>@AppInfo.Name</dd>
         <dt>@Text.AboutVersion</dt><dd>@AppInfo.Version</dd>
         <dt>@Text.AboutBuild</dt><dd>@AppInfo.Build</dd>

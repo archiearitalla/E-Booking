@@ -124,6 +124,8 @@ public static class Text
     public const string SkipToContent = "Skip to content";
     public const string AdminNavLabel = "Back office";
     public const string AdminRoleTitle = "Your role";
+    public const string AboutSignedInAs = "Signed in as";
+    public const string AboutRole = "Role";
     public const string AdminNavBookings = "Bookings";
     public const string AdminNavWalkIn = "Walk-in";
     public const string WalkInTitle = "Add a walk-in";
@@ -164,6 +166,13 @@ public static class Text
     public const string DayNext = "Next day";
     public const string DayGo = "Go";
     public const string DayEmpty = "No bookings on this day.";
+    public const string FilterLabel = "Show bookings";
+    public const string FilterConfirmed = "Confirmed";
+    public const string FilterCancelled = "Cancelled";
+    public const string FilterDone = "Done";
+    public const string DayEmptyConfirmed = "No confirmed bookings on this day.";
+    public const string DayEmptyCancelled = "No cancelled bookings on this day.";
+    public const string DayEmptyDone = "Nothing has been completed on this day yet.";
     public const string DayCount = "{0} active of {1} booking(s) on this day.";
     public const string CancelReason = "Reason (recommended)";
     public const string BookingUpdated = "Booking updated.";

@@ -20,7 +20,7 @@ public class WebFlowTests
     };
 
     [Fact]
-    public async Task Registering_signs_the_owner_in_and_the_admin_page_shows_name_and_role()
+    public async Task Registering_signs_the_owner_in_and_the_about_page_shows_name_and_role()
     {
         var (factory, client) = await StartAsync();
         using var _ = factory;
@@ -31,7 +31,12 @@ public class WebFlowTests
 
         var admin = await client.GetAsync("/Admin");
         Assert.Equal(HttpStatusCode.OK, admin.StatusCode);
-        var html = await admin.Content.ReadAsStringAsync();
+        var adminHtml = await admin.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("Ben Santos", adminHtml); // the name and role are not repeated on every page
+
+        var about = await client.GetAsync("/Admin/About");
+        Assert.Equal(HttpStatusCode.OK, about.StatusCode);
+        var html = await about.Content.ReadAsStringAsync();
         Assert.Contains("Ben Santos", html);
         Assert.Contains("OWNER", html);
     }

@@ -285,7 +285,6 @@ main:focus { outline: none; }
 }
 .subnav a:hover { border-color: var(--brand); }
 .subnav a[aria-current="page"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
-.subnav .who { margin: 0.25rem 1rem 0; font-size: 0.875rem; }
 
 .daynav { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .daynav a { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 0.5rem; font-weight: 600; text-decoration: none; }
@@ -454,7 +453,7 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
   h1 { font-size: 1.75rem; }
   .subnav { margin: 0 0 1rem; }
   .subnav ul { padding: 0 0 0.5rem; flex-wrap: wrap; overflow: visible; }
-  .subnav .who { margin: 0.25rem 0 0; }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -550,3 +549,25 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
   .qr-print .muted, .qr-actions { display: none; }
   .qr-box { width: 14cm; border: 0; }
 }
+
+/* Bookings filter: a segmented switch (Confirmed, Cancelled, Done) */
+
+.seg { display: flex; gap: 0.25rem; padding: 0.25rem; margin: 0 0 1rem; background: var(--soft); border: 1px solid var(--line); border-radius: 999px; }
+.seg a {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.5rem;
+  padding: 0 0.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 999px;
+}
+.seg a:hover { color: var(--ink); }
+.seg a[aria-current="true"] { background: var(--brand); color: var(--brand-ink); }
+.seg .count { font-size: 0.75rem; font-weight: 700; min-width: 1.25rem; padding: 0.05rem 0.4rem; text-align: center; background: rgba(0, 0, 0, 0.12); border-radius: 999px; }
+.seg a[aria-current="true"] .count { background: rgba(255, 255, 255, 0.25); }

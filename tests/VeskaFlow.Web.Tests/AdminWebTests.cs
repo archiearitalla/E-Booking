@@ -96,7 +96,7 @@ public class AdminWebTests
     }
 
     [Fact]
-    public async Task A_signed_in_owner_sees_every_page_with_the_role_badge_and_a_current_nav_item()
+    public async Task A_signed_in_owner_sees_every_page_with_a_current_nav_item_and_the_role_only_on_the_about_page()
     {
         var (factory, _) = await HttpApp.StartAsync();
         using var _f = factory;
@@ -107,7 +107,9 @@ public class AdminWebTests
             var response = await owner.Client.GetAsync(page);
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"{page} returned {(int)response.StatusCode}");
             var html = await response.Content.ReadAsStringAsync();
-            Assert.Contains("class=\"badge\" title=\"Your role\">OWNER", html); // role badge
+            // The name and role are kept off the working pages; they are on About only.
+            var hasRole = html.Contains("class=\"badge\" title=\"Your role\">OWNER");
+            Assert.Equal(page == "/Admin/About", hasRole);
             Assert.Contains("aria-label=\"Back office\"", html);               // landmark for keyboard and screen reader users
             Assert.Contains("class=\"skip-link\"", html);                      // skip to content
             Assert.Contains("aria-current=\"page\"", html);                    // current section announced
@@ -121,7 +123,7 @@ public class AdminWebTests
         using var _f = factory;
         var owner = await RegisterOwnerAsync(factory);
 
-        Assert.Contains(Text.DayEmpty, await owner.Client.GetStringAsync("/Admin"));
+        Assert.Contains(Text.DayEmptyConfirmed, await owner.Client.GetStringAsync("/Admin"));
         Assert.Contains(Text.ClosuresEmpty, await owner.Client.GetStringAsync("/Admin/Closures"));
         Assert.Contains(Text.AuditEmpty, await owner.Client.GetStringAsync("/Admin/Audit"));
 
@@ -204,7 +206,7 @@ public class AdminWebTests
         var theirs = await BookNextFreeAsync(b, "09175550199");
 
         var day = await a.Client.GetStringAsync($"/Admin?date={DateOf(theirs)}");
-        Assert.Contains(Text.DayEmpty, day);
+        Assert.Contains(Text.DayEmptyConfirmed, day);
         Assert.DoesNotContain("09175550199", day);
         Assert.DoesNotContain("09175550199", await a.Client.GetStringAsync("/Admin/Audit"));
     }
@@ -335,6 +337,43 @@ public class AdminWebTests
         Assert.Contains(string.Format(Text.StaffLimit, 1), Dec(await response.Content.ReadAsStringAsync()));
         await using var ctx = owner.Db.CreateDbContext();
         Assert.Equal(1, await ctx.StaffMembers.CountAsync(s => s.BusinessId == owner.BusinessId));
+    }
+
+    [Fact]
+    public async Task The_bookings_page_lists_confirmed_by_default_and_has_a_switch_for_cancelled_and_done()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+        var svc = new BookingService(owner.Db, TimeProvider.System);
+        var confirmed = await BookNextFreeAsync(owner, "09170000011");
+        var toCancel = await BookNextFreeAsync(owner, "09170000012");
+        Assert.True((await svc.TransitionAsync(owner.BusinessId, toCancel.Id, BookingStatus.Cancelled,
+            BookingActor.Staff(Guid.NewGuid(), "Owner"), "Changed plans")).IsSuccess);
+        var day = DateOf(confirmed);
+        Assert.Equal(day, DateOf(toCancel)); // both on the same day so the filter is what separates them
+
+        // Default: only what is still confirmed, and the cancelled booking is not in the list.
+        var byDefault = Dec(await owner.Client.GetStringAsync($"/Admin?date={day}"));
+        Assert.Contains("09170000011", byDefault);
+        Assert.DoesNotContain("09170000012", byDefault);
+        Assert.Contains("aria-current=\"true\"", byDefault);
+        Assert.Matches(@"Confirmed\s*<span class=""count"">1</span>", byDefault);
+        Assert.Matches(@"Cancelled\s*<span class=""count"">1</span>", byDefault);
+
+        // The switch: cancelled shows the cancelled one, with the reason's booking and no action buttons for it.
+        var cancelled = Dec(await owner.Client.GetStringAsync($"/Admin?date={day}&status=cancelled"));
+        Assert.Contains("09170000012", cancelled);
+        Assert.DoesNotContain("09170000011", cancelled);
+
+        // Done is empty until a booking is completed (it cannot be before it has started, so it stays empty here).
+        var done = Dec(await owner.Client.GetStringAsync($"/Admin?date={day}&status=done"));
+        Assert.Contains(Text.DayEmptyDone, done);
+
+        // Unknown values fall back to confirmed, and the day links keep the chosen filter.
+        var odd = Dec(await owner.Client.GetStringAsync($"/Admin?date={day}&status=nonsense"));
+        Assert.Contains("09170000011", odd);
+        Assert.Contains("status=cancelled", cancelled); // the previous and next day links carry the filter
     }
 
     [Fact]

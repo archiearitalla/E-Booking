@@ -7,9 +7,30 @@ namespace VeskaFlow.Web.Pages.Admin;
 /// <summary>Day view of bookings with complete, no-show and cancel. All rules live in BookingService.</summary>
 public class IndexModel(AdminDayService days, BookingService bookings) : AdminPageModel
 {
+    public const string Confirmed = "confirmed";
+    public const string Cancelled = "cancelled";
+    public const string Done = "done";
+
     [BindProperty(SupportsGet = true)] public DateOnly? Date { get; set; }
 
+    /// <summary>Which bookings to list: confirmed (the default), cancelled, or done (completed and no-show).</summary>
+    [BindProperty(SupportsGet = true)] public string? Status { get; set; }
+
     public DayView? View { get; private set; }
+
+    public string Filter => Status is Cancelled or Done ? Status : Confirmed;
+
+    public IReadOnlyList<DayBooking> Shown => View!.Bookings.Where(b => Matches(Filter, b.Status)).ToList();
+
+    public int CountFor(string filter) => View!.Bookings.Count(b => Matches(filter, b.Status));
+
+    /// <summary>Confirmed means still on the schedule (held, pending or confirmed); done means completed or no-show.</summary>
+    public static bool Matches(string filter, BookingStatus status) => filter switch
+    {
+        Cancelled => status == BookingStatus.Cancelled,
+        Done => status is BookingStatus.Completed or BookingStatus.NoShow,
+        _ => status.OccupiesSlot(),
+    };
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
@@ -18,7 +39,7 @@ public class IndexModel(AdminDayService days, BookingService bookings) : AdminPa
     }
 
     public async Task<IActionResult> OnPostTransitionAsync(
-        Guid id, string? action, uint? version, string? reason, DateOnly? date, CancellationToken ct)
+        Guid id, string? action, uint? version, string? reason, DateOnly? date, string? status, CancellationToken ct)
     {
         BookingStatus? target = action switch
         {
@@ -29,11 +50,14 @@ public class IndexModel(AdminDayService days, BookingService bookings) : AdminPa
         };
         if (target is null) return BadRequest();
 
+        // Stay on the same day and the same filter after the change.
+        var back = new { date = date?.ToString("yyyy-MM-dd"), status = status is Cancelled or Done ? status : null };
+
         var trimmed = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
         if (trimmed is { Length: > 200 })
         {
             Failure = Text.ReasonTooLong;
-            return RedirectToPage(new { date = date?.ToString("yyyy-MM-dd") });
+            return RedirectToPage(back);
         }
 
         // The booking must belong to the signed-in business; another tenant's id is simply "not found".
@@ -42,6 +66,6 @@ public class IndexModel(AdminDayService days, BookingService bookings) : AdminPa
 
         if (result.IsSuccess) Success = Text.BookingUpdated;
         else Failure = result.Message;
-        return RedirectToPage(new { date = date?.ToString("yyyy-MM-dd") });
+        return RedirectToPage(back);
     }
 }

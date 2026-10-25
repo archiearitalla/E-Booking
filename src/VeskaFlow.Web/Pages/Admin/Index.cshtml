@@ -6,31 +6,45 @@
     var view = Model.View!;
     var dateParam = DisplayFormat.DateParam(view.Date);
     var dateText = view.Date.ToString("dddd, MMMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture);
+    var filter = Model.Filter;
+    string Link(DateOnly d, string f) => $"?date={DisplayFormat.DateParam(d)}" + (f == IndexModel.Confirmed ? "" : $"&status={f}");
+    (string Key, string Label)[] filters =
+    [
+        (IndexModel.Confirmed, Text.FilterConfirmed), (IndexModel.Cancelled, Text.FilterCancelled), (IndexModel.Done, Text.FilterDone),
+    ];
+    var shown = Model.Shown;
 }
 <h1>@Text.AdminNavBookings</h1>
 
 <div class="card">
     <div class="daynav">
-        <a href="?date=@DisplayFormat.DateParam(view.Date.AddDays(-1))">&laquo; @Text.DayPrevious</a>
+        <a href="@Link(view.Date.AddDays(-1), filter)">&laquo; @Text.DayPrevious</a>
         <strong>@dateText</strong>
-        <a href="?date=@DisplayFormat.DateParam(view.Date.AddDays(1))">@Text.DayNext &raquo;</a>
+        <a href="@Link(view.Date.AddDays(1), filter)">@Text.DayNext &raquo;</a>
     </div>
     <form method="get" class="inline-form">
         <label for="date">@Text.BookDate</label>
         <input type="date" id="date" name="date" value="@dateParam" />
+        @if (filter != IndexModel.Confirmed) { <input type="hidden" name="status" value="@filter" /> }
         <button type="submit" class="primary">@Text.DayGo</button>
     </form>
 </div>
 
-@if (view.Bookings.Count == 0)
+<nav class="seg" aria-label="@Text.FilterLabel">
+    @foreach (var (key, label) in filters)
+    {
+        <a href="@Link(view.Date, key)" aria-current="@(key == filter ? "true" : null)">@label <span class="count">@Model.CountFor(key)</span></a>
+    }
+</nav>
+
+@if (shown.Count == 0)
 {
-    <div class="card empty"><p>@Text.DayEmpty</p></div>
+    <div class="card empty"><p>@(filter == IndexModel.Cancelled ? Text.DayEmptyCancelled : filter == IndexModel.Done ? Text.DayEmptyDone : Text.DayEmptyConfirmed)</p></div>
 }
 else
 {
-    <p class="muted" role="status">@string.Format(Text.DayCount, view.ActiveCount, view.Bookings.Count)</p>
     <ul class="bookings">
-        @foreach (var b in view.Bookings)
+        @foreach (var b in shown)
         {
             <li class="card booking @(b.Status.OccupiesSlot() ? "" : "inactive")">
                 <div class="booking-head">
@@ -50,6 +64,7 @@ else
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="version" value="@b.Version" />
                         <input type="hidden" name="date" value="@dateParam" />
+                        <input type="hidden" name="status" value="@filter" />
                         @if (b.CanComplete) { <button type="submit" name="action" value="complete" class="primary">@Text.ActionComplete</button> }
                         @if (b.CanNoShow) { <button type="submit" name="action" value="noshow" class="secondary">@Text.ActionNoShow</button> }
                     </form>
@@ -60,6 +75,7 @@ else
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="version" value="@b.Version" />
                         <input type="hidden" name="date" value="@dateParam" />
+                        <input type="hidden" name="status" value="@filter" />
                         <label for="reason-@b.Id">@Text.CancelReason</label>
                         <input type="text" id="reason-@b.Id" name="reason" maxlength="200" />
                         <button type="submit" name="action" value="cancel" class="danger">@Text.ActionCancel</button>

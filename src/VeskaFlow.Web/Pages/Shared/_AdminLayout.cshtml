@@ -23,7 +23,6 @@
             <li><a href="@href" aria-current="@(Current(href) ? "page" : null)">@label</a></li>
         }
     </ul>
-    <p class="who"><span class="muted">@User.DisplayName()</span> <span class="badge" title="@Text.AdminRoleTitle">@User.Role()</span></p>
 </nav>
 
 @if (Model is VeskaFlow.Web.Pages.Admin.AdminPageModel admin)

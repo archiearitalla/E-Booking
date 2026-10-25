@@ -23,3 +23,19 @@ public class BrandingTests
         }
     }
 }
+
+[Collection("http")]
+public class StaticFileVersionTests
+{
+    [Fact]
+    public async Task The_stylesheet_and_script_urls_carry_a_version_so_a_deploy_is_never_served_stale_files()
+    {
+        var (factory, client) = await StartAsync();
+        using var _f = factory;
+
+        var html = await client.GetStringAsync("/Login");
+
+        Assert.Contains("/css/site.css?v=", html);
+        Assert.Contains("/js/site.js?v=", html);
+    }
+}
