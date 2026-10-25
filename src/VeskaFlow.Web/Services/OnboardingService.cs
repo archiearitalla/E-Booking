@@ -80,8 +80,11 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
         };
         var staff = new Staff { BusinessId = business.Id, Name = ownerName };
         staff.StaffServices.Add(new StaffService { ServiceId = service.Id, BusinessId = business.Id });
-        for (short day = 1; day <= 6; day++) // Monday to Saturday
+        for (short day = 1; day <= 6; day++) // Monday to Saturday; the same hours are the shop's opening hours in Settings
+        {
             staff.WorkingHours.Add(new WorkingHour { DayOfWeek = day, OpenTime = new TimeOnly(9, 0), CloseTime = new TimeOnly(18, 0) });
+            db.Add(new BusinessHour { BusinessId = business.Id, DayOfWeek = day, OpenTime = new TimeOnly(9, 0), CloseTime = new TimeOnly(18, 0) });
+        }
 
         db.AddRange(business, owner, service, staff);
         try

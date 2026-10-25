@@ -63,15 +63,13 @@
 
         <p class="hint">@Text.ClosureTimeHint</p>
         <div class="field">
-            <label for="StartTime">@Text.ClosureFromTime</label>
-            <input type="time" id="StartTime" name="Input.StartTime" value="@Model.Input.StartTime"
-                   aria-invalid="@(Model.ErrorFor("startTime") is null ? "false" : "true")" aria-describedby="StartTime-error" />
+            <label for="StartTime_h">@Text.ClosureFromTime</label>
+            @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("StartTime", Model.Input.StartTime))
             @if (Model.ErrorFor("startTime") is { } e4) { <p class="error" id="StartTime-error">@e4</p> }
         </div>
         <div class="field">
-            <label for="EndTime">@Text.ClosureToTime</label>
-            <input type="time" id="EndTime" name="Input.EndTime" value="@Model.Input.EndTime"
-                   aria-invalid="@(Model.ErrorFor("endTime") is null ? "false" : "true")" aria-describedby="EndTime-error" />
+            <label for="EndTime_h">@Text.ClosureToTime</label>
+            @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("EndTime", Model.Input.EndTime))
             @if (Model.ErrorFor("endTime") is { } e5) { <p class="error" id="EndTime-error">@e5</p> }
         </div>
 

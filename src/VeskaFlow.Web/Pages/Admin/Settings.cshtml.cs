@@ -3,9 +3,47 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin;
 
-public class SettingsModel(ShopSettingsService settings, IConfiguration config) : AdminPageModel
+public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();
+
+    /// <summary>The shop's opening hours as the form shows them.</summary>
+    public Dictionary<short, DayFields> HourFields { get; private set; } = [];
+    public bool HoursFormSubmitted { get; private set; }
+
+    private async Task LoadHoursAsync(CancellationToken ct) =>
+        HourFields = HoursForm.Fill(await catalog.GetShopHoursAsync(BusinessId, ct));
+
+    /// <summary>Saves the opening hours and copies them to every staff member.</summary>
+    public async Task<IActionResult> OnPostHoursAsync(CancellationToken ct)
+    {
+        HoursFormSubmitted = true;
+        var read = HoursForm.Read(Request.Form);
+
+        ServiceResult<SaveOutcome> result;
+        if (read.Incomplete)
+            result = ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["hours"] = Text.HoursIncomplete });
+        else if (read.BadBreak)
+            result = ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["hours"] = Text.HoursBreakInvalid });
+        else
+            result = await catalog.SaveShopHoursAsync(BusinessId, read.Windows, ct);
+
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (!result.IsSuccess)
+        {
+            Errors = result.FieldErrors;
+            var current = await settings.GetSettingsAsync(BusinessId, ct);
+            if (current is null) return NotFound();
+            Apply(current);
+            BuildQr();
+            HourFields = HoursForm.ReadFields(Request.Form); // keep what was picked
+            return Page();
+        }
+
+        var affected = result.Value!.AffectedBookings;
+        Success = affected > 0 ? string.Format(Text.ShopHoursSavedAffected, affected) : Text.ShopHoursSaved;
+        return Redirect("/Admin/Settings#opening-hours");
+    }
 
     public string Slug { get; private set; } = "";
     public string Plan { get; private set; } = "";
@@ -20,6 +58,7 @@ public class SettingsModel(ShopSettingsService settings, IConfiguration config) 
         if (current is null) return NotFound();
         Apply(current);
         BuildQr();
+        await LoadHoursAsync(ct);
         return Page();
     }
 
@@ -52,6 +91,7 @@ public class SettingsModel(ShopSettingsService settings, IConfiguration config) 
             Slug = current?.Slug ?? "";
             Plan = current?.Plan ?? "";
             BuildQr();
+            await LoadHoursAsync(ct);
             return Page(); // keep what was typed
         }
 

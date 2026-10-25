@@ -24,8 +24,19 @@
 </div>
 
 <div class="card">
+    <h2 id="opening-hours">@Text.ShopHoursTitle</h2>
+    <p class="hint">@Text.ShopHoursHint</p>
+    <form method="post" asp-page-handler="Hours" novalidate>
+        @if (Model.ErrorFor("hours") is { } he) { <div class="alert" role="alert">@he</div> }
+        @await Html.PartialAsync("_HoursGrid", Model.HourFields)
+        <p class="hint">@Text.HoursBlankClosed</p>
+        <button type="submit" class="primary">@Text.ShopHoursSave</button>
+    </form>
+</div>
+
+<div class="card">
     <form method="post" novalidate>
-        @if (Model.Errors.Count > 0) { <div class="alert" role="alert">@Text.ValidationFailed</div> }
+        @if (Model.Errors.Count > 0 && !Model.HoursFormSubmitted) { <div class="alert" role="alert">@Text.ValidationFailed</div> }
 
         <div class="field">
             <label for="Name">@Text.LabelShopName</label>

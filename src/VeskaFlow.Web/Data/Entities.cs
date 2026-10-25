@@ -73,6 +73,17 @@ public class WorkingHour
     public TimeOnly CloseTime { get; set; }
 }
 
+/// <summary>The shop's opening hours, set once in Settings. They are copied to every staff member's weekly hours (and to new staff).</summary>
+public class BusinessHour
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    /// <summary>0 = Sunday ... 6 = Saturday (matches System.DayOfWeek).</summary>
+    public short DayOfWeek { get; set; }
+    public TimeOnly OpenTime { get; set; }
+    public TimeOnly CloseTime { get; set; }
+}
+
 public class Blackout
 {
     public Guid Id { get; set; } = Guid.NewGuid();

@@ -1,0 +1,21 @@
+@model Dictionary<short, VeskaFlow.Web.Pages.DayFields>
+@foreach (var day in VeskaFlow.Web.Pages.HoursForm.DayOrder)
+{
+    var f = Model[day];
+    var dayName = VeskaFlow.Web.Pages.HoursForm.DayName(day);
+    <fieldset class="hours-day">
+        <legend>@dayName</legend>
+        <div class="hours-row">
+            <label for="open_@(day)_h">@Text.HoursOpen<span class="sr-only"> @dayName</span></label>
+            @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("open_" + day, f.Open))
+            <label for="close_@(day)_h">@Text.HoursClose<span class="sr-only"> @dayName</span></label>
+            @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("close_" + day, f.Close))
+        </div>
+        <div class="hours-row">
+            <label for="breakfrom_@(day)_h">@Text.HoursBreakFrom<span class="sr-only"> @dayName</span></label>
+            @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("breakfrom_" + day, f.BreakFrom))
+            <label for="breakto_@(day)_h">@Text.HoursBreakTo<span class="sr-only"> @dayName</span></label>
+            @await Html.PartialAsync("_TimePicker", new VeskaFlow.Web.Pages.TimePickerModel("breakto_" + day, f.BreakTo))
+        </div>
+    </fieldset>
+}

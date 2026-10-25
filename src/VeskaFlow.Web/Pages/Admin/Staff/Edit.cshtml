@@ -58,25 +58,7 @@
         <p class="hint">@string.Format(Text.HoursHint, Model.TimeZone)</p>
         <form method="post" asp-page-handler="Hours" asp-route-id="@Model.StaffId" novalidate>
             @if (Model.ErrorFor("hours") is { } he) { <div class="alert" role="alert">@he</div> }
-            @foreach (var day in EditModel.DayOrder)
-            {
-                <fieldset class="hours-day">
-                    <legend>@EditModel.DayName(day)</legend>
-                    @{ var f = Model.HourFields[day]; }
-                    <div class="hours-row">
-                        <label for="open_@day">@Text.HoursOpen<span class="sr-only"> @EditModel.DayName(day)</span></label>
-                        <input type="time" id="open_@day" name="open_@day" value="@f.Open" />
-                        <label for="close_@day">@Text.HoursClose<span class="sr-only"> @EditModel.DayName(day)</span></label>
-                        <input type="time" id="close_@day" name="close_@day" value="@f.Close" />
-                    </div>
-                    <div class="hours-row">
-                        <label for="breakfrom_@day">@Text.HoursBreakFrom<span class="sr-only"> @EditModel.DayName(day)</span></label>
-                        <input type="time" id="breakfrom_@day" name="breakfrom_@day" value="@f.BreakFrom" />
-                        <label for="breakto_@day">@Text.HoursBreakTo<span class="sr-only"> @EditModel.DayName(day)</span></label>
-                        <input type="time" id="breakto_@day" name="breakto_@day" value="@f.BreakTo" />
-                    </div>
-                </fieldset>
-            }
+            @await Html.PartialAsync("_HoursGrid", Model.HourFields)
             <p class="hint">@Text.HoursBlankClosed</p>
             <button type="submit" class="primary">@Text.HoursSave</button>
         </form>

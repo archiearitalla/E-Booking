@@ -584,3 +584,8 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .service-item summary::after { content: "\25BE"; float: right; color: var(--muted, #667); }
 .service-item[open] summary::after { content: "\25B4"; }
 .service-item summary .booking-head { display: inline-flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+
+/* Time picker: hour, minute and AM/PM dropdowns. */
+.timepick { display: inline-flex; gap: 0.25rem; align-items: center; flex-wrap: nowrap; }
+.timepick select { width: auto; min-width: 0; }
+.hours-row { grid-template-columns: auto 1fr; }

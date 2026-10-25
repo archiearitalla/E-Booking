@@ -1,0 +1,26 @@
+@model VeskaFlow.Web.Pages.TimePickerModel
+@{
+    var parts = Model.Parts();
+    var minutes = VeskaFlow.Web.Pages.TimePickerModel.Minutes.ToList();
+    // Keep a saved time that is not on a 5-minute step.
+    if (parts is { } p0 && !minutes.Contains(p0.Minute.ToString("00"))) { minutes.Add(p0.Minute.ToString("00")); minutes.Sort(); }
+}
+<span class="timepick" role="group" aria-label="@Model.Name">
+    <select id="@(Model.Name)_h" name="@(Model.Name)_h" aria-label="Hour">
+        <option value="">--</option>
+        @for (var h = 1; h <= 12; h++)
+        {
+            <option value="@h" selected="@(parts?.Hour == h)">@h</option>
+        }
+    </select>
+    <select id="@(Model.Name)_m" name="@(Model.Name)_m" aria-label="Minute">
+        @foreach (var m in minutes)
+        {
+            <option value="@m" selected="@(parts is { } p && p.Minute.ToString("00") == m)">@m</option>
+        }
+    </select>
+    <select id="@(Model.Name)_ap" name="@(Model.Name)_ap" aria-label="AM or PM">
+        <option value="AM" selected="@(parts?.Suffix != "PM")">AM</option>
+        <option value="PM" selected="@(parts?.Suffix == "PM")">PM</option>
+    </select>
+</span>

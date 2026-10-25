@@ -338,8 +338,8 @@ public class AdminWebTests
                 monday.Select(h => (h.OpenTime, h.CloseTime)).ToArray());
         }
         var page = Dec(await owner.Client.GetStringAsync(url));
-        Assert.Contains("value=\"12:00\"", page);
-        Assert.Contains("value=\"13:00\"", page);
+        Assert.Contains("<option value=\"12\" selected", page); // break from 12 PM
+        Assert.Contains("<option value=\"PM\" selected", page);
 
         // A break outside the opening hours, or with only one time, is refused and nothing changes.
         var outside = await PostAsync(owner.Client, url, $"{url}?handler=Hours",
@@ -348,6 +348,33 @@ public class AdminWebTests
         var half = await PostAsync(owner.Client, url, $"{url}?handler=Hours",
             new() { ["open_1"] = "09:00", ["close_1"] = "18:00", ["breakfrom_1"] = "12:00", ["breakto_1"] = "" });
         Assert.Contains(Text.HoursIncomplete, Dec(await half.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task Hours_can_be_picked_with_hour_minute_and_AM_PM_and_are_shown_that_way()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+        var url = $"/Admin/Staff/Edit/{owner.StaffId}";
+
+        var saved = await PostAsync(owner.Client, url, $"{url}?handler=Hours", new()
+        {
+            ["open_2_h"] = "9", ["open_2_m"] = "00", ["open_2_ap"] = "AM",
+            ["close_2_h"] = "6", ["close_2_m"] = "30", ["close_2_ap"] = "PM",
+            ["breakfrom_2_h"] = "12", ["breakfrom_2_m"] = "00", ["breakfrom_2_ap"] = "PM",
+            ["breakto_2_h"] = "1", ["breakto_2_m"] = "00", ["breakto_2_ap"] = "PM",
+        });
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+
+        await using var ctx = owner.Db.CreateDbContext();
+        var tuesday = await ctx.WorkingHours.Where(h => h.StaffId == owner.StaffId && h.DayOfWeek == 2).OrderBy(h => h.OpenTime).ToListAsync();
+        Assert.Equal([(new TimeOnly(9, 0), new TimeOnly(12, 0)), (new TimeOnly(13, 0), new TimeOnly(18, 30))],
+            tuesday.Select(h => (h.OpenTime, h.CloseTime)).ToArray());
+
+        var page = Dec(await owner.Client.GetStringAsync(url));
+        Assert.Contains("<option value=\"PM\" selected", page);
+        Assert.Contains("AM or PM", page);
     }
 
     // ------------------------------------------------------------ staff, settings, about

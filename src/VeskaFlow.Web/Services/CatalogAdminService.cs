@@ -205,8 +205,14 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
 
         if (isNew)
         {
-            for (short day = 1; day <= 6; day++) // same starter hours as onboarding: Monday to Saturday
-                staff.WorkingHours.Add(new WorkingHour { DayOfWeek = day, OpenTime = new TimeOnly(9, 0), CloseTime = new TimeOnly(18, 0) });
+            // New staff start with the shop's opening hours from Settings (Monday to Saturday 9 to 6 when none are set).
+            var shopHours = await db.BusinessHours.AsNoTracking().Where(h => h.BusinessId == businessId).ToListAsync(ct);
+            if (shopHours.Count > 0)
+                foreach (var h in shopHours)
+                    staff.WorkingHours.Add(new WorkingHour { DayOfWeek = h.DayOfWeek, OpenTime = h.OpenTime, CloseTime = h.CloseTime });
+            else
+                for (short day = 1; day <= 6; day++)
+                    staff.WorkingHours.Add(new WorkingHour { DayOfWeek = day, OpenTime = new TimeOnly(9, 0), CloseTime = new TimeOnly(18, 0) });
         }
         foreach (var link in staff.StaffServices.Where(l => !wanted.Contains(l.ServiceId)).ToList())
             staff.StaffServices.Remove(link);
@@ -227,12 +233,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     public async Task<ServiceResult<SaveOutcome>> SaveHoursAsync(
         Guid businessId, Guid staffId, IReadOnlyList<HourWindow> windows, CancellationToken ct = default)
     {
-        var errors = new Dictionary<string, string>();
-        foreach (var w in windows)
-        {
-            if (w.DayOfWeek is < 0 or > 6 || w.Open == w.Close) { errors["hours"] = Text.HoursInvalid; break; }
-        }
-        if (errors.Count == 0 && HasOverlap(windows)) errors["hours"] = Text.HoursOverlap;
+        var errors = HoursErrors(windows);
         if (errors.Count > 0) return ServiceResult<SaveOutcome>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -246,6 +247,65 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         await tx.CommitAsync(ct);
 
         return ServiceResult<SaveOutcome>.Ok(new SaveOutcome(staffId, await CountOutsideHoursAsync(businessId, staffId, windows, ct)));
+    }
+
+    private static Dictionary<string, string> HoursErrors(IReadOnlyList<HourWindow> windows)
+    {
+        var errors = new Dictionary<string, string>();
+        foreach (var w in windows)
+        {
+            if (w.DayOfWeek is < 0 or > 6 || w.Open == w.Close) { errors["hours"] = Text.HoursInvalid; break; }
+        }
+        if (errors.Count == 0 && HasOverlap(windows)) errors["hours"] = Text.HoursOverlap;
+        return errors;
+    }
+
+    /// <summary>
+    /// The shop's opening hours from Settings. A shop that never set them shows its first staff member's hours,
+    /// which is what its other staff started with.
+    /// </summary>
+    public async Task<IReadOnlyList<HourWindow>> GetShopHoursAsync(Guid businessId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.BusinessHours.AsNoTracking().Where(h => h.BusinessId == businessId)
+            .OrderBy(h => h.DayOfWeek).ThenBy(h => h.OpenTime)
+            .Select(h => new HourWindow(h.DayOfWeek, h.OpenTime, h.CloseTime)).ToListAsync(ct);
+        if (rows.Count > 0) return rows;
+
+        var first = await db.StaffMembers.AsNoTracking().Where(s => s.BusinessId == businessId)
+            .OrderBy(s => s.SortOrder).ThenBy(s => s.Name).Select(s => (Guid?)s.Id).FirstOrDefaultAsync(ct);
+        if (first is null) return [];
+        return await db.WorkingHours.AsNoTracking().Where(h => h.StaffId == first)
+            .OrderBy(h => h.DayOfWeek).ThenBy(h => h.OpenTime)
+            .Select(h => new HourWindow(h.DayOfWeek, h.OpenTime, h.CloseTime)).ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Saves the shop's opening hours and copies them to every staff member (replacing their weekly hours).
+    /// Individual hours can still be changed afterwards on the Staff page. Bookings are never cancelled; the result
+    /// counts upcoming bookings left outside the new hours.
+    /// </summary>
+    public async Task<ServiceResult<SaveOutcome>> SaveShopHoursAsync(Guid businessId, IReadOnlyList<HourWindow> windows, CancellationToken ct = default)
+    {
+        var errors = HoursErrors(windows);
+        if (errors.Count > 0) return ServiceResult<SaveOutcome>.Invalid(errors);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Businesses.AnyAsync(b => b.Id == businessId, ct)) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
+        var staffIds = await db.StaffMembers.Where(s => s.BusinessId == businessId).Select(s => s.Id).ToListAsync(ct);
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.BusinessHours.Where(h => h.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        db.BusinessHours.AddRange(windows.Select(w => new BusinessHour { BusinessId = businessId, DayOfWeek = w.DayOfWeek, OpenTime = w.Open, CloseTime = w.Close }));
+        await db.WorkingHours.Where(h => staffIds.Contains(h.StaffId)).ExecuteDeleteAsync(ct);
+        foreach (var staffId in staffIds)
+            db.WorkingHours.AddRange(windows.Select(w => new WorkingHour { StaffId = staffId, DayOfWeek = w.DayOfWeek, OpenTime = w.Open, CloseTime = w.Close }));
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+
+        var affected = 0;
+        foreach (var staffId in staffIds) affected += await CountOutsideHoursAsync(businessId, staffId, windows, ct);
+        return ServiceResult<SaveOutcome>.Ok(new SaveOutcome(businessId, affected));
     }
 
     /// <summary>Windows on one day may not overlap. A window that closes at or before it opens runs past midnight.</summary>

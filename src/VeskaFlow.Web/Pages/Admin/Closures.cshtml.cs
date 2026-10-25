@@ -44,6 +44,9 @@ public class ClosuresModel(ShopSettingsService settings, CatalogAdminService cat
 
     public async Task<IActionResult> OnPostAddAsync(CancellationToken ct)
     {
+        // Times come from the AM/PM dropdowns; keep what was picked so the form is not emptied on an error.
+        Input.StartTime = TimeFields.Read(Request.Form, "StartTime");
+        Input.EndTime = TimeFields.Read(Request.Form, "EndTime");
         if (!TryTime(Input.StartTime, out var startTime) || !TryTime(Input.EndTime, out var endTime))
         {
             Errors = new Dictionary<string, string> { ["startTime"] = Text.ClosureTimesBoth };

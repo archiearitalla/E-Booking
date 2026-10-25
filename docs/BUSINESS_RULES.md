@@ -376,6 +376,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - A one-off closure can have a start and an end time (both or neither): it then runs from the first day at the start time to the last day at the end time (business time zone). Without times it closes whole days.
 - A repeating closure can be for one weekday or every day, and for the whole day or a time window such as 12:00 to 13:00 (a lunch break). It can be switched off and on. Times are local wall-clock times in the business time zone.
 - Existing bookings are never cancelled; the owner is told how many fall inside.
+- Opening hours are set once in Settings (`business_hour`, same shape as `working_hour`; a break is two windows on one day). Saving copies them to every staff member's weekly hours, replacing them, and new staff start with them. A person's own hours can still be changed on the Staff page afterwards; later Settings saves overwrite those again. Closures are for days off and one-time changes. Times are picked with hour, minute and AM/PM dropdowns (stored as 24-hour `HH:mm`).
 
 ### 18.2 Sign-up and the 30-day trial
 
