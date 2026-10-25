@@ -81,6 +81,7 @@ public static class Text
 
     public const string BookTitle = "Book an appointment";
     public const string BookService = "Service";
+    public const string BookServicePlaceholder = "Choose a service";
     public const string BookStaff = "Barber";
     public const string BookStaffAny = "Any available";
     public const string StaffLabelSalon = "Stylist";
