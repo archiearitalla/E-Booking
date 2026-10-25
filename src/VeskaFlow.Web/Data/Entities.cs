@@ -65,6 +65,8 @@ public class Service
     public int SortOrder { get; set; }
     /// <summary>Suggested days until a follow-up visit after this service. Null means no follow-up is suggested.</summary>
     public int? FollowUpDays { get; set; }
+    /// <summary>The "Other" service: for a visit whose service is not in the list. The booking keeps the text that was typed.</summary>
+    public bool IsOther { get; set; }
 }
 
 public class StaffService

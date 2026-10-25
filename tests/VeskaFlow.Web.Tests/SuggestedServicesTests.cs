@@ -26,13 +26,13 @@ public class SuggestedServicesTests
         Assert.Equal(0, await catalog.AddSuggestedServicesAsync(owner.BusinessId));
 
         var names = (await catalog.ListServicesAsync(owner.BusinessId)).Select(s => s.Name).ToList();
-        Assert.Equal(suggested.Count, names.Count);
+        Assert.Equal(suggested.Count + 1, names.Count); // the suggestions, plus the "Other" service every shop has
         Assert.Equal(names.Count, names.Select(n => n.ToLowerInvariant()).Distinct().Count());
 
         // New services are linked to the existing staff so they can be booked.
         await using var ctx = db.CreateDbContext();
         var staffId = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
-        Assert.Equal(suggested.Count, await ctx.StaffServices.CountAsync(x => x.StaffId == staffId));
+        Assert.Equal(suggested.Count + 1, await ctx.StaffServices.CountAsync(x => x.StaffId == staffId));
     }
 
     [Fact]
@@ -47,6 +47,6 @@ public class SuggestedServicesTests
 
         await catalog.AddSuggestedServicesAsync(a.BusinessId);
 
-        Assert.Single(await catalog.ListServicesAsync(b.BusinessId));
+        Assert.Equal(2, (await catalog.ListServicesAsync(b.BusinessId)).Count); // only its starter service and "Other"
     }
 }

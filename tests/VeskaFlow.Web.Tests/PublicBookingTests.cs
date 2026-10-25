@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
 using VeskaFlow.Web.Data;
@@ -23,7 +23,7 @@ public class PublicBookingTests
         await using var ctx = db.CreateDbContext();
         await ctx.Businesses.Where(b => b.Id == owner.BusinessId)
             .ExecuteUpdateAsync(s => s.SetProperty(b => b.CancelCutoffHours, cancelCutoffHours));
-        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
         var staffId = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
         return new ShopInfo(slug, owner.BusinessId, serviceId, staffId, db);
     }

@@ -1,10 +1,10 @@
-using VeskaFlow.Core.Scheduling;
+﻿using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price);
+public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false);
 
 public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> ServiceIds);
 
@@ -72,7 +72,7 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
         var services = await db.Services.AsNoTracking()
             .Where(s => s.BusinessId == business.Id && s.IsActive)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price))
+            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther))
             .ToListAsync(ct);
 
         var staffRows = await db.StaffMembers.AsNoTracking()

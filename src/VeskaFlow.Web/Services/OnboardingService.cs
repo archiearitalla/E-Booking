@@ -95,15 +95,21 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
         {
             BusinessId = business.Id, Name = Industries.StarterService(industry), DurationMinutes = 30, Price = 0,
         };
+        // "Other" is always offered last, for a visit whose service is not in the list.
+        var other = new Service
+        {
+            BusinessId = business.Id, Name = Text.OtherServiceName, DurationMinutes = 30, Price = 0, SortOrder = 1000, IsOther = true,
+        };
         var staff = new Staff { BusinessId = business.Id, Name = ownerName };
         staff.StaffServices.Add(new StaffService { ServiceId = service.Id, BusinessId = business.Id });
+        staff.StaffServices.Add(new StaffService { ServiceId = other.Id, BusinessId = business.Id });
         for (short day = 1; day <= 6; day++) // Monday to Saturday; the same hours are the shop's opening hours in Settings
         {
             staff.WorkingHours.Add(new WorkingHour { DayOfWeek = day, OpenTime = new TimeOnly(9, 0), CloseTime = new TimeOnly(18, 0) });
             db.Add(new BusinessHour { BusinessId = business.Id, DayOfWeek = day, OpenTime = new TimeOnly(9, 0), CloseTime = new TimeOnly(18, 0) });
         }
 
-        db.AddRange(business, owner, service, staff);
+        db.AddRange(business, owner, service, other, staff);
         try
         {
             await db.SaveChangesAsync(ct);

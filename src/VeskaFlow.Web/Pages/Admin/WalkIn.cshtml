@@ -16,11 +16,20 @@
                     <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" required />
                     <span>
                         <strong>@service.Name</strong>
-                        <span class="muted">@DisplayFormat.Duration(service.DurationMinutes) &middot; @DisplayFormat.Price(service.Price)</span>
+                        <span class="muted">@DisplayFormat.Duration(service.DurationMinutes)@(service.IsOther ? "" : " · " + DisplayFormat.Price(service.Price))</span>
                     </span>
                 </label>
             }
         </fieldset>
+        @if (Model.Services.Any(s => s.IsOther))
+        {
+            <div class="field">
+                <label for="serviceNote">@Text.WalkInOtherLabel</label>
+                <input type="text" id="serviceNote" name="serviceNote" value="@Model.ServiceNote" maxlength="60"
+                       aria-invalid="@(Model.ErrorFor("serviceNote") is null ? "false" : "true")" aria-describedby="serviceNote-error" />
+                @if (Model.ErrorFor("serviceNote") is { } eO) { <p class="error" id="serviceNote-error">@eO</p> }
+            </div>
+        }
         <div class="field">
             <label for="staffId">@Text.ManageWith</label>
             <select id="staffId" name="staffId">
@@ -48,6 +57,7 @@
             <form method="post" novalidate>
                 <input type="hidden" name="ServiceId" value="@Model.ServiceId" />
                 <input type="hidden" name="StaffId" value="@Model.StaffId" />
+                <input type="hidden" name="ServiceNote" value="@Model.ServiceNote" />
                 <input type="hidden" name="Input.IdempotencyKey" value="@Model.Input.IdempotencyKey" />
 
                 <fieldset class="field">

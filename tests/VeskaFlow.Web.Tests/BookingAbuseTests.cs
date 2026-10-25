@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
@@ -22,7 +22,7 @@ public class BookingAbuseServiceTests
         var owner = (await new OnboardingService(db, clock).RegisterAsync(
             new RegisterRequest("Clinic", Id("ab"), "Dr A", $"{Id("o")}@example.com", "correct-horse-1", Industry: "clinic", TrialDays: 30))).Value!;
         await using var ctx = db.CreateDbContext();
-        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
         var staffA = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
         var second = await new CatalogAdminService(db, clock).SaveStaffAsync(owner.BusinessId, new StaffInput(null, "Dr B", true, 1, [service]));
         Assert.True(second.IsSuccess, second.Message);
@@ -133,7 +133,7 @@ public class BookingHoneypotWebTests
         var owner = (await new OnboardingService(db).RegisterAsync(
             new RegisterRequest("Honeypot Clinic", slug, "Dr A", $"{Unique("o")}@example.com", "correct-horse-1", Industry: "clinic"))).Value!;
         await using var ctx = db.CreateDbContext();
-        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
 
         var svc = new BookingService(db, TimeProvider.System);
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));

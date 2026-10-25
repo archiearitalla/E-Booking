@@ -1,11 +1,11 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record ServiceRow(Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null);
+public sealed record ServiceRow(Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null, bool IsOther = false);
 
 public sealed record ServiceInput(Guid? Id, string? Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null);
 
@@ -40,7 +40,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Services.AsNoTracking().Where(s => s.BusinessId == businessId && s.Id == id)
-            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays))
+            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays, s.IsOther))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -117,7 +117,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     private static Task<List<ServiceRow>> ServiceRows(AppDbContext db, Guid businessId, CancellationToken ct) =>
         db.Services.AsNoTracking().Where(s => s.BusinessId == businessId)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays))
+            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays, s.IsOther))
             .ToListAsync(ct);
 
     // ------------------------------------------------------------------ staff

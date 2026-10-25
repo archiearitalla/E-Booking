@@ -11,6 +11,9 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking) : Pa
     [BindProperty(SupportsGet = true)] public DateOnly? Date { get; set; }
     [BindProperty(SupportsGet = true)] public bool Taken { get; set; }
 
+    /// <summary>What the customer needs when they chose "Other".</summary>
+    [BindProperty(SupportsGet = true)] public string? ServiceNote { get; set; }
+
     public PublicShop? Shop { get; private set; }
     public bool Searched { get; private set; }
     public string? Notice { get; private set; }
@@ -47,6 +50,12 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking) : Pa
         if (service is null) return Page(); // nothing chosen yet (or an id from another shop, which shows nothing)
 
         Searched = true;
+        ServiceNote = ServiceNote?.Trim();
+        if (service.IsOther && string.IsNullOrEmpty(ServiceNote))
+        {
+            Notice = Text.OtherServiceRequired; // "Other" needs a few words about what the customer wants
+            return Page();
+        }
         var result = await booking.GetFreeStartsAsync(Shop.Id, service.Id, StaffId, SelectedDate, walkIn: false, ct);
         if (result.IsSuccess) Times = result.Value!;
         else Notice = Text.BookStaffMismatch;

@@ -178,9 +178,9 @@ public static class Text
     public const string CancelReason = "Reason (required)";
     public const string CancelReasonRequired = "Write the reason for cancelling. The customer is affected and the reason is kept in the audit log.";
     public const string ConfirmCancelStaff = "Cancel this booking? The time becomes free and the customer is not told automatically.";
-    public const string StatusOnlyToday = "Mark completed and Mark no-show are only for today's bookings, not for another day.";
-    public const string StatusLater = "Mark completed and Mark no-show turn on when the appointment starts.";
-    public const string NoShowLater = "Mark no-show turns on 15 minutes after the appointment starts.";
+    public const string StatusOnlyToday = "Mark completed and Mark no-show only appear for today's bookings.";
+    public const string StatusLater = "Mark completed and Mark no-show appear when the appointment starts.";
+    public const string NoShowLater = "Mark no-show appears 15 minutes after the appointment starts.";
     public const string ConfirmBooking = "Book this time? You can cancel later from your booking link.";
     public const string ConfirmCancelCustomer = "Cancel your booking? This cannot be undone.";
     public const string ConfirmNoShow = "Mark this customer as a no-show?";
@@ -222,6 +222,13 @@ public static class Text
     public const string HintFollowUpDays = "For services that need a return visit, for example 14. After you mark a booking completed, this date is suggested. Leave empty if it does not apply.";
     public const string FollowUpsHint = "Customers who should come back. Each has a ready-made message: copy it or send it as a text from your phone. Nothing is sent automatically.";
     public const string FollowUpsEmpty = "No follow-ups to do. Set one after you mark a booking completed (Bookings, Done).";
+    public const string OtherServiceName = "Other";
+    public const string WalkInOtherLabel = "If Other: what does the customer need?";
+    public const string OtherServicePrice = "The shop will tell you the price";
+    public const string OtherServiceHint = "Not in the list? Choose Other and tell us what you need.";
+    public const string OtherServiceLabel = "What service do you need? (only if you chose Other)";
+    public const string OtherServiceRequired = "Please say what service you need (up to 60 characters).";
+    public const string OtherServiceIsOther = "For visits whose service is not in your list. Customers and walk-ins choose Other and type what they need. Set how long it takes, or switch it off.";
     public const string EmailNotConfirmed = "Confirm your email address first. We sent you a link when you signed up.";
     public const string ShopDisabled = "This account is switched off. Please contact the administrator.";
     public const string SignupPending = "Thanks! Your shop will be switched on by the administrator soon. You can sign in after that.";

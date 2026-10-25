@@ -13,6 +13,9 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
 {
     [BindProperty(SupportsGet = true)] public Guid? ServiceId { get; set; }
     [BindProperty(SupportsGet = true)] public Guid? StaffId { get; set; }
+
+    /// <summary>What the customer needs when "Other" is chosen (the service is not in the list).</summary>
+    [BindProperty(SupportsGet = true)] public string? ServiceNote { get; set; }
     [BindProperty] public WalkInForm Input { get; set; } = new();
 
     public IReadOnlyList<ServiceRow> Services { get; private set; } = [];
@@ -21,9 +24,18 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
     public string TimeZone { get; private set; } = "Asia/Manila";
     public bool Searched { get; private set; }
 
+    /// <summary>True when the chosen service is the "Other" one.</summary>
+    public bool SelectedIsOther => Services.Any(s => s.Id == ServiceId && s.IsOther);
+
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         await LoadAsync(ct);
+        ServiceNote = ServiceNote?.Trim();
+        if (SelectedIsOther && string.IsNullOrEmpty(ServiceNote))
+        {
+            Errors = new Dictionary<string, string> { ["serviceNote"] = Text.OtherServiceRequired }; // say what "Other" is first
+            return Page();
+        }
         if (ServiceId is not null) await LoadTimesAsync(ct);
         if (Searched && Input.IdempotencyKey is null) Input = new WalkInForm { Name = Text.WalkInNameDefault, IdempotencyKey = Guid.NewGuid().ToString("N") };
         return Page();
@@ -43,7 +55,7 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
         // The business comes from the signed-in user; the server re-derives availability for the chosen time.
         var result = await booking.CreateAsync(new CreateBookingRequest(
             BusinessId, ServiceId.Value, StaffId, start, Input.Name ?? "", Input.Phone ?? "", null,
-            Input.IdempotencyKey ?? "", StaffActor), ct);
+            Input.IdempotencyKey ?? "", StaffActor, ServiceNote?.Trim()), ct);
 
         if (result.IsSuccess)
         {
@@ -54,7 +66,7 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
         if (result.Failure == FailureKind.SlotTaken)
         {
             Failure = Text.WalkInTaken;
-            return RedirectToPage(new { serviceId = ServiceId, staffId = StaffId });
+            return RedirectToPage(new { serviceId = ServiceId, staffId = StaffId, serviceNote = ServiceNote });
         }
         if (result.Failure == FailureKind.Validation) Errors = result.FieldErrors;
         else if (result.Failure == FailureKind.NotFound) return NotFound();

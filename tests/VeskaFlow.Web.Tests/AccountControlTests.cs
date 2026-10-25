@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using VeskaFlow.Web.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -106,7 +106,7 @@ public class AccountControlTests
         var bookings = new BookingService(s.Db, s.Clock);
         var catalog = new ShopCatalogService(s.Db, s.Clock);
         await using var ctx = s.Db.CreateDbContext();
-        var service = await ctx.Services.Where(x => x.BusinessId == owner.BusinessId).Select(x => x.Id).SingleAsync();
+        var service = await ctx.Services.Where(x => x.BusinessId == owner.BusinessId && !x.IsOther).Select(x => x.Id).SingleAsync();
 
         Assert.True((await s.Accounts.SetEnabledAsync(owner.BusinessId, false)).IsSuccess);
         Assert.False(await s.Accounts.IsEnabledAsync(owner.BusinessId));

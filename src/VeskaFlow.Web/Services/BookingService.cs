@@ -52,6 +52,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
 
     // ---------------------------------------------------------------- create
 
+    /// <summary>Longest text a person can type to say what "Other" is.</summary>
+    public const int MaxServiceNote = 60;
+
     public async Task<ServiceResult<CreateOutcome>> CreateAsync(CreateBookingRequest request, CancellationToken ct = default)
     {
         var errors = ValidateInput(request, out var name, out var phone, out var email);
@@ -71,6 +74,14 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var service = business is null ? null : await LoadServiceAsync(db, request.BusinessId, request.ServiceId, ct);
         if (business is null || service is null)
             return ServiceResult<CreateOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        // "Other": the person must say what they need, and the booking keeps that text as its service name.
+        if (service.IsOther)
+        {
+            var note = (request.ServiceNote ?? "").Trim();
+            if (note.Length is < 1 or > MaxServiceNote)
+                return ServiceResult<CreateOutcome>.Invalid(new Dictionary<string, string> { ["serviceNote"] = Text.OtherServiceRequired });
+        }
 
         // A finished trial closes online booking for customers; staff can still record bookings.
         if (request.Actor.Kind != ActorKind.Staff && business.TrialEndsAtUtc is { } trialEnds
@@ -205,7 +216,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 LocationTimeZone = business.TimeZone,
                 Status = BookingStatus.Confirmed, // MVP: pay on site, instant confirmation
                 PriceSnapshot = service.Price,
-                ServiceNameSnapshot = service.Name,
+                ServiceNameSnapshot = service.IsOther ? $"{service.Name}: {(request.ServiceNote ?? "").Trim()}" : service.Name,
                 ManageToken = NewManageToken(),
                 IdempotencyKey = key,
                 CreatedAtUtc = now,

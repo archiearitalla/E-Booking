@@ -17,21 +17,29 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
 
     public string ChangeTimeUrl => Url.Page("/Book/Index", new
     {
-        slug = Shop!.Slug, serviceId = Service!.Id, staffId = Staff?.Id,
+        slug = Shop!.Slug, serviceId = Service!.Id, staffId = Staff?.Id, serviceNote = Input.ServiceNote,
         date = DisplayFormat.DateParam(LocalTime.LocalDateOf(StartUtc, Shop.TimeZone)),
     })!;
 
-    public async Task<IActionResult> OnGetAsync(string slug, Guid? serviceId, Guid? staffId, string? start, CancellationToken ct)
+    /// <summary>The service name as the customer will see it: for "Other" it includes what they typed.</summary>
+    public string ServiceTitle => Service!.IsOther ? $"{Service.Name}: {Input.ServiceNote}" : Service.Name;
+
+    public async Task<IActionResult> OnGetAsync(string slug, Guid? serviceId, Guid? staffId, string? start, string? serviceNote, CancellationToken ct)
     {
         if (!await LoadAsync(slug, serviceId, staffId, start, ct)) return NotFound();
         if (!Shop!.AcceptingBookings) return RedirectToPage("/Book/Index", new { slug = Shop.Slug });
+
+        // "Other" always comes with the words the customer typed; without them go back and ask.
+        var note = serviceNote?.Trim();
+        if (Service!.IsOther && string.IsNullOrEmpty(note))
+            return RedirectToPage("/Book/Index", new { slug = Shop.Slug, serviceId = Service.Id, staffId = Staff?.Id });
 
         // Show the form only for a time that is still free; otherwise go back to the time list.
         var localDate = LocalTime.LocalDateOf(StartUtc, Shop!.TimeZone);
         var free = await booking.GetFreeStartsAsync(Shop.Id, Service!.Id, Staff?.Id, localDate, walkIn: false, ct);
         if (!free.IsSuccess || !free.Value!.Contains(StartUtc)) return BackToTimes(localDate);
 
-        Input = new DetailsInput { IdempotencyKey = Guid.NewGuid().ToString("N") }; // one key per form, reused on resubmit
+        Input = new DetailsInput { IdempotencyKey = Guid.NewGuid().ToString("N"), ServiceNote = Service.IsOther ? note : null }; // one key per form, reused on resubmit
         return Page();
     }
 
@@ -46,7 +54,7 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
         var result = await booking.CreateAsync(new CreateBookingRequest(
             Shop!.Id, Service!.Id, Staff?.Id, StartUtc,
             Input.Name ?? "", Input.Phone ?? "", Input.Email, Input.IdempotencyKey ?? "",
-            BookingActor.Customer((Input.Name ?? "Customer").Trim())), ct);
+            BookingActor.Customer((Input.Name ?? "Customer").Trim()), Input.ServiceNote), ct);
 
         if (result.IsSuccess)
             return RedirectToPage("/Booking/Manage", new { token = result.Value!.Booking.ManageToken, confirmed = 1 });
@@ -68,7 +76,7 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
     private IActionResult BackToTimes(DateOnly date) =>
         RedirectToPage("/Book/Index", new
         {
-            slug = Shop!.Slug, serviceId = Service!.Id, staffId = Staff?.Id,
+            slug = Shop!.Slug, serviceId = Service!.Id, staffId = Staff?.Id, serviceNote = Input.ServiceNote,
             date = DisplayFormat.DateParam(date), taken = true,
         });
 
@@ -100,6 +108,9 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public string? IdempotencyKey { get; set; }
+
+        /// <summary>What the customer needs, for the "Other" service.</summary>
+        public string? ServiceNote { get; set; }
 
         /// <summary>Honeypot: hidden from people, filled in by simple bots. Anything in it means no booking.</summary>
         public string? Website { get; set; }

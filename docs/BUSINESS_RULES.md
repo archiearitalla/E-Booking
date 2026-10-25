@@ -387,6 +387,11 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Message tools (under a completed booking in Done, and on each follow-up): a ready-made message (thank-you after the visit, reminder for a follow-up) with Copy, Send as text (`sms:`, customer's number filled in), Send by email (`mailto:`, only when the customer gave an email), Share to another app (the phone's share sheet: Messenger, Viber, WhatsApp and so on; shown only where the browser supports it) and Save contact (a `.vcf` contact card, so staff can find the customer in their phone contacts). The system sends nothing. Walk-ins without a number have no text or contact options. The contact card is scoped to the signed-in business; another business's booking is "not found".
 - Schema: `service.follow_up_days`, `booking.follow_up_on`, `follow_up_note`, `follow_up_done` (migration 006, additive).
 
+### 6.w The "Other" service
+
+- Every shop has a service named "Other" (`service.is_other`, one per shop, linked to every staff member; migration 010 added it to existing shops and onboarding adds it to new ones). It is listed last, for a visit whose service is not in the shop's list, on the online booking page and in walk-in.
+- Choosing it requires a short description (1 to 60 characters, typed by the customer or by staff for a walk-in). The booking keeps it as its service name ("Other: <text>"), so the day view, the customer's page, history and messages show what was asked for. Online booking shows no price for it ("the shop will tell you the price"); the owner sets how long it takes (default 30 minutes) and can switch it off like any service. A description sent with an ordinary service is ignored.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

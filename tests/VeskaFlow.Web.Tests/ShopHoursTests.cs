@@ -1,4 +1,4 @@
-using VeskaFlow.Web.Services;
+﻿using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using static VeskaFlow.Web.Tests.Seed;
 
@@ -52,7 +52,7 @@ public class ShopHoursTests
         await catalog.SaveShopHoursAsync(owner.BusinessId, WithLunch); // Tuesday 8 AM to 5 PM
         await using var ctx = db.CreateDbContext();
         var staffId = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
-        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
 
         // This person's own hours are wider than the shop's, but the shop hours win.
         await catalog.SaveHoursAsync(owner.BusinessId, staffId, [new HourWindow(2, new TimeOnly(6, 0), new TimeOnly(20, 0))]);

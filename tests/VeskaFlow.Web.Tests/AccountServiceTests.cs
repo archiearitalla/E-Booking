@@ -38,8 +38,13 @@ public class AccountServiceTests
         Assert.Single(staff); // exactly the FREE plan limit
         Assert.True(staff.Count <= PlanLimits.FreeMaxStaff);
 
-        var service = await db.Services.SingleAsync(s => s.BusinessId == owner.BusinessId);
-        Assert.Equal(1, await db.StaffServices.CountAsync(x => x.StaffId == staff[0].Id && x.ServiceId == service.Id && x.BusinessId == owner.BusinessId));
+        // One starter service, plus "Other" for visits whose service is not in the list. Both can be booked with the owner.
+        var services = await db.Services.Where(s => s.BusinessId == owner.BusinessId).OrderBy(s => s.SortOrder).ToListAsync();
+        Assert.Equal(2, services.Count);
+        Assert.False(services[0].IsOther);
+        Assert.True(services[1].IsOther);
+        Assert.Equal(Text.OtherServiceName, services[1].Name);
+        Assert.All(services, service => Assert.Equal(1, db.StaffServices.Count(x => x.StaffId == staff[0].Id && x.ServiceId == service.Id && x.BusinessId == owner.BusinessId)));
 
         var hours = await db.WorkingHours.Where(h => h.StaffId == staff[0].Id).OrderBy(h => h.DayOfWeek).ToListAsync();
         Assert.Equal(new short[] { 1, 2, 3, 4, 5, 6 }, hours.Select(h => h.DayOfWeek)); // Mon-Sat, closed Sunday

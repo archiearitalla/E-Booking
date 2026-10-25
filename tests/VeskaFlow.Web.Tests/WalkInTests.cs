@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +20,7 @@ public class WalkInServiceTests
             new RegisterRequest("Clinic", Id("wi"), "Dr Reyes", $"{Id("o")}@example.com", "correct-horse-1", Industry: "clinic", TrialDays: 30))).Value!;
         await using var ctx = db.CreateDbContext();
         return (db, new BookingService(db, clock), owner,
-            await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync(),
+            await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync(),
             await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync());
     }
 
@@ -102,7 +102,7 @@ public class WalkInWebTests
         var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
         await using var ctx = db.CreateDbContext();
         var businessId = await ctx.Businesses.Where(b => b.Slug == slug).Select(b => b.Id).SingleAsync();
-        var serviceId = await ctx.Services.Where(s => s.BusinessId == businessId).Select(s => s.Id).SingleAsync();
+        var serviceId = await ctx.Services.Where(s => s.BusinessId == businessId && !s.IsOther).Select(s => s.Id).SingleAsync();
 
         var page = WebUtility.HtmlDecode(await client.GetStringAsync("/Admin/WalkIn"));
         Assert.Contains(Text.WalkInTitle, page);

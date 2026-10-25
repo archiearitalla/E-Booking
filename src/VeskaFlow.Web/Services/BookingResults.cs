@@ -54,7 +54,8 @@ public sealed record CreateBookingRequest(
     string Phone,
     string? Email,
     string IdempotencyKey,
-    BookingActor Actor);
+    BookingActor Actor,
+    string? ServiceNote = null); // what the customer needs, required when the service is "Other"
 
 /// <summary>Read model of a booking. <c>Version</c> is the row's xmin; pass it back to detect a stale edit.</summary>
 public sealed record BookingSummary(

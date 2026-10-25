@@ -10,10 +10,10 @@
     <h1>@Text.BookSummary</h1>
     <dl class="facts">
         <dt>@Text.ManageShop</dt><dd>@shop.Name</dd>
-        <dt>@Text.ManageService</dt><dd>@Model.Service!.Name (@DisplayFormat.Duration(Model.Service.DurationMinutes))</dd>
+        <dt>@Text.ManageService</dt><dd>@Model.ServiceTitle (@DisplayFormat.Duration(Model.Service!.DurationMinutes))</dd>
         <dt>@Text.ManageWith</dt><dd>@(Model.Staff?.Name ?? Text.BookStaffAny)</dd>
         <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(Model.StartUtc, shop.TimeZone), @DisplayFormat.Time(Model.StartUtc, shop.TimeZone)</dd>
-        <dt>@Text.ManagePrice</dt><dd>@DisplayFormat.Price(Model.Service.Price) &middot; @Text.BookPayOnSite</dd>
+        <dt>@Text.ManagePrice</dt><dd>@(Model.Service.IsOther ? Text.OtherServicePrice : DisplayFormat.Price(Model.Service.Price)) &middot; @Text.BookPayOnSite</dd>
     </dl>
     <p><a href="@Model.ChangeTimeUrl">@Text.BookChangeTime</a></p>
 </div>
@@ -27,6 +27,8 @@
         }
         <input type="hidden" name="Input.ServiceId" value="@Model.Service.Id" />
         <input type="hidden" name="Input.StaffId" value="@Model.Staff?.Id" />
+        <input type="hidden" name="Input.ServiceNote" value="@Model.Input.ServiceNote" />
+        @if (Model.ErrorFor("serviceNote") is { } eNote) { <p class="error">@eNote</p> }
         <input type="hidden" name="Input.Start" value="@DisplayFormat.StartParam(Model.StartUtc)" />
         <input type="hidden" name="Input.IdempotencyKey" value="@Model.Input.IdempotencyKey" />
 

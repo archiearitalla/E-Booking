@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Data;
@@ -36,7 +36,7 @@ public class AdminWebTests
         var businessId = await ctx.Businesses.Where(b => b.Slug == slug).Select(b => b.Id).SingleAsync();
         return new Owner(client, businessId,
             await ctx.StaffMembers.Where(s => s.BusinessId == businessId).Select(s => s.Id).SingleAsync(),
-            await ctx.Services.Where(s => s.BusinessId == businessId).Select(s => s.Id).SingleAsync(), slug, db);
+            await ctx.Services.Where(s => s.BusinessId == businessId && !s.IsOther).Select(s => s.Id).SingleAsync(), slug, db);
     }
 
     private static Dictionary<string, string> Hidden(string html)
@@ -554,11 +554,10 @@ public class AdminWebTests
         Assert.Contains($"data-confirm=\"{Text.ConfirmCancelStaff}\"", page);
         Assert.Contains("name=\"reason\" maxlength=\"200\" required", page);
 
-        // The status buttons are always there on a confirmed booking; before the start time they are off, with the reason shown.
-        Assert.Contains(Text.ActionComplete, page);
-        Assert.Contains(Text.ActionNoShow, page);
-        Assert.Contains("value=\"complete\" class=\"primary\" disabled", page);
-        Assert.Contains(Text.StatusOnlyToday, page); // the test booking is on a future day
+        // Before the scheduled time (here: a future day) the status buttons are not shown at all, only a note about when they appear.
+        Assert.DoesNotContain("value=\"complete\"", page);
+        Assert.DoesNotContain("value=\"noshow\"", page);
+        Assert.Contains(Text.StatusOnlyToday, page);
 
         // A blank (or spaces-only) reason is refused on the server too, and the booking stays confirmed.
         foreach (var blank in new[] { "", "   " })

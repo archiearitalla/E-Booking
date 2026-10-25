@@ -60,16 +60,19 @@ else
 
                 @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Confirmed)
                 {
-                    @* The status buttons are always visible on a confirmed booking. Before the appointment time they are
-                       switched off with the reason next to them, so staff can see what comes next. *@
-                    <form method="post" asp-page-handler="Transition" class="actions">
-                        <input type="hidden" name="id" value="@b.Id" />
-                        <input type="hidden" name="version" value="@b.Version" />
-                        <input type="hidden" name="date" value="@dateParam" />
-                        <input type="hidden" name="status" value="@filter" />
-                        <button type="submit" name="action" value="complete" class="primary" disabled="@(!b.CanComplete)">@Text.ActionComplete</button>
-                        <button type="submit" name="action" value="noshow" class="secondary" disabled="@(!b.CanNoShow)" data-confirm="@Text.ConfirmNoShow">@Text.ActionNoShow</button>
-                    </form>
+                    @* A status button is shown only when it can be used: today, and after the scheduled time. Before that
+                       only a short note says when it will appear. *@
+                    @if (b.CanComplete || b.CanNoShow)
+                    {
+                        <form method="post" asp-page-handler="Transition" class="actions">
+                            <input type="hidden" name="id" value="@b.Id" />
+                            <input type="hidden" name="version" value="@b.Version" />
+                            <input type="hidden" name="date" value="@dateParam" />
+                            <input type="hidden" name="status" value="@filter" />
+                            @if (b.CanComplete) { <button type="submit" name="action" value="complete" class="primary">@Text.ActionComplete</button> }
+                            @if (b.CanNoShow) { <button type="submit" name="action" value="noshow" class="secondary" data-confirm="@Text.ConfirmNoShow">@Text.ActionNoShow</button> }
+                        </form>
+                    }
                     @if (!view.IsToday) { <p class="hint">@Text.StatusOnlyToday</p> }
                     else if (!b.CanComplete) { <p class="hint">@Text.StatusLater</p> }
                     else if (!b.CanNoShow) { <p class="hint">@Text.NoShowLater</p> }

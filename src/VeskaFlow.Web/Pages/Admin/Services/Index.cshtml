@@ -32,6 +32,7 @@ else
                         @if (s.BufferMinutes > 0) { <text>(+@s.BufferMinutes min @Text.ServiceBufferShort)</text> }
                         &middot; @DisplayFormat.Price(s.Price)
                     </p>
+                    @if (s.IsOther) { <p class="hint">@Text.OtherServiceIsOther</p> }
                     <p><a href="/Admin/Services/Edit/@s.Id">@Text.ActionEdit<span class="sr-only"> @s.Name</span></a></p>
                 </details>
             </li>

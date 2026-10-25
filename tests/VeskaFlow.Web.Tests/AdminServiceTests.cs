@@ -1,4 +1,4 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +30,7 @@ public class AdminServiceTests
         await using var ctx = db.CreateDbContext();
         return new Tenant(owner.BusinessId,
             await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync(),
-            await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync());
+            await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync());
     }
 
     private static async Task<BookingSummary> BookAsync(BookingService svc, Tenant t, DateTime start, string phone = "09170000001")
@@ -111,7 +111,7 @@ public class AdminServiceTests
         var trial = (await new OnboardingService(db).RegisterAsync(
             new RegisterRequest("Clinic", Unique("tr"), "Dr Reyes", $"{Unique("o")}@example.com", "correct-horse-1", TrialDays: 30))).Value!;
         var plain = await NewTenantAsync(db);
-        var trialService = await db.CreateDbContext().Services.Where(s => s.BusinessId == trial.BusinessId).Select(s => s.Id).SingleAsync();
+        var trialService = await db.CreateDbContext().Services.Where(s => s.BusinessId == trial.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
 
         foreach (var name in new[] { "Dr Cruz", "Dr Lim", "Dr Tan" })
             Assert.True((await catalog.SaveStaffAsync(trial.BusinessId, new StaffInput(null, name, true, 1, [trialService]))).IsSuccess);

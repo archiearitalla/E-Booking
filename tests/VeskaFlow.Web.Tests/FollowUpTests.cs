@@ -1,4 +1,4 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using static VeskaFlow.Web.Tests.Seed;
@@ -19,7 +19,7 @@ public class FollowUpTests
         var owner = (await new OnboardingService(db, clock).RegisterAsync(
             new RegisterRequest("Clinic", Id("fu"), "Dr A", $"{Id("o")}@example.com", "correct-horse-1", Industry: "clinic", TrialDays: 30))).Value!;
         await using var ctx = db.CreateDbContext();
-        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
         var staff = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
         return new Setup(db, clock, new BookingService(db, clock), new FollowUpService(db, clock), new CatalogAdminService(db, clock), owner, service, staff);
     }

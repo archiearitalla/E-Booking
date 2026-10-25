@@ -1,4 +1,4 @@
-using VeskaFlow.Web.Data;
+﻿using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using static VeskaFlow.Web.Tests.Seed;
@@ -29,7 +29,7 @@ public class TrialAndIndustryTests
         Assert.Equal("clinic", business.Industry);
         Assert.Equal(BaseNow.UtcDateTime.AddDays(30), business.TrialEndsAtUtc);
         Assert.Equal(Text.DefaultServiceClinic,
-            await ctx.Services.Where(s => s.BusinessId == business.Id).Select(s => s.Name).SingleAsync());
+            await ctx.Services.Where(s => s.BusinessId == business.Id && !s.IsOther).Select(s => s.Name).SingleAsync());
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class TrialAndIndustryTests
         var catalog = new ShopCatalogService(db, clock);
 
         await using var ctx = db.CreateDbContext();
-        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
         var staffId = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
         CreateBookingRequest Req(string phone, BookingActor actor, int hour) => new(
             owner.BusinessId, serviceId, staffId, Manila(5, hour), "Maria", phone, null, Unique("k"), actor);

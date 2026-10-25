@@ -1,4 +1,4 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +22,7 @@ public class WeeklyClosureTests
         var owner = (await new OnboardingService(db, clock).RegisterAsync(
             new RegisterRequest("Clinic", Id("wc"), "Dr A", $"{Id("o")}@example.com", "correct-horse-1", Industry: "clinic", TrialDays: 30))).Value!;
         await using var ctx = db.CreateDbContext();
-        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
         var a = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
         var b = (await new CatalogAdminService(db, clock).SaveStaffAsync(owner.BusinessId, new StaffInput(null, "Dr B", true, 1, [service]))).Value!.Id;
         return new Setup(db, new BookingService(db, clock), new ShopSettingsService(db, clock), owner, service, a, b);
