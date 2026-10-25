@@ -1,0 +1,21 @@
+@page
+@model VeskaFlow.Web.Pages.ConfirmEmailModel
+@{
+    ViewData["Title"] = Text.ConfirmEmailTitle;
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<div class="card">
+    <h1>@Text.ConfirmEmailTitle</h1>
+    @if (Model.Confirmed)
+    {
+        <div class="notice" role="status">@Text.ConfirmDone</div>
+        <p><a class="button" href="/Login">@Text.NavSignIn</a></p>
+    }
+    else
+    {
+        <div class="alert" role="alert">@Text.ConfirmLinkInvalid</div>
+        <p><a href="/Login">@Text.NavSignIn</a></p>
+    }
+</div>

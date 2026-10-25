@@ -10,10 +10,15 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record RegisterRequest(
     string? BusinessName, string? Slug, string? OwnerName, string? Email, string? Password, string? TimeZone = null,
-    string? Industry = null, int TrialDays = 0);
+    string? Industry = null, int TrialDays = 0, bool RequireEmailConfirmation = false, bool RequireApproval = false);
 
+/// <summary>
+/// <c>ConfirmationToken</c> is set only when the owner still has to confirm the email address: it goes into the email link
+/// and is never stored. <c>Enabled</c> is false when the platform owner must approve the shop first.
+/// </summary>
 public sealed record RegisteredOwner(
-    Guid BusinessId, Guid AdminUserId, string Slug, string DisplayName, string Role, DateTime? TrialEndsAtUtc = null);
+    Guid BusinessId, Guid AdminUserId, string Slug, string DisplayName, string Role, DateTime? TrialEndsAtUtc = null,
+    string? ConfirmationToken = null, string Email = "", bool Enabled = true);
 
 /// <summary>
 /// Creates a shop: business, owner, one staff member, one service and Mon-Sat 09:00-18:00 hours, all in one
@@ -65,7 +70,9 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
         {
             Slug = slug, Name = businessName, TimeZone = timeZone, Industry = industry,
             TrialEndsAtUtc = request.TrialDays > 0 ? clock.GetUtcNow().UtcDateTime.AddDays(request.TrialDays) : null,
+            IsEnabled = !request.RequireApproval, // when approval is required the platform owner switches the shop on
         };
+        var now = clock.GetUtcNow().UtcDateTime;
         var owner = new AdminUser
         {
             BusinessId = business.Id,
@@ -73,7 +80,17 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
             DisplayName = ownerName,
             PasswordHash = PasswordHasher.Hash(password),
             Role = "OWNER",
+            // Not required: confirmed at once. Required: no sign-in until the link in the email is opened.
+            EmailConfirmedAtUtc = request.RequireEmailConfirmation ? null : now,
         };
+        string? confirmationToken = null;
+        if (request.RequireEmailConfirmation)
+        {
+            var (token, hash) = EmailTokens.NewToken();
+            confirmationToken = token;
+            owner.EmailTokenHash = hash;
+            owner.EmailTokenExpiresUtc = now.Add(EmailTokens.Lifetime);
+        }
         var service = new Service
         {
             BusinessId = business.Id, Name = Industries.StarterService(industry), DurationMinutes = 30, Price = 0,
@@ -101,7 +118,9 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
             });
         }
 
-        return ServiceResult<RegisteredOwner>.Ok(new RegisteredOwner(business.Id, owner.Id, business.Slug, owner.DisplayName, owner.Role, business.TrialEndsAtUtc));
+        return ServiceResult<RegisteredOwner>.Ok(new RegisteredOwner(
+            business.Id, owner.Id, business.Slug, owner.DisplayName, owner.Role, business.TrialEndsAtUtc,
+            confirmationToken, owner.Email, business.IsEnabled));
     }
 
     private static PostgresException? FindPostgres(Exception? ex)

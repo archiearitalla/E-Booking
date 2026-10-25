@@ -1,0 +1,29 @@
+@page
+@model VeskaFlow.Web.Pages.CheckEmailModel
+@{
+    ViewData["Title"] = Text.CheckEmailTitle;
+}
+<div class="card">
+    <h1>@Text.CheckEmailTitle</h1>
+    @if (Model.Resent)
+    {
+        <div class="notice" role="status">@Text.ConfirmResent</div>
+    }
+    @if (Model.ManualOnly)
+    {
+        <p>@Text.CheckEmailManual</p>
+    }
+    else
+    {
+        <p>@(string.IsNullOrEmpty(Model.Email) ? Text.CheckEmailSentNoAddress : string.Format(Text.CheckEmailSent, Model.Email))</p>
+        <p class="hint">@Text.CheckEmailHint</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.Email) && !Model.ManualOnly)
+    {
+        <form method="post" asp-page-handler="Resend">
+            <input type="hidden" name="email" value="@Model.Email" />
+            <button type="submit" class="secondary">@Text.ConfirmResend</button>
+        </form>
+    }
+    <p><a href="/Login">@Text.NavSignIn</a></p>
+</div>

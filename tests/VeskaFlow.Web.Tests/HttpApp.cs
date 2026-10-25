@@ -9,8 +9,13 @@ public sealed class AppFactory : WebApplicationFactory<Program> { }
 public static class HttpApp
 {
     /// <summary>Configuration is read when the app starts, so settings are applied just before the host is created.</summary>
-    public static async Task<(AppFactory Factory, HttpClient Client)> StartAsync(int authPerMinute = 1000, int bookingPerMinute = 1000)
+    public static async Task<(AppFactory Factory, HttpClient Client)> StartAsync(
+        int authPerMinute = 1000, int bookingPerMinute = 1000, bool requireEmailConfirmation = false, bool requireApproval = false,
+        string? platformAdminEmails = null)
     {
+        Environment.SetEnvironmentVariable("Signup__RequireEmailConfirmation", requireEmailConfirmation.ToString());
+        Environment.SetEnvironmentVariable("Signup__RequireApproval", requireApproval.ToString());
+        Environment.SetEnvironmentVariable("Platform__AdminEmails", platformAdminEmails ?? "");
         var cs = await TestDb.ConnectionStringAsync();
         Environment.SetEnvironmentVariable("ConnectionStrings__Default", cs);
         Environment.SetEnvironmentVariable("RateLimits__AuthPerMinute", authPerMinute.ToString());

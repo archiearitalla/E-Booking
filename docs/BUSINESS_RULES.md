@@ -387,6 +387,13 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Message tools (under a completed booking in Done, and on each follow-up): a ready-made message (thank-you after the visit, reminder for a follow-up) with Copy, Send as text (`sms:`, customer's number filled in), Send by email (`mailto:`, only when the customer gave an email), Share to another app (the phone's share sheet: Messenger, Viber, WhatsApp and so on; shown only where the browser supports it) and Save contact (a `.vcf` contact card, so staff can find the customer in their phone contacts). The system sends nothing. Walk-ins without a number have no text or contact options. The contact card is scoped to the signed-in business; another business's booking is "not found".
 - Schema: `service.follow_up_days`, `booking.follow_up_on`, `follow_up_note`, `follow_up_done` (migration 006, additive).
 
+### 6.z Who may use the system
+
+- A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.
+- A shop can be switched off by the platform owner (`business.is_enabled`): its owners are signed out on their next request and cannot sign in, online booking is closed, and nothing is deleted. Switching it on restores everything. With `Signup:RequireApproval` a new shop starts switched off.
+- The platform owner is a confirmed, active owner whose email is listed in `Platform:AdminEmails`. `/Platform` lists every shop (owner, address, signed up, trial end, email confirmed, on/off) and can switch a shop on/off, confirm an owner's email by hand, and send or copy a new link. Anyone else gets "not found". The platform owner cannot switch off their own shop.
+- Emails go through the Resend HTTP API (`Email:ResendApiKey`, `Email:From`). With none configured nothing is emailed and the platform owner confirms by hand. Accounts that existed before this rule were marked confirmed (migration 009).
+
 ### 18.2 Sign-up and the 30-day trial
 
 - Each sign-up creates its own tenant: its own business, owner login and booking link `/b/{slug}` (the slug is the public key, the owner login is the private one). Tenant isolation is unchanged.

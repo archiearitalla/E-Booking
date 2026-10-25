@@ -5,6 +5,8 @@
 }
 <div class="card">
     <h1>@Text.LoginTitle</h1>
+    @if (Model.Disabled) { <div class="alert" role="alert">@Text.ShopDisabled</div> }
+    @if (Model.Pending) { <div class="notice" role="status">@Text.SignupPending</div> }
     <form method="post" novalidate>
         @if (Model.Errors.Count > 0)
         {
@@ -24,5 +26,12 @@
 
         <button type="submit" class="primary">@Text.ButtonSignIn</button>
     </form>
+    @if (Model.NeedsConfirmation)
+    {
+        <form method="post" asp-page="/CheckEmail" asp-page-handler="Resend" class="resend-form">
+            <input type="hidden" name="email" value="@Model.Input.Email" />
+            <button type="submit" class="secondary">@Text.ConfirmResend</button>
+        </form>
+    }
     <p>@Text.LoginNew <a href="/Register">@Text.NavRegister</a></p>
 </div>

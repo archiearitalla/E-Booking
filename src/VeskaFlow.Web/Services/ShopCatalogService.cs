@@ -85,8 +85,8 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
         return new PublicShop(
             business.Id, business.Slug, business.Name, business.TimeZone, business.HorizonDays, today,
             services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
-            business.TrialEndsAtUtc is not { } ends
-                || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc),
+            business.IsEnabled && (business.TrialEndsAtUtc is not { } ends
+                || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc)),
             business.Industry);
     }
 }

@@ -35,6 +35,13 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.AuthService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopCatalogService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AdminDayService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.FollowUpService>();
+builder.Services.AddHttpClient<VeskaFlow.Web.Services.ResendEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
+{
+    var resend = sp.GetRequiredService<VeskaFlow.Web.Services.ResendEmailSender>();
+    return resend.IsConfigured ? resend : new VeskaFlow.Web.Services.NoEmailSender(); // no email service: the platform owner confirms by hand
+});
+builder.Services.AddScoped<VeskaFlow.Web.Services.AccountControlService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
@@ -63,7 +70,11 @@ builder.Services.AddAntiforgery(o =>
     o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
-builder.Services.AddRazorPages(o => o.Conventions.AuthorizeFolder("/Admin"));
+builder.Services.AddRazorPages(o =>
+{
+    o.Conventions.AuthorizeFolder("/Admin");
+    o.Conventions.AuthorizeFolder("/Platform"); // signed in; the page itself then checks the platform owner's email
+});
 
 // Rate limiting: per client IP. Policies are attached to endpoints with RequireRateLimiting("auth" | "booking").
 var authPerMinute = builder.Configuration.GetValue("RateLimits:AuthPerMinute", 10);

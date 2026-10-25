@@ -1,4 +1,5 @@
 using VeskaFlow.Web.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -32,6 +33,15 @@ public abstract class AdminPageModel : FormPageModel
     {
         if (User.BusinessId() is { } id)
         {
+            // A shop switched off by the platform owner: end this session now, whatever the cookie still says.
+            var accounts = context.HttpContext.RequestServices.GetRequiredService<AccountControlService>();
+            if (!await accounts.IsEnabledAsync(id, context.HttpContext.RequestAborted))
+            {
+                await context.HttpContext.SignOutAsync();
+                context.Result = Redirect("/Login?disabled=true");
+                return;
+            }
+
             var settings = context.HttpContext.RequestServices.GetRequiredService<ShopSettingsService>();
             var ends = await settings.TrialEndsAtAsync(id, context.HttpContext.RequestAborted);
             // The header bell shows what the database says now, not the date frozen in the cookie at sign-in.

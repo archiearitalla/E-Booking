@@ -21,6 +21,8 @@ public class Business
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     /// <summary>Staff are reminded to message a customer this many days before the follow-up date.</summary>
     public int FollowUpNoticeDays { get; set; } = 3;
+    /// <summary>Switched off by the platform owner: nobody signs in and online booking is closed. Nothing is deleted.</summary>
+    public bool IsEnabled { get; set; } = true;
 }
 
 public class AdminUser
@@ -33,6 +35,11 @@ public class AdminUser
     public string Role { get; set; } = "OWNER";
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    /// <summary>When the owner proved the email address is theirs. Null means not confirmed: no sign-in yet.</summary>
+    public DateTime? EmailConfirmedAtUtc { get; set; }
+    /// <summary>SHA-256 (hex) of the confirmation link token. The token itself is only ever in the email.</summary>
+    public string? EmailTokenHash { get; set; }
+    public DateTime? EmailTokenExpiresUtc { get; set; }
 }
 
 public class Staff

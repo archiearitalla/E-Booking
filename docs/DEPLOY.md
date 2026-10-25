@@ -39,6 +39,17 @@ Option B, manually: **New, Web Service, Docker**, this repository, plan **Free**
 | `Trial__Days` | `30` for the shared trial. `0` for a client's own deployment |
 | `Database__MigrateOnStartup` | `true` |
 
+Who may use the system (all optional, set in the same place; never commit secrets):
+
+| Variable | What it does |
+|---|---|
+| `Platform__AdminEmails` | Your own email (comma separated for more than one). Sign in with it and open `/Platform`: the list of shops with Switch on / Switch off, Confirm email now and Send confirmation link. Everyone else gets "not found". Needs an account with that email, already confirmed |
+| `Signup__RequireEmailConfirmation` | `true` (default): a new owner cannot sign in until they open the link in the email. `false` for a client's own deployment |
+| `Signup__RequireApproval` | `true`: a new shop stays switched off until you switch it on in `/Platform`. Default `false` |
+| `Email__ResendApiKey` and `Email__From` | Sends the confirmation email through Resend's HTTP API (free tier; Render's free plan blocks SMTP). `Email__From` must be an address on a domain you verified in Resend (add the DNS records it shows in Cloudflare). Without both, nothing is emailed: use `/Platform` to confirm an owner by hand or copy a link to send yourself |
+
+Existing accounts were marked confirmed by migration 009, so they keep working. To keep a free uptime monitor from letting the app sleep, point it at `/ping` (it never touches the database); `/healthz` does touch it.
+
 After the first deploy, open `https://<name>.onrender.com/healthz`. It returns `{"status":"ok","version":...}` when the database is reachable and `503` when it is not.
 
 ## 3. Domain (Cloudflare)

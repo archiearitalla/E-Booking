@@ -1,0 +1,67 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.IndexModel
+@{
+    ViewData["Title"] = Text.PlatformTitle;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<h1>@Text.PlatformTitle</h1>
+<p class="hint">@Text.PlatformHint</p>
+@if (!Model.EmailConfigured) { <div class="notice" role="status">@Text.PlatformNoEmail</div> }
+@if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
+@if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
+@if (!string.IsNullOrEmpty(Model.LinkToCopy))
+{
+    <div class="card">
+        <div class="field">
+            <label for="confirm-link">@Text.PlatformLinkLabel</label>
+            <input type="text" id="confirm-link" readonly value="@Model.LinkToCopy" />
+        </div>
+        <button type="button" class="secondary" data-copy="confirm-link" data-copied="@Text.FollowUpCopied">@Text.ManageCopyLink</button>
+    </div>
+}
+
+@if (Model.Shops.Count == 0)
+{
+    <div class="card empty"><p>@Text.PlatformEmpty</p></div>
+}
+else
+{
+    <ul class="bookings">
+        @foreach (var s in Model.Shops)
+        {
+            <li class="card @(s.Enabled ? "" : "inactive")">
+                <div class="booking-head">
+                    <strong>@s.Name</strong>
+                    <span class="badge @(s.Enabled ? "" : "off")">@(s.Enabled ? Text.PlatformOn : Text.PlatformOff)</span>
+                    <span class="badge @(s.EmailConfirmed ? "" : "off")">@(s.EmailConfirmed ? Text.PlatformEmailOk : Text.PlatformEmailPending)</span>
+                </div>
+                <dl class="facts">
+                    <dt>@Text.PlatformOwner</dt><dd>@s.OwnerName &middot; @s.OwnerEmail</dd>
+                    <dt>@Text.SettingsAddress</dt><dd><a href="/b/@s.Slug">/b/@s.Slug</a> &middot; @s.Industry</dd>
+                    <dt>@Text.PlatformSignedUp</dt><dd>@s.CreatedAtUtc.ToString("MMM d, yyyy", invariant)@(s.TrialEndsAtUtc is { } t ? " · " + string.Format(Text.PlatformTrialEnds, t.ToString("MMM d, yyyy", invariant)) : "")</dd>
+                </dl>
+                <div class="actions">
+                    <form method="post" asp-page-handler="Enable">
+                        <input type="hidden" name="id" value="@s.BusinessId" />
+                        <input type="hidden" name="on" value="@((!s.Enabled).ToString().ToLowerInvariant())" />
+                        <button type="submit" class="@(s.Enabled ? "danger" : "primary")" data-confirm="@(s.Enabled ? Text.PlatformConfirmOff : Text.PlatformConfirmOn)">@(s.Enabled ? Text.PlatformSwitchOff : Text.PlatformSwitchOn)<span class="sr-only"> @s.Name</span></button>
+                    </form>
+                    @if (!s.EmailConfirmed)
+                    {
+                        <form method="post" asp-page-handler="ConfirmNow">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformConfirmNowAsk">@Text.PlatformConfirmNow<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                        <form method="post" asp-page-handler="SendLink">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <button type="submit" class="secondary">@Text.PlatformSendLink<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                    }
+                </div>
+            </li>
+        }
+    </ul>
+}

@@ -77,6 +77,10 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             && time.GetUtcNow().UtcDateTime > DateTime.SpecifyKind(trialEnds, DateTimeKind.Utc))
             return ServiceResult<CreateOutcome>.Fail(FailureKind.PolicyViolation, Text.TrialEndedPublic);
 
+        // A shop switched off by the platform owner takes no online bookings either.
+        if (request.Actor.Kind != ActorKind.Staff && !business.IsEnabled)
+            return ServiceResult<CreateOutcome>.Fail(FailureKind.PolicyViolation, Text.TrialEndedPublic);
+
         var candidates = await LoadEligibleStaffAsync(db, business.Id, service.Id, request.StaffId, ct);
         if (request.StaffId is not null && candidates.Count == 0)
             return ServiceResult<CreateOutcome>.Fail(FailureKind.NotFound, Text.NotFound);

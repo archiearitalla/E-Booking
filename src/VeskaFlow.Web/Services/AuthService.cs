@@ -29,9 +29,15 @@ public sealed class AuthService(IDbContextFactory<AppDbContext> dbFactory)
         if (user is null || !user.IsActive || !passwordOk || string.IsNullOrEmpty(password))
             return ServiceResult<SignedInUser>.Fail(FailureKind.Validation, Text.LoginFailed);
 
-        var trialEnds = await db.Businesses.AsNoTracking().Where(b => b.Id == user.BusinessId)
-            .Select(b => b.TrialEndsAtUtc).FirstOrDefaultAsync(ct);
-        return ServiceResult<SignedInUser>.Ok(new SignedInUser(user.Id, user.BusinessId, user.Role, user.DisplayName, trialEnds));
+        // The password was right, so it is safe to say why the door is closed (nothing is revealed to a stranger).
+        if (user.EmailConfirmedAtUtc is null)
+            return ServiceResult<SignedInUser>.Fail(FailureKind.PolicyViolation, Text.EmailNotConfirmed);
+
+        var shop = await db.Businesses.AsNoTracking().Where(b => b.Id == user.BusinessId)
+            .Select(b => new { b.TrialEndsAtUtc, b.IsEnabled }).FirstOrDefaultAsync(ct);
+        if (shop is null || !shop.IsEnabled)
+            return ServiceResult<SignedInUser>.Fail(FailureKind.PolicyViolation, Text.ShopDisabled);
+        return ServiceResult<SignedInUser>.Ok(new SignedInUser(user.Id, user.BusinessId, user.Role, user.DisplayName, shop.TrialEndsAtUtc));
     }
 
     /// <summary>The cookie identity. The business id here is the only source of tenant scoping in the back office.</summary>
