@@ -1,6 +1,11 @@
+@inject VeskaFlow.Web.Services.FollowUpService FollowUps
 @{
     Layout = "_Layout";
     var path = Context.Request.Path.Value ?? "";
+    // Follow-ups that need a message soon: shown as a strip here and in the header bell (the layout reuses this result).
+    var alert = User.BusinessId() is { } businessId ? await FollowUps.AlertAsync(businessId) : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
+    Context.Items[VeskaFlow.Web.Services.FollowUpAlert.ItemKey] = alert;
+    var onFollowUps = path.StartsWith("/Admin/FollowUps", StringComparison.OrdinalIgnoreCase);
     (string Href, string Label)[] items =
     [
         ("/Admin", Text.AdminNavBookings),
@@ -25,6 +30,13 @@
         }
     </ul>
 </nav>
+
+@if (alert.Total > 0 && !onFollowUps)
+{
+    <div class="notice" role="status">
+        <a href="/Admin/FollowUps">@Text.FollowUpAlertText(alert.Overdue, alert.Soon)</a>
+    </div>
+}
 
 @if (Model is VeskaFlow.Web.Pages.Admin.AdminPageModel admin)
 {

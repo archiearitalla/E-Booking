@@ -420,7 +420,7 @@ public class AdminWebTests
         {
             var row = await ctx.Bookings.SingleAsync(x => x.Id == booking.Id);
             row.Status = BookingStatus.Completed;
-            row.FollowUpOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10));
+            row.FollowUpOn = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8).AddDays(2)); // due soon (the shop is in Asia/Manila)
             row.FollowUpNote = "Check the wound";
             await ctx.SaveChangesAsync();
         }
@@ -429,6 +429,11 @@ public class AdminWebTests
         Assert.Contains("Check the wound", page);
         Assert.Contains("It is time for your follow-up", page);
         Assert.Contains("sms:", page);
+
+        // A follow-up due within 3 days is announced on every back-office page and in the bell.
+        var bookings = Dec(await owner.Client.GetStringAsync("/Admin"));
+        Assert.Contains("1 follow-up(s) due in the next 3 days", bookings);
+        Assert.Contains("bell-badge end\">1<", bookings);
 
         var done = await PostAsync(owner.Client, "/Admin/FollowUps", "/Admin/FollowUps?handler=Done", new() { ["id"] = booking.Id.ToString() });
         Assert.Equal(HttpStatusCode.Redirect, done.StatusCode);

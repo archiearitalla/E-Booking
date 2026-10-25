@@ -19,17 +19,32 @@
             }
             else if (User.Identity?.IsAuthenticated == true)
             {
-                @if (User.TrialEndsForBell(Context.Items) is { } trialEnds)
+                // Follow-ups that need a message soon. Only the back-office pages load this (see _AdminLayout).
+                var followUpAlert = Context.Items.TryGetValue(VeskaFlow.Web.Services.FollowUpAlert.ItemKey, out var cachedAlert) && cachedAlert is VeskaFlow.Web.Services.FollowUpAlert known
+                    ? known
+                    : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
+                var trialEndsNow = User.TrialEndsForBell(Context.Items);
+                @if (trialEndsNow is not null || followUpAlert.Total > 0)
                 {
-                    var daysLeft = (int)Math.Ceiling((trialEnds - DateTime.UtcNow).TotalDays);
+                    var daysLeft = trialEndsNow is { } trialEnds ? (int)Math.Ceiling((trialEnds - DateTime.UtcNow).TotalDays) : int.MaxValue;
+                    var badgeText = followUpAlert.Total > 0 ? followUpAlert.Total.ToString() : daysLeft > 0 ? daysLeft.ToString() : "!";
+                    var badgeEnd = followUpAlert.Total > 0 || daysLeft <= 0;
                     <details class="bell">
                         <summary aria-label="@Text.NotificationsLabel">
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                            <span class="bell-badge@(daysLeft > 0 ? "" : " end")">@(daysLeft > 0 ? daysLeft.ToString() : "!")</span>
+                            <span class="bell-badge@(badgeEnd ? " end" : "")">@badgeText</span>
                         </summary>
                         <div class="bell-panel" role="status">
-                            <strong>@Text.TrialTitle</strong>
-                            <p>@(daysLeft > 0 ? string.Format(Text.TrialBanner, daysLeft) : Text.TrialEndedBanner)</p>
+                            @if (followUpAlert.Total > 0)
+                            {
+                                <strong>@Text.AdminNavFollowUps</strong>
+                                <p>@Text.FollowUpAlertText(followUpAlert.Overdue, followUpAlert.Soon) <a href="/Admin/FollowUps">@Text.FollowUpOpen</a></p>
+                            }
+                            @if (trialEndsNow is not null)
+                            {
+                                <strong>@Text.TrialTitle</strong>
+                                <p>@(daysLeft > 0 ? string.Format(Text.TrialBanner, daysLeft) : Text.TrialEndedBanner)</p>
+                            }
                         </div>
                     </details>
                 }

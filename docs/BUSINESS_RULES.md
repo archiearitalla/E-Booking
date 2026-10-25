@@ -383,7 +383,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 - A service may carry "suggested follow-up after N days" (1 to 730, empty = not applicable). It only suggests a date.
 - Staff can set a follow-up date (and a note up to 200 characters) on a **completed** booking, in Bookings under Done. The date may not be before the visit or more than 2 years after it. Removing it clears it. Other statuses cannot have one.
-- Admin → Follow-ups lists follow-ups not yet done, soonest first, with Overdue and Today badges. Each has a ready-made message (customer first name, shop, service, date, booking link). Staff copy it or send it as a text from their own phone (`sms:` link). The system never sends anything by itself. "Mark done" takes it off the list. All of it is scoped to the signed-in business.
+- Admin → Follow-ups lists follow-ups not yet done, soonest first, with Overdue and Today badges. Each has a ready-made message (customer first name, shop, service, date, booking link). Staff copy it or send it as a text from their own phone (`sms:` link). The system never sends anything by itself. "Mark done" takes it off the list. Follow-ups that are overdue or due within the next 3 days are announced to staff: a strip at the top of every back-office page and the header bell (its badge counts them). All of it is scoped to the signed-in business.
 - Schema: `service.follow_up_days`, `booking.follow_up_on`, `follow_up_note`, `follow_up_done` (migration 006, additive).
 
 ### 18.2 Sign-up and the 30-day trial
