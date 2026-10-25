@@ -1,0 +1,68 @@
+@page "/Admin/AfterVisit/{id:guid}"
+@model VeskaFlow.Web.Pages.Admin.AfterVisitModel
+@{
+    ViewData["Title"] = Text.AfterVisitTitle;
+    var b = Model.Booking!;
+    var fuValue = (b.FollowUpOn ?? b.SuggestedFollowUp) is { } fuDate ? DisplayFormat.DateParam(fuDate) : "";
+}
+<h1>@Text.AfterVisitTitle</h1>
+
+<div class="card">
+    <dl class="facts">
+        <dt>@Text.ManageWho</dt><dd>@b.CustomerName</dd>
+        <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; @DisplayFormat.Time(b.StartsAtUtc, Model.TimeZone)</dd>
+    </dl>
+    <p><a href="/Admin/History/@b.CustomerId">@Text.HistoryLink</a></p>
+</div>
+
+<div class="card">
+    <form method="post" asp-page-handler="Notes" asp-route-id="@b.Id">
+        <h2>@Text.VisitNotesTitle</h2>
+        <p class="hint">@Text.VisitNotesHint</p>
+        <div class="field">
+            <label for="visitNotes">@Text.VisitNotesLabel</label>
+            <textarea id="visitNotes" name="visitNotes" rows="6" maxlength="4000">@b.VisitNotes</textarea>
+        </div>
+        <button type="submit" class="primary">@Text.VisitNotesSave</button>
+    </form>
+</div>
+
+<div class="card">
+    <form method="post" asp-page-handler="FollowUp" asp-route-id="@b.Id" class="followup-form">
+        <h2>@Text.FollowUpTitle</h2>
+        @if (b.FollowUpOn is null && b.SuggestedFollowUp is not null) { <p class="hint">@Text.FollowUpSuggested</p> }
+        <div class="field">
+            <label for="fu">@Text.FollowUpDate</label>
+            <input type="date" id="fu" name="followUpOn" value="@fuValue" />
+        </div>
+        <div class="field">
+            <label for="fus">@Text.FollowUpForService</label>
+            <select id="fus" name="followUpServiceId">
+                <option value="">@Text.FollowUpServiceSame (@b.ServiceName)</option>
+                @foreach (var s in Model.Services.Where(s => s.Name != b.ServiceName))
+                {
+                    <option value="@s.Id" selected="@(b.FollowUpService == s.Name)">@s.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="fun">@Text.FollowUpNote</label>
+            <input type="text" id="fun" name="followUpNote" value="@b.FollowUpNote" maxlength="200" />
+        </div>
+        <div class="actions">
+            <button type="submit" class="primary">@Text.FollowUpSave</button>
+            @if (b.FollowUpOn is not null) { <button type="submit" name="clear" value="1" class="secondary">@Text.FollowUpRemove</button> }
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>@Text.AfterVisitSendTitle</h2>
+    <p class="hint">@Text.AfterVisitHint</p>
+    @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
+        "t" + b.Id.ToString("N"), Model.ThankYou, b.CustomerPhone, b.CustomerEmail, Text.ThankYouSubject(Model.ShopName),
+        $"/Admin?handler=Contact&id={b.Id}"))
+    @if (b.FollowUpOn is null) { <p class="hint">@Text.AfterVisitMessageHint</p> }
+</div>
+
+<p><a class="button secondary" href="@Model.DayLink">@Text.AfterVisitBack</a></p>

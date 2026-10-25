@@ -1,0 +1,39 @@
+@page "/Admin/History/{id:guid}"
+@model VeskaFlow.Web.Pages.Admin.HistoryModel
+@{
+    ViewData["Title"] = Text.HistoryTitle;
+    var h = Model.History!;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+}
+<h1>@Text.HistoryTitle</h1>
+
+<div class="card">
+    <dl class="facts">
+        <dt>@Text.ManageWho</dt><dd>@h.Name</dd>
+        @if (!DisplayFormat.IsPlaceholderPhone(h.Phone)) { <dt>@Text.BookLabelPhone</dt><dd><a href="tel:@h.Phone">@h.Phone</a></dd> }
+        @if (!string.IsNullOrWhiteSpace(h.Email)) { <dt>@Text.LabelEmail</dt><dd>@h.Email</dd> }
+    </dl>
+</div>
+
+@if (h.Visits.Count == 0)
+{
+    <div class="card empty"><p>@Text.HistoryEmpty</p></div>
+}
+else
+{
+    <ul class="bookings">
+        @foreach (var v in h.Visits)
+        {
+            <li class="card">
+                <div class="booking-head">
+                    <strong>@v.Date.ToString("MMM d, yyyy", invariant)</strong>
+                    <span class="badge">@v.ServiceName</span>
+                </div>
+                <p class="muted">@Text.ManageWith: @v.StaffName</p>
+                @if (string.IsNullOrWhiteSpace(v.Notes)) { <p class="muted">@Text.HistoryNoNotes</p> }
+                else { <p class="record">@v.Notes</p> }
+                <p><a href="/Admin/AfterVisit/@v.BookingId">@Text.ActionEdit</a></p>
+            </li>
+        }
+    </ul>
+}

@@ -220,14 +220,35 @@ public static class Text
     public const string ManageCopyLink = "Copy link";
     public const string ManageAddToCalendar = "Add to calendar";
     public const string AfterVisitTitle = "After the visit";
+    public const string AfterVisitOpen = "Record, message and follow-up";
+    public const string AfterVisitSendTitle = "Send the customer a message";
+    public const string AfterVisitBack = "Back to bookings";
     public const string AfterVisitHint = "Send a thank-you from your own phone, and save the customer's contact so they are easy to find when you follow up.";
     public const string SendByEmail = "Send by email";
     public const string SendShare = "Share to another app";
     public const string SaveContact = "Save contact";
     public static string ThankYouSubject(string shop) => $"Thank you from {shop}";
     public static string FollowUpSubject(string shop) => $"Your follow-up visit at {shop}";
-    public static string ThankYouMessage(string firstName, string shop, string service, string bookingUrl) =>
-        $"Hi {firstName}, thank you for visiting {shop} for {service}. We hope to see you again! You can book your next visit anytime here: {bookingUrl}";
+    /// <summary>The thank-you after a visit. When a follow-up date is set, the message says so and points to the booking link for that day.</summary>
+    public static string ThankYouMessage(string firstName, string shop, string service, string bookingUrl, DateOnly? followUpOn = null, string? followUpService = null) =>
+        followUpOn is { } date
+            ? $"Hi {firstName}, thank you for visiting {shop} for {service}. Your follow-up{(string.IsNullOrWhiteSpace(followUpService) ? "" : $" for {followUpService}")} is on {date.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture)}. You can book your time here: {bookingUrl} See you then!"
+            : $"Hi {firstName}, thank you for visiting {shop} for {service}. We hope to see you again! You can book your next visit anytime here: {bookingUrl}";
+    public const string VisitNotesTitle = "Medical record (optional)";
+    public const string VisitNotesLabel = "Notes for this visit";
+    public const string VisitNotesHint = "Findings, diagnosis, treatment, medicines, allergies. Only staff who sign in can see this. It is never shown to the customer and never put in a message. Leave it empty if it does not apply.";
+    public const string VisitNotesSave = "Save record";
+    public const string VisitNotesOnFile = "Medical record on file";
+    public const string VisitNotesSaved = "Medical record saved.";
+    public const string VisitNotesTooLong = "The record can be at most 4000 characters.";
+    public const string VisitNotesOnlyCompleted = "A record can only be added to a completed booking.";
+    public const string HistoryTitle = "Customer history";
+    public const string HistoryLink = "View history";
+    public const string HistoryEmpty = "No completed visits yet.";
+    public const string HistoryNoNotes = "No record for this visit.";
+    public const string FollowUpForService = "Follow-up is for";
+    public const string FollowUpServiceSame = "Same service as this visit";
+    public const string AfterVisitMessageHint = "Set the follow-up date below and save it: the message above will then mention the date.";
     public const string FollowUpOpen = "Open follow-ups";
     public static string FollowUpAlertText(int overdue, int soon) => (overdue, soon) switch
     {

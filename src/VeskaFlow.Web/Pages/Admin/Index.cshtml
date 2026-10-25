@@ -72,32 +72,16 @@ else
                 @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Completed)
                 {
                     <div class="after-visit">
-                        <h3>@Text.AfterVisitTitle</h3>
-                        <p class="hint">@Text.AfterVisitHint</p>
-                        @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
-                            "t" + b.Id.ToString("N"), Model.ThankYouFor(b), b.CustomerPhone, b.CustomerEmail, Text.ThankYouSubject(Model.ShopName),
-                            $"/Admin?handler=Contact&id={b.Id}"))
-                    </div>
-                    <form method="post" asp-page-handler="FollowUp" class="followup-form">
-                        <input type="hidden" name="id" value="@b.Id" />
-                        <input type="hidden" name="date" value="@dateParam" />
-                        <input type="hidden" name="status" value="@filter" />
-                        @{ var fuValue = (b.FollowUpOn ?? b.SuggestedFollowUp) is { } fuDate ? DisplayFormat.DateParam(fuDate) : ""; }
-                        <h3>@Text.FollowUpTitle</h3>
-                        @if (b.FollowUpOn is null && b.SuggestedFollowUp is not null) { <p class="hint">@Text.FollowUpSuggested</p> }
-                        <div class="field">
-                            <label for="fu-@b.Id">@Text.FollowUpDate</label>
-                            <input type="date" id="fu-@b.Id" name="followUpOn" value="@fuValue" />
-                        </div>
-                        <div class="field">
-                            <label for="fun-@b.Id">@Text.FollowUpNote</label>
-                            <input type="text" id="fun-@b.Id" name="followUpNote" value="@b.FollowUpNote" maxlength="200" />
-                        </div>
+                        @if (b.FollowUpOn is { } fuOn)
+                        {
+                            <p class="muted">@Text.FollowUpTitle: @fuOn.ToString("ddd, MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)@(string.IsNullOrEmpty(b.FollowUpService) ? "" : " · " + b.FollowUpService)</p>
+                        }
+                        @if (!string.IsNullOrEmpty(b.VisitNotes)) { <p class="muted">@Text.VisitNotesOnFile</p> }
                         <div class="actions">
-                            <button type="submit" class="primary">@Text.FollowUpSave</button>
-                            @if (b.FollowUpOn is not null) { <button type="submit" name="clear" value="1" class="secondary">@Text.FollowUpRemove</button> }
+                            <a class="button" href="/Admin/AfterVisit/@b.Id">@Text.AfterVisitOpen</a>
+                            <a class="button secondary" href="/Admin/History/@b.CustomerId">@Text.HistoryLink</a>
                         </div>
-                    </form>
+                    </div>
                 }
                 @if (b.CanCancel)
                 {

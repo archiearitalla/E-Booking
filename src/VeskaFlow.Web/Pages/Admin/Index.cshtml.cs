@@ -1,22 +1,12 @@
-using VeskaFlow.Core.Domain;
+﻿using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>Day view of bookings with complete, no-show and cancel. All rules live in BookingService.</summary>
-public class IndexModel(AdminDayService days, BookingService bookings, FollowUpService followUps, ShopSettingsService settings, IConfiguration config) : AdminPageModel
+public class IndexModel(AdminDayService days, BookingService bookings, ShopSettingsService settings) : AdminPageModel
 {
-    public string ShopName { get; private set; } = "";
-    public string BookingUrl { get; private set; } = "";
-
-    /// <summary>The thank-you message staff can send after a visit (first name only, so it reads naturally).</summary>
-    public string ThankYouFor(DayBooking b)
-    {
-        var first = b.CustomerName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? b.CustomerName;
-        return Text.ThankYouMessage(first, ShopName, b.ServiceName, BookingUrl);
-    }
-
     /// <summary>Downloads the customer as a contact card (.vcf) to save to the phone's contacts.</summary>
     public async Task<IActionResult> OnGetContactAsync(Guid id, CancellationToken ct)
     {
@@ -54,36 +44,7 @@ public class IndexModel(AdminDayService days, BookingService bookings, FollowUpS
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         View = await days.GetDayAsync(BusinessId, Date, ct);
-        var shop = await settings.GetSettingsAsync(BusinessId, ct);
-        if (View is null || shop is null) return NotFound();
-        ShopName = shop.Name;
-        BookingUrl = QrCodes.BookingUrl(config["App:PublicBaseUrl"], Request.Scheme, Request.Host.Value, shop.Slug);
-        return Page();
-    }
-
-    /// <summary>Sets or clears the follow-up date of a completed booking.</summary>
-    public async Task<IActionResult> OnPostFollowUpAsync(
-        Guid id, string? followUpOn, string? followUpNote, string? clear, DateOnly? date, string? status, CancellationToken ct)
-    {
-        var back = new { date = date?.ToString("yyyy-MM-dd"), status = status is Cancelled or Done ? status : null };
-
-        DateOnly? when = null;
-        if (clear is null)
-        {
-            if (!DateOnly.TryParseExact(followUpOn, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.None, out var parsed))
-            {
-                Failure = Text.FollowUpDateInvalid;
-                return RedirectToPage(back);
-            }
-            when = parsed;
-        }
-
-        var result = await followUps.SetAsync(BusinessId, id, when, followUpNote, ct);
-        if (result.Failure == FailureKind.NotFound) return NotFound();
-        if (result.IsSuccess) Success = when is null ? Text.FollowUpCleared : Text.FollowUpSaved;
-        else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;
-        return RedirectToPage(back);
+        return View is null ? NotFound() : Page();
     }
 
     public async Task<IActionResult> OnPostTransitionAsync(
@@ -114,6 +75,9 @@ public class IndexModel(AdminDayService days, BookingService bookings, FollowUpS
 
         if (result.IsSuccess) Success = Text.BookingUpdated;
         else Failure = result.Message;
+
+        // Right after "Mark completed", open the page to message the customer, save the contact and set a follow-up.
+        if (result.IsSuccess && target == BookingStatus.Completed) return RedirectToPage("/Admin/AfterVisit", new { id });
         return RedirectToPage(back);
     }
 }

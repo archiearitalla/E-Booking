@@ -10,7 +10,7 @@ public sealed record DayBooking(
     DateTime StartsAtUtc, DateTime EndsAtUtc, BookingStatus Status, decimal Price, uint Version,
     bool CanComplete, bool CanNoShow, bool CanCancel,
     DateOnly? FollowUpOn = null, string? FollowUpNote = null, bool FollowUpDone = false, DateOnly? SuggestedFollowUp = null,
-    string? CustomerEmail = null);
+    string? CustomerEmail = null, string? FollowUpService = null, string? VisitNotes = null, Guid CustomerId = default);
 
 /// <summary>A customer's contact details for saving to the staff phone's contacts (a .vcf file).</summary>
 public sealed record CustomerContact(string Name, string Phone, string? Email);
@@ -47,7 +47,7 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
                 CustomerPhone = b.Customer.Phone, b.StartsAtUtc, b.EndsAtUtc, b.Status, b.PriceSnapshot,
                 Version = EF.Property<uint>(b, "xmin"),
                 b.FollowUpOn, b.FollowUpNote, b.FollowUpDone, ServiceFollowUpDays = b.Service.FollowUpDays,
-                CustomerEmail = b.Customer.Email,
+                CustomerEmail = b.Customer.Email, b.FollowUpService, b.VisitNotes, b.CustomerId,
             })
             .ToListAsync(ct);
 
@@ -59,9 +59,21 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
             BookingPolicy.CanCancel(r.Status, r.StartsAtUtc, now, ActorKind.Staff, business.CancelCutoffHours).Allowed,
             r.FollowUpOn, r.FollowUpNote, r.FollowUpDone,
             r.ServiceFollowUpDays is { } days ? LocalTime.LocalDateOf(r.StartsAtUtc, business.TimeZone).AddDays(days) : null,
-            r.CustomerEmail)).ToList();
+            r.CustomerEmail, r.FollowUpService, r.VisitNotes, r.CustomerId)).ToList();
 
         return new DayView(day, business.TimeZone, bookings);
+    }
+
+    /// <summary>One booking of this business as the day view shows it, or null (unknown id, or another business's booking).</summary>
+    public async Task<DayBooking?> GetBookingAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var found = await db.Bookings.AsNoTracking().Where(b => b.Id == bookingId && b.BusinessId == businessId)
+            .Select(b => new { b.StartsAtUtc, b.LocationTimeZone }).FirstOrDefaultAsync(ct);
+        if (found is null) return null;
+
+        var day = await GetDayAsync(businessId, LocalTime.LocalDateOf(found.StartsAtUtc, found.LocationTimeZone), ct);
+        return day?.Bookings.FirstOrDefault(b => b.Id == bookingId);
     }
 
     /// <summary>The customer of one booking of this business, for "Save contact". Another business's booking is "not found" (null).</summary>

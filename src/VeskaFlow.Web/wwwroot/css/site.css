@@ -595,3 +595,6 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .send-actions { flex-wrap: wrap; }
 .after-visit { border-top: 1px solid var(--line); margin-top: 0.75rem; padding-top: 0.75rem; }
 .after-visit textarea { width: 100%; }
+
+/* Medical record text keeps its line breaks. */
+.record { white-space: pre-wrap; overflow-wrap: anywhere; }

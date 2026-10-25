@@ -151,6 +151,10 @@ public class Booking
     public DateOnly? FollowUpOn { get; set; }
     public string? FollowUpNote { get; set; }
     public bool FollowUpDone { get; set; }
+    /// <summary>The service the follow-up is for (a name snapshot). Null means the same service as this visit.</summary>
+    public string? FollowUpService { get; set; }
+    /// <summary>Optional medical record or notes of the visit, for the customer's history. Staff only: never shown to customers, never in messages or the audit log.</summary>
+    public string? VisitNotes { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;

@@ -7,7 +7,8 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record FollowUpRow(
     Guid BookingId, string CustomerName, string CustomerPhone, string ServiceName,
-    DateOnly VisitDate, DateOnly FollowUpOn, string? Note, bool Overdue, bool DueToday, string? CustomerEmail = null);
+    DateOnly VisitDate, DateOnly FollowUpOn, string? Note, bool Overdue, bool DueToday, string? CustomerEmail = null,
+    string? FollowUpServiceName = null);
 
 /// <summary>How many follow-ups need a message soon: overdue, and due today or within the next few days.</summary>
 public sealed record FollowUpAlert(int Overdue, int Soon)
@@ -51,20 +52,21 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
         var rows = await db.Bookings.AsNoTracking()
             .Where(b => b.BusinessId == businessId && b.FollowUpOn != null && !b.FollowUpDone && b.Status == BookingStatus.Completed)
             .OrderBy(b => b.FollowUpOn).ThenBy(b => b.StartsAtUtc)
-            .Select(b => new { b.Id, CustomerName = b.Customer.Name, CustomerPhone = b.Customer.Phone, CustomerEmail = b.Customer.Email, b.ServiceNameSnapshot, b.StartsAtUtc, b.FollowUpOn, b.FollowUpNote })
+            .Select(b => new { b.Id, CustomerName = b.Customer.Name, CustomerPhone = b.Customer.Phone, CustomerEmail = b.Customer.Email, b.ServiceNameSnapshot, b.StartsAtUtc, b.FollowUpOn, b.FollowUpNote, b.FollowUpService })
             .ToListAsync(ct);
 
         return rows.Select(r => new FollowUpRow(
             r.Id, r.CustomerName, r.CustomerPhone, r.ServiceNameSnapshot,
             LocalTime.LocalDateOf(r.StartsAtUtc, tz), r.FollowUpOn!.Value, r.FollowUpNote,
-            r.FollowUpOn.Value < today, r.FollowUpOn.Value == today, r.CustomerEmail)).ToList();
+            r.FollowUpOn.Value < today, r.FollowUpOn.Value == today, r.CustomerEmail, r.FollowUpService)).ToList();
     }
 
     /// <summary>
     /// Sets (or clears, when <paramref name="date"/> is null) the follow-up date of a completed booking.
     /// The date may not be before the visit or more than two years after it.
     /// </summary>
-    public async Task<ServiceResult<bool>> SetAsync(Guid businessId, Guid bookingId, DateOnly? date, string? note, CancellationToken ct = default)
+    public async Task<ServiceResult<bool>> SetAsync(
+        Guid businessId, Guid bookingId, DateOnly? date, string? note, Guid? followUpServiceId = null, CancellationToken ct = default)
     {
         var cleanNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         if (cleanNote is { Length: > 200 })
@@ -83,8 +85,19 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
                 return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["followUpOn"] = Text.FollowUpDateInvalid });
         }
 
+        // The service the follow-up is for must belong to this business; none means the same service as the visit.
+        string? serviceName = null;
+        if (date is not null && followUpServiceId is { } serviceId)
+        {
+            serviceName = await db.Services.AsNoTracking().Where(s => s.Id == serviceId && s.BusinessId == businessId)
+                .Select(s => s.Name).FirstOrDefaultAsync(ct);
+            if (serviceName is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+            if (serviceName == booking.ServiceNameSnapshot) serviceName = null;
+        }
+
         booking.FollowUpOn = date;
         booking.FollowUpNote = date is null ? null : cleanNote;
+        booking.FollowUpService = date is null ? null : serviceName;
         booking.FollowUpDone = false;
         await db.SaveChangesAsync(ct);
         return ServiceResult<bool>.Ok(true);

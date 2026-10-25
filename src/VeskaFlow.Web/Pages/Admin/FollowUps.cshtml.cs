@@ -42,6 +42,6 @@ public class FollowUpsModel(FollowUpService followUps, ShopSettingsService setti
     public string MessageFor(FollowUpRow row)
     {
         var first = row.CustomerName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? row.CustomerName;
-        return Text.FollowUpMessage(first, ShopName, row.ServiceName, row.FollowUpOn.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture), BookingUrl);
+        return Text.FollowUpMessage(first, ShopName, row.FollowUpServiceName ?? row.ServiceName, row.FollowUpOn.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture), BookingUrl);
     }
 }

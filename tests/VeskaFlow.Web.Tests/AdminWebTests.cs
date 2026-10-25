@@ -443,9 +443,9 @@ public class AdminWebTests
 
         // The same message tools are under a completed booking in the day view.
         var doneView = Dec(await owner.Client.GetStringAsync($"/Admin?date={DateOf(booking)}&status=done"));
-        Assert.Contains(Text.AfterVisitTitle, doneView);
-        Assert.Contains("thank you for visiting", doneView);
-        Assert.Contains($"/Admin?handler=Contact&id={booking.Id}", doneView);
+        Assert.Contains(Text.AfterVisitOpen, doneView);
+        Assert.Contains($"/Admin/AfterVisit/{booking.Id}", doneView);
+        Assert.Contains("/Admin/History/", doneView);
         var card2 = await owner.Client.GetAsync($"/Admin?handler=Contact&id={booking.Id}");
         Assert.Equal(HttpStatusCode.OK, card2.StatusCode);
 
@@ -486,6 +486,59 @@ public class AdminWebTests
         var after = Offered(await owner.Client.GetStringAsync($"/b/{owner.Slug}"));
         Assert.DoesNotContain(after, d => d.DayOfWeek == DayOfWeek.Tuesday);
         Assert.Contains(after, d => d.DayOfWeek == DayOfWeek.Wednesday);
+    }
+
+    [Fact]
+    public async Task The_after_visit_page_offers_the_message_tools_and_a_follow_up_right_after_completion()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+        var booking = await BookNextFreeAsync(owner);
+
+        // Not completed yet: nothing to do after the visit, so the page sends the staff member back to the bookings.
+        var early = await owner.Client.GetAsync($"/Admin/AfterVisit/{booking.Id}");
+        Assert.Equal(HttpStatusCode.Redirect, early.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync($"/Admin/AfterVisit/{Guid.NewGuid()}")).StatusCode);
+
+        await using (var ctx = owner.Db.CreateDbContext())
+        {
+            var row = await ctx.Bookings.SingleAsync(x => x.Id == booking.Id);
+            row.Status = BookingStatus.Completed;
+            await ctx.SaveChangesAsync();
+        }
+
+        var page = Dec(await owner.Client.GetStringAsync($"/Admin/AfterVisit/{booking.Id}"));
+        Assert.Contains(Text.AfterVisitSendTitle, page);
+        Assert.Contains("thank you for visiting", page);
+        Assert.Contains("Send as text", page);
+        Assert.Contains(Text.SaveContact, page);
+        Assert.Contains(Text.FollowUpTitle, page);
+        Assert.Contains(Text.AfterVisitMessageHint, page); // no follow-up date yet
+        Assert.DoesNotContain("Your follow-up visit is on", page);
+
+        var url = $"/Admin/AfterVisit/{booking.Id}";
+        var saved = await PostAsync(owner.Client, url, $"{url}?handler=FollowUp",
+            new() { ["followUpOn"] = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14)).ToString("yyyy-MM-dd"), ["followUpNote"] = "Check-up" });
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+        Assert.Single(await new FollowUpService(owner.Db, TimeProvider.System).ListAsync(owner.BusinessId));
+
+        // Once a follow-up date is set, the message tells the customer about it.
+        var after = Dec(await owner.Client.GetStringAsync(url));
+        Assert.Contains("Your follow-up is on", after);
+        Assert.DoesNotContain(Text.AfterVisitMessageHint, after);
+
+        // The optional medical record is saved on the visit, shown in the customer's history, and never put in the message.
+        var recorded = await PostAsync(owner.Client, url, $"{url}?handler=Notes", new() { ["visitNotes"] = "Blood pressure 120/80. Allergic to penicillin." });
+        Assert.Equal(HttpStatusCode.Redirect, recorded.StatusCode);
+        var withRecord = Dec(await owner.Client.GetStringAsync(url));
+        Assert.Contains("Allergic to penicillin.", withRecord);
+        Assert.DoesNotContain("penicillin", withRecord[withRecord.IndexOf("Ready message", StringComparison.Ordinal)..]);
+        await using var ctx2 = owner.Db.CreateDbContext();
+        var customerId = (await ctx2.Bookings.SingleAsync(x => x.Id == booking.Id)).CustomerId;
+        var history = Dec(await owner.Client.GetStringAsync($"/Admin/History/{customerId}"));
+        Assert.Contains("Allergic to penicillin.", history);
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync($"/Admin/History/{Guid.NewGuid()}")).StatusCode);
     }
 
     // ------------------------------------------------------------ staff, settings, about

@@ -31,6 +31,7 @@ else
                         else { <span class="muted">&middot; @Text.WalkInNoPhone</span> }
                     </dd>
                     <dt>@Text.ManageService</dt><dd>@r.ServiceName &middot; @string.Format(Text.FollowUpVisitOn, r.VisitDate.ToString("MMM d, yyyy", invariant))</dd>
+                    @if (!string.IsNullOrEmpty(r.FollowUpServiceName)) { <dt>@Text.FollowUpForService</dt><dd>@r.FollowUpServiceName</dd> }
                     @if (!string.IsNullOrEmpty(r.Note)) { <dt>@Text.FollowUpNote</dt><dd>@r.Note</dd> }
                 </dl>
 
