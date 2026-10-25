@@ -8,11 +8,11 @@ An account on each service is needed and only the owner can create them. Nothing
 
 The no-double-booking guarantee needs the `btree_gist` extension. Prove it on Neon before going live:
 
-1. In Neon, create a project on **PostgreSQL 16**. Create a second database named `barberbook_test` in it (or a separate branch).
+1. In Neon, create a project on **PostgreSQL 16**. Create a second database named `veskaflow_test` in it (or a separate branch).
 2. In the SQL editor of the **test** database run `CREATE EXTENSION IF NOT EXISTS btree_gist;`. It must succeed.
 3. From a machine with `psql`, run the invariant script against the test database only (it wipes the public schema):
    ```bash
-   PGHOST=<neon host> PGUSER=<user> PGPASSWORD=<password> PGDATABASE=barberbook_test PGSSLMODE=require tests/db/double_booking.sh
+   PGHOST=<neon host> PGUSER=<user> PGPASSWORD=<password> PGDATABASE=veskaflow_test PGSSLMODE=require tests/db/double_booking.sh
    ```
    It must print "All database invariants hold." If it does not, stop and use the fallback in 17.3.
 
@@ -60,7 +60,7 @@ After the first deploy, open `https://<name>.onrender.com/healthz`. It returns `
 The free database keeps a very short history. Take a regular dump and keep it outside Neon:
 
 ```bash
-pg_dump "postgresql://<user>:<password>@<host>/<db>?sslmode=require" -Fc -f barberbook-$(date +%F).dump
+pg_dump "postgresql://<user>:<password>@<host>/<db>?sslmode=require" -Fc -f veskaflow-$(date +%F).dump
 ```
 
 Restore it once into an empty database to prove it works (`pg_restore -d <empty db> <file>`). A scheduled job can run this daily and upload the file to storage such as Cloudflare R2 (free allowance, verify current limits). That job is not built yet.

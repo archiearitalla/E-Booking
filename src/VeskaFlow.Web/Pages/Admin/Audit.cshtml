@@ -1,0 +1,40 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.AuditModel
+@{
+    ViewData["Title"] = Text.AdminNavAudit;
+    var view = Model.View!;
+}
+<h1>@Text.AdminNavAudit</h1>
+<p class="hint">@Text.AuditHint</p>
+
+@if (view.Rows.Count == 0)
+{
+    <div class="card empty"><p>@Text.AuditEmpty</p></div>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <caption class="sr-only">@Text.AdminNavAudit</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@Text.AuditWhen</th>
+                    <th scope="col">@Text.AuditWho</th>
+                    <th scope="col">@Text.AuditWhat</th>
+                    <th scope="col">@Text.AuditReason</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in view.Rows)
+                {
+                    <tr>
+                        <td>@DisplayFormat.Date(r.AtUtc, view.TimeZone), @DisplayFormat.Time(r.AtUtc, view.TimeZone)</td>
+                        <td>@r.ActorLabel <span class="muted">(@r.ActorType.ToLowerInvariant())</span></td>
+                        <td>@r.Action @if (r.FromStatus is not null) { <span class="muted">(@r.FromStatus &rarr; @r.ToStatus)</span> }</td>
+                        <td>@r.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

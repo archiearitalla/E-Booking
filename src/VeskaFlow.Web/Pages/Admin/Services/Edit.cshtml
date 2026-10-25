@@ -1,0 +1,52 @@
+@page "{id:guid?}"
+@model VeskaFlow.Web.Pages.Admin.Services.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? Text.ServiceAdd : Text.ServiceEdit;
+}
+<h1>@ViewData["Title"]</h1>
+<div class="card">
+    <form method="post" novalidate>
+        @if (Model.Errors.Count > 0) { <div class="alert" role="alert">@Text.ValidationFailed</div> }
+
+        <div class="field">
+            <label for="Name">@Text.LabelServiceName</label>
+            <input type="text" id="Name" name="Input.Name" value="@Model.Input.Name" maxlength="80"
+                   aria-invalid="@(Model.ErrorFor("name") is null ? "false" : "true")" aria-describedby="Name-error" />
+            @if (Model.ErrorFor("name") is { } e1) { <p class="error" id="Name-error">@e1</p> }
+        </div>
+        <div class="field">
+            <label for="Duration">@Text.LabelDuration</label>
+            <input type="number" id="Duration" name="Input.DurationMinutes" value="@Model.Input.DurationMinutes" min="5" max="600" step="5" inputmode="numeric"
+                   aria-invalid="@(Model.ErrorFor("durationMinutes") is null ? "false" : "true")" aria-describedby="Duration-error" />
+            @if (Model.ErrorFor("durationMinutes") is { } e2) { <p class="error" id="Duration-error">@e2</p> }
+        </div>
+        <div class="field">
+            <label for="Buffer">@Text.LabelBuffer</label>
+            <input type="number" id="Buffer" name="Input.BufferMinutes" value="@Model.Input.BufferMinutes" min="0" max="240" step="5" inputmode="numeric"
+                   aria-invalid="@(Model.ErrorFor("bufferMinutes") is null ? "false" : "true")" aria-describedby="Buffer-hint Buffer-error" />
+            <p class="hint" id="Buffer-hint">@Text.HintBuffer</p>
+            @if (Model.ErrorFor("bufferMinutes") is { } e3) { <p class="error" id="Buffer-error">@e3</p> }
+        </div>
+        <div class="field">
+            <label for="Price">@Text.LabelPrice</label>
+            <input type="text" id="Price" name="Input.Price" value="@Model.Input.Price" inputmode="decimal" maxlength="12"
+                   aria-invalid="@(Model.ErrorFor("price") is null ? "false" : "true")" aria-describedby="Price-error" />
+            @if (Model.ErrorFor("price") is { } e4) { <p class="error" id="Price-error">@e4</p> }
+        </div>
+        <div class="field">
+            <label for="SortOrder">@Text.LabelSortOrder</label>
+            <input type="number" id="SortOrder" name="Input.SortOrder" value="@Model.Input.SortOrder" min="0" max="1000" inputmode="numeric"
+                   aria-invalid="@(Model.ErrorFor("sortOrder") is null ? "false" : "true")" aria-describedby="SortOrder-error" />
+            @if (Model.ErrorFor("sortOrder") is { } e5) { <p class="error" id="SortOrder-error">@e5</p> }
+        </div>
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.IsActive" value="true" checked="@Model.Input.IsActive" />
+                <span>@Text.LabelActive <span class="muted">@Text.HintServiceActive</span></span>
+            </label>
+        </div>
+
+        <button type="submit" class="primary">@Text.ActionSave</button>
+        <a href="/Admin/Services">@Text.ActionBack</a>
+    </form>
+</div>

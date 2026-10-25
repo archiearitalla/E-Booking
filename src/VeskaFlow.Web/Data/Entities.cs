@@ -1,0 +1,139 @@
+using VeskaFlow.Core.Domain;
+
+namespace VeskaFlow.Web.Data;
+
+// Column names are derived from property names in snake_case (see AppDbContext) and must match Migrations/*.sql.
+
+public class Business
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Slug { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string TimeZone { get; set; } = "Asia/Manila";
+    public int SlotMinutes { get; set; } = 30;
+    public int LeadTimeMinutes { get; set; } = 60;
+    public int HorizonDays { get; set; } = 30;
+    public int CancelCutoffHours { get; set; } = 2;
+    public string Plan { get; set; } = "FREE";
+    public string BrandColor { get; set; } = "teal";
+    public string Industry { get; set; } = "barbershop";
+    public DateTime? TrialEndsAtUtc { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public class AdminUser
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public string Email { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string PasswordHash { get; set; } = "";
+    public string Role { get; set; } = "OWNER";
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public class Staff
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public string Name { get; set; } = "";
+    public bool IsActive { get; set; } = true;
+    public int SortOrder { get; set; }
+    public List<WorkingHour> WorkingHours { get; set; } = [];
+    public List<StaffService> StaffServices { get; set; } = [];
+}
+
+public class Service
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public string Name { get; set; } = "";
+    public int DurationMinutes { get; set; } = 30;
+    public int BufferMinutes { get; set; }
+    public decimal Price { get; set; }
+    public bool IsActive { get; set; } = true;
+    public int SortOrder { get; set; }
+}
+
+public class StaffService
+{
+    public Guid StaffId { get; set; }
+    public Guid ServiceId { get; set; }
+    public Guid BusinessId { get; set; }
+}
+
+public class WorkingHour
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid StaffId { get; set; }
+    /// <summary>0 = Sunday ... 6 = Saturday (matches System.DayOfWeek).</summary>
+    public short DayOfWeek { get; set; }
+    public TimeOnly OpenTime { get; set; }
+    public TimeOnly CloseTime { get; set; }
+}
+
+public class Blackout
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    /// <summary>Null means the whole shop is closed.</summary>
+    public Guid? StaffId { get; set; }
+    public DateTime StartsAtUtc { get; set; }
+    public DateTime EndsAtUtc { get; set; }
+    public string? Reason { get; set; }
+}
+
+public class Customer
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public string Name { get; set; } = "";
+    public string Phone { get; set; } = "";
+    public string? Email { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public class Booking
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public Guid CustomerId { get; set; }
+    public Guid StaffId { get; set; }
+    public Guid ServiceId { get; set; }
+    public DateTime StartsAtUtc { get; set; }
+    public DateTime EndsAtUtc { get; set; }
+    /// <summary>EndsAtUtc plus the service buffer, snapshotted at booking time. Drives the exclusion constraint.</summary>
+    public DateTime OccupiedUntilUtc { get; set; }
+    public string LocationTimeZone { get; set; } = "";
+    public BookingStatus Status { get; set; }
+    public DateTime? HoldExpiresAtUtc { get; set; }
+    public decimal PriceSnapshot { get; set; }
+    public string ServiceNameSnapshot { get; set; } = "";
+    public string ManageToken { get; set; } = "";
+    public string? IdempotencyKey { get; set; }
+    public string? CancelledBy { get; set; }
+    public string? CancelReason { get; set; }
+    public DateTime? CancelledAtUtc { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public Staff Staff { get; set; } = null!;
+    public Service Service { get; set; } = null!;
+    public Customer Customer { get; set; } = null!;
+}
+
+public class AuditLog
+{
+    public long Id { get; set; }
+    public Guid BusinessId { get; set; }
+    public Guid? BookingId { get; set; }
+    public string ActorType { get; set; } = "";
+    public Guid? ActorId { get; set; }
+    public string ActorLabel { get; set; } = "";
+    public string Action { get; set; } = "";
+    public string? FromStatus { get; set; }
+    public string? ToStatus { get; set; }
+    public string? Reason { get; set; }
+    public DateTime AtUtc { get; set; } = DateTime.UtcNow;
+}

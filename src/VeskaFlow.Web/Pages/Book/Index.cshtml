@@ -1,0 +1,129 @@
+@page "/b/{slug}"
+@model VeskaFlow.Web.Pages.Book.IndexModel
+@{
+    ViewData["Title"] = Model.Shop?.Name ?? Text.BookTitle;
+    var shop = Model.Shop!;
+    ViewData["Theme"] = shop.BrandColor;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+    var stripDays = Math.Min(shop.HorizonDays + 1, 14);
+}
+<section class="hero-card">
+    <div>
+        <p class="hero-kicker">@Text.BookTitle</p>
+        <h1>@shop.Name</h1>
+    </div>
+    @if (shop.AcceptingBookings && shop.Services.Count > 0)
+    {
+        <a class="hero-btn" href="#book">@Text.BookNow</a>
+    }
+</section>
+
+<div class="card" id="book">
+    @if (Model.Taken)
+    {
+        <div class="alert" role="alert">@Text.BookTaken</div>
+    }
+
+    @if (!shop.AcceptingBookings)
+    {
+        <p>@Text.TrialEndedPublic</p>
+    }
+    else if (shop.Services.Count == 0)
+    {
+        <p>@Text.BookNoServices</p>
+    }
+    else
+    {
+        <form method="get" asp-page="/Book/Index" asp-route-slug="@shop.Slug">
+            <fieldset class="field">
+                <legend>@Text.BookService</legend>
+                @foreach (var service in shop.Services)
+                {
+                    <label class="choice">
+                        <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" required />
+                        <span>
+                            <strong>@service.Name</strong>
+                            <span class="muted">@DisplayFormat.Duration(service.DurationMinutes) &middot; @DisplayFormat.Price(service.Price)</span>
+                        </span>
+                    </label>
+                }
+            </fieldset>
+
+            <fieldset class="field">
+                <legend>@Industries.StaffLabel(shop.Industry)</legend>
+                <div class="people">
+                    <label class="choice person">
+                        <input type="radio" name="staffId" value="" checked="@(Model.StaffId is null)" />
+                        <span class="avatar" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </span>
+                        <span><strong>@Text.BookStaffAny</strong></span>
+                    </label>
+                    @foreach (var staff in shop.Staff)
+                    {
+                        <label class="choice person">
+                            <input type="radio" name="staffId" value="@staff.Id" checked="@(Model.StaffId == staff.Id)" />
+                            <span class="avatar" aria-hidden="true">@staff.Name.Trim()[..1].ToUpperInvariant()</span>
+                            <span><strong>@staff.Name</strong></span>
+                        </label>
+                    }
+                </div>
+            </fieldset>
+
+            <fieldset class="field">
+                <legend>@Text.BookDate</legend>
+                <div class="datestrip">
+                    @for (var i = 0; i < stripDays; i++)
+                    {
+                        var day = shop.Today.AddDays(i);
+                        <label class="daychip">
+                            <input type="radio" name="date" value="@DisplayFormat.DateParam(day)" checked="@(Model.SelectedDate == day)" />
+                            <small>@day.ToString("ddd", invariant)</small>
+                            <span>@day.Day</span>
+                            <small>@day.ToString("MMM", invariant)</small>
+                        </label>
+                    }
+                </div>
+                <details class="other-date">
+                    <summary>@Text.BookAnotherDate</summary>
+                    <input type="date" id="other" name="other" aria-label="@Text.BookAnotherDate"
+                           min="@DisplayFormat.DateParam(shop.Today)" max="@DisplayFormat.DateParam(shop.Today.AddDays(shop.HorizonDays))" />
+                </details>
+            </fieldset>
+
+            <button type="submit" class="primary">@Text.BookShowTimes</button>
+        </form>
+    }
+</div>
+
+@if (Model.Searched)
+{
+    <div class="card" id="times" aria-live="polite">
+        <h2>@Text.BookAvailableTimes @Model.DateText</h2>
+        @if (Model.Notice is not null)
+        {
+            <p>@Model.Notice</p>
+        }
+        else if (Model.Times.Count == 0)
+        {
+            <p>@Text.BookNoTimes</p>
+        }
+        else
+        {
+            <ul class="slots">
+                @foreach (var start in Model.Times)
+                {
+                    <li>
+                        <a class="slot" asp-page="/Book/Details" asp-route-slug="@shop.Slug"
+                           asp-route-serviceId="@Model.ServiceId" asp-route-staffId="@Model.StaffId"
+                           asp-route-start="@DisplayFormat.StartParam(start)">@DisplayFormat.Time(start, shop.TimeZone)</a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+else if (shop.Services.Count > 0)
+{
+    <p class="muted">@Text.BookPickService</p>
+}

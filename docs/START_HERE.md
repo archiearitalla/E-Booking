@@ -13,9 +13,9 @@ One file to open Claude Code (or any developer) with. It tells you what to insta
 Postgres with Docker (the official image includes `btree_gist`):
 
 ```bash
-docker run -d --name barber-pg -e POSTGRES_PASSWORD=barber -p 5432:5432 postgres:16
-docker exec -it barber-pg psql -U postgres -c "CREATE DATABASE barberbook;"
-docker exec -it barber-pg psql -U postgres -c "CREATE DATABASE barberbook_test;"
+docker run -d --name veskaflow-pg -e POSTGRES_PASSWORD=veskaflow -p 5432:5432 postgres:16
+docker exec -it veskaflow-pg psql -U postgres -c "CREATE DATABASE veskaflow;"
+docker exec -it veskaflow-pg psql -U postgres -c "CREATE DATABASE veskaflow_test;"
 ```
 
 If you install Postgres directly, make sure the contrib package is included so `CREATE EXTENSION btree_gist` works.
@@ -24,9 +24,9 @@ Connection strings (environment variables, never committed):
 
 ```bash
 # bash
-export ConnectionStrings__Default="Host=localhost;Database=barberbook;Username=postgres;Password=barber"
+export ConnectionStrings__Default="Host=localhost;Database=veskaflow;Username=postgres;Password=veskaflow"
 # PowerShell
-$env:ConnectionStrings__Default = "Host=localhost;Database=barberbook;Username=postgres;Password=barber"
+$env:ConnectionStrings__Default = "Host=localhost;Database=veskaflow;Username=postgres;Password=veskaflow"
 ```
 
 ## 2. Get the code
@@ -40,7 +40,7 @@ git pull --rebase origin main     # do this at the start of every session
 Quick sanity check that works with no NuGet access:
 
 ```bash
-dotnet run --project tests/BarberBook.Core.SelfCheck     # expect: All 55 checks passed.
+dotnet run --project tests/VeskaFlow.Core.SelfCheck     # expect: All 55 checks passed.
 ```
 
 ## 3. Paste this into Claude Code
@@ -61,14 +61,14 @@ existing code. Work through docs/BUILD_PLAN.md in order, starting at Step 0. For
 Hard constraints:
 - The double-booking guarantee is the database exclusion constraint. Never replace it with
   application-only checks.
-- No business logic in pages. Availability is derived by BarberBook.Core, never stored.
+- No business logic in pages. Availability is derived by VeskaFlow.Core, never stored.
 - Every back-office query is scoped by the BusinessId from the signed-in user's claims.
 - Database changes are additive numbered migrations only. No DROP, TRUNCATE or destructive ALTER.
 - Everything is free-tier first. Do not add a paid service or package that needs payment.
 - If the code disagrees with docs/BUSINESS_RULES.md, stop and ask me.
 
 Start now with Step 0: restore, add the web project to the solution, make it build, fix compile
-errors in src/BarberBook.Web/Data, and run all three checks (self-check, database script, build).
+errors in src/VeskaFlow.Web/Data, and run all three checks (self-check, database script, build).
 ```
 
 ## 4. Decisions already made (do not reopen without asking)
@@ -90,8 +90,8 @@ errors in src/BarberBook.Web/Data, and run all three checks (self-check, databas
 
 ## 5. What is verified and what is not
 
-- Verified: `BarberBook.Core` (55 self-checks) and the SQL schema (20 checks on PostgreSQL 16).
-- Not compiled yet: `src/BarberBook.Web/Data/*` and `AppInfo.cs`. Step 0 fixes that.
+- Verified: `VeskaFlow.Core` (55 self-checks) and the SQL schema (20 checks on PostgreSQL 16).
+- Not compiled yet: `src/VeskaFlow.Web/Data/*` and `AppInfo.cs`. Step 0 fixes that.
 - Not written yet: `Program.cs`, services, pages, admin, API, Flutter app.
 
 ## 6. When you switch between PC and mobile

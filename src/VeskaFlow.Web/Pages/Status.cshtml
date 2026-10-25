@@ -1,0 +1,10 @@
+@page "/Status/{code:int}"
+@model VeskaFlow.Web.Pages.StatusModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+<div class="card">
+    <h1>@Model.Title</h1>
+    <p>@Model.Body</p>
+    <p><a href="/">@Text.HomeLink</a></p>
+</div>

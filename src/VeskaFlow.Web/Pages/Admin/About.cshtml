@@ -1,0 +1,15 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.AboutModel
+@{
+    ViewData["Title"] = Text.AdminNavAbout;
+}
+<h1>@Text.AdminNavAbout</h1>
+<div class="card">
+    <dl class="facts">
+        <dt>@Text.AboutApp</dt><dd>@AppInfo.Name</dd>
+        <dt>@Text.AboutVersion</dt><dd>@AppInfo.Version</dd>
+        <dt>@Text.AboutBuild</dt><dd>@AppInfo.Build</dd>
+        <dt>@Text.AboutRuntime</dt><dd>@Model.Runtime</dd>
+        <dt>@Text.AboutEnvironment</dt><dd>@Model.EnvironmentName</dd>
+    </dl>
+</div>

@@ -6,17 +6,17 @@ Legend: ✅ done and verified · 🟡 written, not compiled · ⬜ not started
 
 ## Step 0: Make the existing code build ✅
 
-Verified on Windows, .NET SDK 8.0.426 and 10.0.401 installed, PostgreSQL 16.15: build 0 warnings 0 errors; self-check 55/55; `double_booking.sh` 20/20; `tests/BarberBook.Web.ModelCheck` confirms the EF model matches the migrated schema and a booking round-trips through EF. The Data files needed no fixes. A placeholder `Program.cs` (with `/healthz`) was added so the project builds; Step 1 replaces it.
+Verified on Windows, .NET SDK 8.0.426 and 10.0.401 installed, PostgreSQL 16.15: build 0 warnings 0 errors; self-check 55/55; `double_booking.sh` 20/20; `tests/VeskaFlow.Web.ModelCheck` confirms the EF model matches the migrated schema and a booking round-trips through EF. The Data files needed no fixes. A placeholder `Program.cs` (with `/healthz`) was added so the project builds; Step 1 replaces it.
 
-Files: `BarberBook.sln`, `src/BarberBook.Web/*`
+Files: `VeskaFlow.sln`, `src/VeskaFlow.Web/*`
 
 1. `dotnet restore` (needs NuGet access).
-2. Add the web project: `dotnet sln add src/BarberBook.Web`. It has no entry point yet, so also create a minimal `Program.cs` in Step 1 before building it.
+2. Add the web project: `dotnet sln add src/VeskaFlow.Web`. It has no entry point yet, so also create a minimal `Program.cs` in Step 1 before building it.
 3. Fix any compile errors in `Data/Entities.cs`, `Data/AppDbContext.cs`, `Data/SqlMigrator.cs`, `AppInfo.cs`.
 
 Acceptance:
-- `dotnet build BarberBook.sln` succeeds with no warnings treated as errors.
-- `dotnet run --project tests/BarberBook.Core.SelfCheck` prints "All 55 checks passed."
+- `dotnet build VeskaFlow.sln` succeeds with no warnings treated as errors.
+- `dotnet run --project tests/VeskaFlow.Core.SelfCheck` prints "All 55 checks passed."
 - `tests/db/double_booking.sh` prints "All database invariants hold."
 - `AppDbContext` model matches the SQL: write a small check that opens the context and runs `db.Bookings.Take(1)`, `db.Staff...` etc. against a migrated database without a column-name error.
 
@@ -24,7 +24,7 @@ Acceptance:
 
 Verified: empty database gets all tables on first start, second start applies nothing; `/healthz` 200 with version, and 503 after the database was dropped while the app ran; security headers present on responses; `/Error` renders. Verified in Step 3: the `auth` rate-limit policy returns 429 and the `/Admin` folder policy redirects to `/Login`. Still unverified: the `booking` policy (not attached until Step 4), HSTS (HTTPS only), forwarded headers (`Proxy:TrustForwardedHeaders`, off by default).
 
-Files: `src/BarberBook.Web/Program.cs`, `appsettings.json`, `appsettings.Development.json`, `Pages/Error.cshtml`.
+Files: `src/VeskaFlow.Web/Program.cs`, `appsettings.json`, `appsettings.Development.json`, `Pages/Error.cshtml`.
 
 - DI: `AddDbContextFactory<AppDbContext>` plus a scoped context from the factory, `TimeProvider.System`.
 - Cookie authentication (`HttpOnly`, `SameSite=Lax`), authorization, folder policy on `/Admin`.
@@ -52,7 +52,7 @@ Acceptance (integration tests against a real PostgreSQL):
 - Customer cancel after the cutoff is refused; staff cancel succeeds; every change writes an audit row.
 - A booking id from another business returns not found.
 
-Verified: all of the above in `tests/BarberBook.Web.Tests` (21 xunit tests, real PostgreSQL 16, 25 consecutive runs without a failure after the fixes below). Findings while testing: (1) concurrent inserts into the exclusion constraint can deadlock (40P01, wrapped by EF in `InvalidOperationException`) and 50 at once exceeded the 30 s command timeout, so attempts for one staff member are queued with `pg_advisory_xact_lock`; the constraint is still the guarantee. (2) A retry with the same idempotency key that lost the slot race now returns the existing booking instead of `SlotTaken`. Interpretation to confirm: a staff walk-in may start in the slot that is in progress right now (up to one slot length ago). Not verified: HTTP layer (no pages yet), Held/Pending flows beyond the state machine, Neon behaviour of advisory locks.
+Verified: all of the above in `tests/VeskaFlow.Web.Tests` (21 xunit tests, real PostgreSQL 16, 25 consecutive runs without a failure after the fixes below). Findings while testing: (1) concurrent inserts into the exclusion constraint can deadlock (40P01, wrapped by EF in `InvalidOperationException`) and 50 at once exceeded the 30 s command timeout, so attempts for one staff member are queued with `pg_advisory_xact_lock`; the constraint is still the guarantee. (2) A retry with the same idempotency key that lost the slot race now returns the existing booking instead of `SlotTaken`. Interpretation to confirm: a staff walk-in may start in the slot that is in progress right now (up to one slot length ago). Not verified: HTTP layer (no pages yet), Held/Pending flows beyond the state machine, Neon behaviour of advisory locks.
 
 ## Step 3: Onboarding and sign-in ✅
 
@@ -66,7 +66,7 @@ Acceptance:
 - After sign-in, `User` has `business_id`, role and display name claims. Sign-out clears the cookie.
 - More than the allowed attempts per minute returns 429.
 
-Verified: all of the above in `tests/BarberBook.Web.Tests` (41 tests now, 20 of them for Step 3; run 5 times in a row without a failure; the HTTP ones drive the real app in-process against PostgreSQL 16) and by starting the real app under Kestrel (pages 200, `/Admin` redirects to `/Login`). Also covered: parallel registrations for one slug give one success and friendly errors; the password is stored as a PBKDF2 hash; open redirects through `ReturnUrl` are ignored; a form post without the antiforgery token is rejected; the auth cookie is `HttpOnly` and `SameSite=Lax`. Notes: the 429 limit counts form posts only (viewing the form is free); `Pages/Admin/Index` is a placeholder until Step 5; `PlanLimits` holds the 1-staff FREE limit for the staff page in Step 5. Not verified: the `Secure` cookie flag (needs HTTPS), real-browser rendering, accessibility checks, and "similar timing" is a loose 0.5x to 2x bound on PBKDF2 time, not a side-channel analysis.
+Verified: all of the above in `tests/VeskaFlow.Web.Tests` (41 tests now, 20 of them for Step 3; run 5 times in a row without a failure; the HTTP ones drive the real app in-process against PostgreSQL 16) and by starting the real app under Kestrel (pages 200, `/Admin` redirects to `/Login`). Also covered: parallel registrations for one slug give one success and friendly errors; the password is stored as a PBKDF2 hash; open redirects through `ReturnUrl` are ignored; a form post without the antiforgery token is rejected; the auth cookie is `HttpOnly` and `SameSite=Lax`. Notes: the 429 limit counts form posts only (viewing the form is free); `Pages/Admin/Index` is a placeholder until Step 5; `PlanLimits` holds the 1-staff FREE limit for the staff page in Step 5. Not verified: the `Secure` cookie flag (needs HTTPS), real-browser rendering, accessibility checks, and "similar timing" is a loose 0.5x to 2x bound on PBKDF2 time, not a side-channel analysis.
 
 ## Step 4: Public booking pages ✅ (one criterion only partly verified)
 
@@ -113,7 +113,7 @@ Acceptance:
 
 ## Step 7: Tests in CI ⬜
 
-Files: `tests/BarberBook.Web.Tests/` (xunit), `.github/workflows/ci.yml`.
+Files: `tests/VeskaFlow.Web.Tests/` (xunit), `.github/workflows/ci.yml`.
 
 Acceptance: CI runs the self-check, the SQL invariants (PostgreSQL service container) and the integration tests on every push.
 

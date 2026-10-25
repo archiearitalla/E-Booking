@@ -284,10 +284,10 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 
 | Area | Status |
 |---|---|
-| Availability, DST, buffers, blackouts, lead time, horizon | ✅ 55 self-checks pass (`tests/BarberBook.Core.SelfCheck`) |
+| Availability, DST, buffers, blackouts, lead time, horizon | ✅ 55 self-checks pass (`tests/VeskaFlow.Core.SelfCheck`) |
 | State machine, cancellation and no-show policy, passwords, slugs | ✅ same run |
 | Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | ✅ 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
-| EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/BarberBook.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
+| EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/VeskaFlow.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
 | `BookingService` (availability, create, idempotency, transitions, audit) | ✅ 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
 | Registration, sign-in/out, cookie claims, `/Admin` protection, sign-in rate limit, antiforgery | ✅ 20 tests over services and HTTP against PostgreSQL 16 (`Secure` cookie flag and real-browser rendering not verified) |
 | Public booking pages (`/b/{slug}`, confirm, `/booking/{token}`) | ✅ 12 HTTP tests plus a real-browser run at phone width; not verified: stopwatch timing, Safari or a real phone, screen reader |
@@ -383,4 +383,4 @@ Invite codes, a consent record per booking, clinic-specific fields such as an in
 
 ### 17.3.1 Result of the Neon safety gate (2026-10-25)
 
-On the Neon Free project in AWS Singapore, **PostgreSQL 18.6**: `CREATE EXTENSION btree_gist` succeeded (version 1.8), `tests/db/double_booking.sh` printed "All database invariants hold." against a separate `barberbook_test` database, and the whole Web test suite passed (91 of 91, direct connection, `SSL Mode=Require`). One earlier run lost two tests to a dropped connection while the development PC was asleep; the rerun passed. Not checked: a Neon branch restore, behaviour after the compute has been idle, and PostgreSQL 16 on Neon (the other tests ran on 16.11 locally).
+On the Neon Free project in AWS Singapore, **PostgreSQL 18.6**: `CREATE EXTENSION btree_gist` succeeded (version 1.8), `tests/db/double_booking.sh` printed "All database invariants hold." against a separate `veskaflow_test` database, and the whole Web test suite passed (91 of 91, direct connection, `SSL Mode=Require`). One earlier run lost two tests to a dropped connection while the development PC was asleep; the rerun passed. Not checked: a Neon branch restore, behaviour after the compute has been idle, and PostgreSQL 16 on Neon (the other tests ran on 16.11 locally).

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verifies the database-level booking invariants against a REAL PostgreSQL.
-# Usage: PGHOST=localhost PGUSER=barber PGPASSWORD=barber PGDATABASE=barberbook_test tests/db/double_booking.sh
+# Usage: PGHOST=localhost PGUSER=veskaflow PGPASSWORD=veskaflow PGDATABASE=veskaflow_test tests/db/double_booking.sh
 # WARNING: wipes the public schema of $PGDATABASE and re-applies migrations. Use a disposable database.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
@@ -10,7 +10,7 @@ inserted() { if echo "$1" | grep -q ERROR; then echo 0; else echo 1; fi; }
 check() { if [ "$2" = "$3" ]; then echo "  ok   $1"; else echo "  FAIL $1 (expected '$3', got '$2')"; fail=1; fi; }
 
 $P -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null
-for f in src/BarberBook.Web/Data/Migrations/*.sql; do $P -f "$f" >/dev/null || { echo "migration $f failed"; exit 1; }; done
+for f in src/VeskaFlow.Web/Data/Migrations/*.sql; do $P -f "$f" >/dev/null || { echo "migration $f failed"; exit 1; }; done
 
 B1=$($P -c "INSERT INTO business (slug,name) VALUES ('shop-one','Shop One') RETURNING id" | head -1)
 B2=$($P -c "INSERT INTO business (slug,name) VALUES ('shop-two','Shop Two') RETURNING id" | head -1)
