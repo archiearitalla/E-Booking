@@ -182,6 +182,7 @@ public sealed class AccountControlService(
         await db.WeeklyClosures.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.Blackouts.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.BusinessHours.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.BusinessLogos.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.StaffServices.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.StaffMembers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct); // working hours go with them
         await db.Services.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);

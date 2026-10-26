@@ -8,13 +8,24 @@
 <p class="hint">@Text.ReportsHint</p>
 
 <form method="get" class="card" role="search">
-    <label for="p">@Text.ReportsPeriod</label>
-    <select id="p" name="p">
-        @foreach (var (value, label) in Model.Periods)
-        {
-            <option value="@value" selected="@(value == Model.PeriodKey)">@label</option>
-        }
-    </select>
+    <div class="field">
+        <label for="p">@Text.ReportsPeriod</label>
+        <select id="p" name="p">
+            @foreach (var (value, label) in Model.Periods)
+            {
+                <option value="@value" selected="@(value == Model.PeriodKey)">@label</option>
+            }
+        </select>
+    </div>
+    <p class="hint">@Text.ReportsDatesHint</p>
+    <div class="field">
+        <label for="from">@Text.ReportsFrom</label>
+        <input type="date" id="from" name="from" value="@Model.FromText" />
+    </div>
+    <div class="field">
+        <label for="to">@Text.ReportsTo</label>
+        <input type="date" id="to" name="to" value="@Model.ToText" />
+    </div>
     <div class="actions"><button type="submit">@Text.ReportsShow</button></div>
 </form>
 

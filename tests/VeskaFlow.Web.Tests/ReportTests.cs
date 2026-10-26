@@ -70,3 +70,36 @@ public class ReportTests
         Assert.Equal(0, (await reports.BuildAsync(other.BusinessId, ReportService.Period.ThisMonth))!.Total);
     }
 }
+
+[Collection("http")]
+public class ReportRangeTests
+{
+    [Fact]
+    public async Task Exact_dates_limit_the_report_swapped_dates_are_ordered_and_the_range_is_capped()
+    {
+        var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+        var clock = new TestClock(Seed.BaseNow);
+        var bookings = new BookingService(db, clock);
+        var owner = (await new OnboardingService(db, clock).RegisterAsync(
+            new RegisterRequest("Cuts", "rr" + Guid.NewGuid().ToString("N")[..10], "Owner", $"o{Guid.NewGuid():N}@example.com", "correct-horse-1", TrialDays: 30))).Value!;
+        await using var ctx = db.CreateDbContext();
+        var service = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
+        var staff = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
+        foreach (var day in new[] { 5, 8 })
+        {
+            var b = (await bookings.CreateAsync(new CreateBookingRequest(owner.BusinessId, service, staff, Seed.Manila(day, 9), "Maria",
+                "0917" + Random.Shared.Next(1000000, 9999999), null, Guid.NewGuid().ToString("N"), BookingActor.Customer("Maria")))).Value!.Booking;
+            await ctx.Bookings.Where(x => x.Id == b.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Status, BookingStatus.Completed).SetProperty(x => x.PriceSnapshot, 100m));
+        }
+
+        var reports = new ReportService(db, clock);
+        var one = (await reports.BuildRangeAsync(owner.BusinessId, new DateOnly(2030, 3, 5), new DateOnly(2030, 3, 6)))!;
+        Assert.Equal(1, one.Completed);
+        Assert.Equal(100m, one.Revenue);
+        var both = (await reports.BuildRangeAsync(owner.BusinessId, new DateOnly(2030, 3, 9), new DateOnly(2030, 3, 1)))!; // swapped
+        Assert.Equal(new DateOnly(2030, 3, 1), both.From);
+        Assert.Equal(2, both.Completed);
+        var capped = (await reports.BuildRangeAsync(owner.BusinessId, new DateOnly(2020, 1, 1), new DateOnly(2030, 3, 31)))!;
+        Assert.Equal(ReportService.MaxDays, capped.To.DayNumber - capped.From.DayNumber + 1);
+    }
+}

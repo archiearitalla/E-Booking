@@ -193,3 +193,12 @@ public class AuditLog
     public string? Reason { get; set; }
     public DateTime AtUtc { get; set; } = DateTime.UtcNow;
 }
+
+/// <summary>The shop's logo image, at most one per shop (see migration 013).</summary>
+public class BusinessLogo
+{
+    public Guid BusinessId { get; set; }
+    public string ContentType { get; set; } = "";
+    public byte[] Data { get; set; } = [];
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}

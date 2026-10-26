@@ -11,6 +11,7 @@
 <div class="book-shell">
 <section class="hero-card">
     <div>
+        @if (Model.LogoVersion is { } logoVersion) { <img class="shop-logo" src="/logo/@shop.Slug?v=@logoVersion" alt="" width="64" height="64" /> }
         <p class="hero-kicker">@Text.BookTitle</p>
         <h1>@shop.Name</h1>
     </div>

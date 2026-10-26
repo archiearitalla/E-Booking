@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace VeskaFlow.Web.Pages.Book;
 
-public class IndexModel(ShopCatalogService catalog, BookingService booking) : PageModel
+public class IndexModel(ShopCatalogService catalog, BookingService booking, LogoService logos) : PageModel
 {
     [BindProperty(SupportsGet = true)] public Guid? ServiceId { get; set; }
     [BindProperty(SupportsGet = true)] public Guid? StaffId { get; set; }
@@ -15,6 +15,9 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking) : Pa
     [BindProperty(SupportsGet = true)] public string? ServiceNote { get; set; }
 
     public PublicShop? Shop { get; private set; }
+
+    /// <summary>Changes when the shop changes its logo; null when it has none.</summary>
+    public long? LogoVersion { get; private set; }
     public bool Searched { get; private set; }
     public string? Notice { get; private set; }
     public IReadOnlyList<DateTime> Times { get; private set; } = [];
@@ -43,6 +46,7 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking) : Pa
     {
         Shop = await catalog.GetBySlugAsync(slug, ct);
         if (Shop is null) return NotFound();
+        LogoVersion = await logos.VersionAsync(Shop.Id, ct);
         if (!Shop.AcceptingBookings) return Page(); // trial ended: the page says so and offers no times
         ClosedDates = await catalog.ClosedDatesAsync(Shop, Math.Min(Shop.HorizonDays, 14), ct);
 

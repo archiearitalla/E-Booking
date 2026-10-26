@@ -24,9 +24,22 @@ public sealed class ReportService(IDbContextFactory<AppDbContext> dbFactory, Tim
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var tz = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
         if (tz is null) return null;
+        var (from, to) = Range(period, LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, tz));
+        return await BuildRangeAsync(businessId, from, to, ct);
+    }
 
-        var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, tz);
-        var (from, to) = Range(period, today);
+    /// <summary>Longest range a report may cover.</summary>
+    public const int MaxDays = 366;
+
+    /// <summary>The report for any dates (inclusive, shop time). Swapped dates are put in order and the range is capped at a year.</summary>
+    public async Task<Report?> BuildRangeAsync(Guid businessId, DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        if (to < from) (from, to) = (to, from);
+        if (to.DayNumber - from.DayNumber >= MaxDays) from = to.AddDays(-(MaxDays - 1));
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var tz = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
+        if (tz is null) return null;
+
         var startUtc = LocalTime.DayRangeUtc(from, tz).StartUtc;
         var endUtc = LocalTime.DayRangeUtc(to, tz).EndUtc;
 

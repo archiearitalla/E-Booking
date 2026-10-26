@@ -52,6 +52,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.ReminderService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ReportService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.TeamService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.LogoService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
 
@@ -154,6 +155,18 @@ app.MapRazorPages();
 // A plain "I am awake" answer that never touches the database. A free uptime monitor can call it every few minutes
 // so the hosting does not put the app to sleep, without keeping the database awake.
 app.MapGet("/ping", () => Results.Text("ok"));
+
+// The shop's logo for the booking page. The browser keeps it and asks again each time (ETag), so a new logo shows at once.
+app.MapGet("/logo/{slug}", async (string slug, HttpContext http, VeskaFlow.Web.Services.LogoService logos, CancellationToken ct) =>
+{
+    var logo = await logos.GetBySlugAsync(slug, ct);
+    if (logo is null) return Results.NotFound();
+    var etag = $"\"{logo.Version:x}\"";
+    http.Response.Headers.CacheControl = "no-cache";
+    http.Response.Headers.ETag = etag;
+    if (http.Request.Headers.IfNoneMatch == etag) return Results.StatusCode(StatusCodes.Status304NotModified);
+    return Results.Bytes(logo.Data, logo.ContentType);
+});
 
 app.MapGet("/healthz", async (IDbContextFactory<AppDbContext> factory, CancellationToken ct) =>
 {

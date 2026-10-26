@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StaffService> StaffServices => Set<StaffService>();
     public DbSet<WorkingHour> WorkingHours => Set<WorkingHour>();
     public DbSet<BusinessHour> BusinessHours => Set<BusinessHour>();
+    public DbSet<BusinessLogo> BusinessLogos => Set<BusinessLogo>();
     public DbSet<Blackout> Blackouts => Set<Blackout>();
     public DbSet<WeeklyClosure> WeeklyClosures => Set<WeeklyClosure>();
     public DbSet<Customer> Customers => Set<Customer>();
@@ -38,6 +39,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<Staff>().HasMany(s => s.WorkingHours).WithOne().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.Cascade);
         m.Entity<Blackout>().HasOne<Staff>().WithMany().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<BusinessHour>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
+        m.Entity<BusinessLogo>().HasKey(x => x.BusinessId);
+        m.Entity<BusinessLogo>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<WeeklyClosure>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<WeeklyClosure>().HasOne<Staff>().WithMany().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.NoAction);
 

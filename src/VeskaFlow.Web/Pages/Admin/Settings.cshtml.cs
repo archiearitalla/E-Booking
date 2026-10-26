@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 [AdminAccess(AdminLevel.Owner)]
-public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config) : AdminPageModel
+[RequestSizeLimit(1_048_576)] // a logo is at most 256 KB; nothing bigger is read
+public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();
 
@@ -12,8 +13,45 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     public DayFields ShopRange { get; private set; } = new("", "", "", "");
     public bool HoursFormSubmitted { get; private set; }
 
-    private async Task LoadHoursAsync(CancellationToken ct) =>
+    /// <summary>Changes when the logo does; null when the shop has none.</summary>
+    public long? LogoVersion { get; private set; }
+
+    /// <summary>Loads what the page shows besides the settings form: the opening hours and the logo.</summary>
+    private async Task LoadHoursAsync(CancellationToken ct)
+    {
         ShopRange = HoursForm.FillRange(await catalog.GetShopHoursAsync(BusinessId, ct));
+        LogoVersion = await logos.VersionAsync(BusinessId, ct);
+    }
+
+    /// <summary>Saves the chosen picture as the shop's logo (PNG, JPEG or WebP, up to 256 KB).</summary>
+    public async Task<IActionResult> OnPostLogoAsync(IFormFile? logo, CancellationToken ct)
+    {
+        byte[]? bytes = null;
+        if (logo is { Length: > 0 and <= LogoService.MaxBytes })
+        {
+            await using var stream = logo.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            bytes = buffer.ToArray();
+        }
+        else if (logo is { Length: > LogoService.MaxBytes })
+        {
+            Failure = Text.LogoTooBig;
+            return RedirectToPage();
+        }
+
+        var result = await logos.SaveAsync(BusinessId, bytes, ct);
+        if (result.IsSuccess) Success = Text.LogoSaved;
+        else Failure = result.FieldErrors.GetValueOrDefault("logo") ?? result.Message;
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRemoveLogoAsync(CancellationToken ct)
+    {
+        await logos.RemoveAsync(BusinessId, ct);
+        Success = Text.LogoRemoved;
+        return RedirectToPage();
+    }
 
     /// <summary>Saves the opening hours and copies them to every staff member.</summary>
     public async Task<IActionResult> OnPostHoursAsync(CancellationToken ct)
