@@ -1,0 +1,55 @@
+using VeskaFlow.Core.Domain;
+using VeskaFlow.Core.Scheduling;
+using VeskaFlow.Web.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace VeskaFlow.Web.Services;
+
+public sealed record ReportLine(string Label, int Completed, decimal Revenue);
+
+public sealed record Report(
+    DateOnly From, DateOnly To, int Total, int Completed, int NoShows, int Cancelled, int Upcoming, decimal Revenue,
+    IReadOnlyList<ReportLine> ByService, IReadOnlyList<ReportLine> ByStaff);
+
+/// <summary>
+/// Simple numbers for a date range in the shop's time zone: bookings by outcome, revenue (completed bookings only, at the
+/// price they were booked at) and the same split by service and by staff member. Scoped by the caller's business id.
+/// </summary>
+public sealed class ReportService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+{
+    public enum Period { ThisMonth, LastMonth, Last30Days, ThisYear }
+
+    public async Task<Report?> BuildAsync(Guid businessId, Period period, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var tz = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
+        if (tz is null) return null;
+
+        var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, tz);
+        var (from, to) = Range(period, today);
+        var startUtc = LocalTime.DayRangeUtc(from, tz).StartUtc;
+        var endUtc = LocalTime.DayRangeUtc(to, tz).EndUtc;
+
+        var rows = await db.Bookings.AsNoTracking()
+            .Where(b => b.BusinessId == businessId && b.StartsAtUtc >= startUtc && b.StartsAtUtc < endUtc)
+            .Select(b => new { b.Status, b.ServiceNameSnapshot, Staff = b.Staff.Name, b.PriceSnapshot })
+            .ToListAsync(ct);
+
+        var done = rows.Where(r => r.Status == BookingStatus.Completed).ToList();
+        return new Report(from, to, rows.Count, done.Count,
+            rows.Count(r => r.Status == BookingStatus.NoShow), rows.Count(r => r.Status == BookingStatus.Cancelled),
+            rows.Count(r => r.Status == BookingStatus.Confirmed), done.Sum(r => r.PriceSnapshot),
+            done.GroupBy(r => r.ServiceNameSnapshot).Select(g => new ReportLine(g.Key, g.Count(), g.Sum(r => r.PriceSnapshot)))
+                .OrderByDescending(l => l.Revenue).ThenBy(l => l.Label).ToList(),
+            done.GroupBy(r => r.Staff).Select(g => new ReportLine(g.Key, g.Count(), g.Sum(r => r.PriceSnapshot)))
+                .OrderByDescending(l => l.Revenue).ThenBy(l => l.Label).ToList());
+    }
+
+    public static (DateOnly From, DateOnly To) Range(Period period, DateOnly today) => period switch
+    {
+        Period.LastMonth => (new DateOnly(today.Year, today.Month, 1).AddMonths(-1), new DateOnly(today.Year, today.Month, 1).AddDays(-1)),
+        Period.Last30Days => (today.AddDays(-29), today),
+        Period.ThisYear => (new DateOnly(today.Year, 1, 1), today),
+        _ => (new DateOnly(today.Year, today.Month, 1), today),
+    };
+}

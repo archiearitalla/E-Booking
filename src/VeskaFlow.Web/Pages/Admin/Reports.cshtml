@@ -1,0 +1,64 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.ReportsModel
+@{
+    ViewData["Title"] = Text.AdminNavReports;
+    var r = Model.Report!;
+}
+<h1>@Text.AdminNavReports</h1>
+<p class="hint">@Text.ReportsHint</p>
+
+<form method="get" class="card" role="search">
+    <label for="p">@Text.ReportsPeriod</label>
+    <select id="p" name="p">
+        @foreach (var (value, label) in Model.Periods)
+        {
+            <option value="@value" selected="@(value == Model.PeriodKey)">@label</option>
+        }
+    </select>
+    <div class="actions"><button type="submit">@Text.ReportsShow</button></div>
+</form>
+
+<p class="hint">@r.From.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture) &ndash; @r.To.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)</p>
+
+<div class="table-wrap">
+    <table>
+        <caption class="sr-only">@Text.AdminNavReports</caption>
+        <tbody>
+            <tr><th scope="row">@Text.ReportsRevenue</th><td>@DisplayFormat.Price(r.Revenue)</td></tr>
+            <tr><th scope="row">@Text.ReportsCompleted</th><td>@r.Completed</td></tr>
+            <tr><th scope="row">@Text.ReportsUpcoming</th><td>@r.Upcoming</td></tr>
+            <tr><th scope="row">@Text.ReportsNoShows</th><td>@r.NoShows</td></tr>
+            <tr><th scope="row">@Text.ReportsCancelled</th><td>@r.Cancelled</td></tr>
+            <tr><th scope="row">@Text.ReportsTotal</th><td>@r.Total</td></tr>
+        </tbody>
+    </table>
+</div>
+
+@if (r.ByService.Count > 0)
+{
+    <h2>@Text.ReportsByService</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">@Text.ManageService</th><th scope="col">@Text.ReportsCompleted</th><th scope="col">@Text.ReportsRevenue</th></tr></thead>
+            <tbody>
+                @foreach (var l in r.ByService)
+                {
+                    <tr><td>@l.Label</td><td>@l.Completed</td><td>@DisplayFormat.Price(l.Revenue)</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <h2>@Text.ReportsByStaff</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">@Text.CustomersName</th><th scope="col">@Text.ReportsCompleted</th><th scope="col">@Text.ReportsRevenue</th></tr></thead>
+            <tbody>
+                @foreach (var l in r.ByStaff)
+                {
+                    <tr><td>@l.Label</td><td>@l.Completed</td><td>@DisplayFormat.Price(l.Revenue)</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

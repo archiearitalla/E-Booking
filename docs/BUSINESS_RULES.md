@@ -411,6 +411,10 @@ A confirmed booking that starts within the shop's reminder hours (Settings, 1 to
 
 The Customers page lists the shop's customers with completed visits, no-shows, total spent (sum of completed bookings' prices) and last visit; search by name, phone or email; CSV download of the same list (formula-looking cells are defused). Scoped by the shop.
 
+### 6.y4 Reports
+
+The Reports page shows, for this month, last month, the last 30 days or this year (in the shop's time zone): bookings by outcome, revenue (completed bookings only, at the price they were booked at), and completed visits and revenue by service and by staff member. Scoped by the shop.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

@@ -50,7 +50,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerDataService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ReminderService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();
-builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.ReportService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
 
