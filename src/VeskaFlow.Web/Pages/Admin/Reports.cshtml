@@ -26,7 +26,7 @@
         <label for="to">@Text.ReportsTo</label>
         <input type="date" id="to" name="to" value="@Model.ToText" />
     </div>
-    <div class="actions"><button type="submit">@Text.ReportsShow</button></div>
+    <div class="actions"><button type="submit" class="primary">@Text.ReportsShow</button></div>
 </form>
 
 <p class="hint">@r.From.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture) &ndash; @r.To.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)</p>
