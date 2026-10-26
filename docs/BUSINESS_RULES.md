@@ -401,7 +401,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 ### 18.2 Sign-up and the 30-day trial
 
-- Each sign-up creates its own tenant: its own business, owner login and booking link `/b/{slug}` (the slug is the public key, the owner login is the private one). Tenant isolation is unchanged.
+- Each sign-up creates its own tenant: its own business, owner login and booking link `/b/{slug}` (the slug is the public key, the owner login is the private one). Tenant isolation is unchanged. The booking address is entered leniently: whatever is typed is cleaned into a slug (capitals to small letters, spaces and symbols to single hyphens, cut at 40 characters, "San Juan 123" becomes `san-juan-123`); the only rule is a minimum of 3 characters after cleaning, and "already taken" is judged on the cleaned slug. Blank uses the shop name.
 - `Trial:Days` (configuration, default 30) sets `trial_ends_at_utc` at sign-up. `0` turns trials off, for example on a deployment the client hosts for itself. Existing shops have no trial date and are never limited.
 - The admin shows the days left.
 - **After the trial ends the account lapses.** The public page stops accepting customer bookings and says so, and every back-office page sends the owner to a "your free trial has ended" page with a way to contact the operator and a sign-out button. The server checks this against the database on every admin request (the cookie is only for the bell). Nothing is deleted: the data is kept. The operator extends or lifts a trial by setting or clearing `trial_ends_at_utc` for that business (see DEPLOY.md), and deletes a tenant by hand after confirming with the business.

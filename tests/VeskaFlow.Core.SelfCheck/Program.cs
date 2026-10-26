@@ -201,6 +201,9 @@ Console.WriteLine("Security & slugs");
     Check("phone: foreign number unchanged", PhoneNumber.Normalize("+1 415 555 0172") == "+14155550172", PhoneNumber.Normalize("+1 415 555 0172"));
     Check("phone: landline unchanged", PhoneNumber.Normalize("02 8123 4567") == "0281234567", PhoneNumber.Normalize("02 8123 4567"));
     Check("phone: empty stays empty", PhoneNumber.Normalize("  ") == "", PhoneNumber.Normalize("  "));
+    Check("slug from typed address", Slug.From("  San Juan 123  ") == "san-juan-123", Slug.From("  San Juan 123  "));
+    Check("slug from symbols only is empty", Slug.From("!! ??") == "");
+    Check("slug is cut at 40 and never ends in a hyphen", Slug.From(new string('a', 39) + " bbb").Length <= 40 && !Slug.From(new string('a', 39) + " bbb").EndsWith('-'));
     Check("slug validity", Slug.IsValid("salon-maria") && !Slug.IsValid("-bad") && !Slug.IsValid("ab") && !Slug.IsValid("Has Space"));
 }
 

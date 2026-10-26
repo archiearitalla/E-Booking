@@ -37,7 +37,9 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
         var businessName = (request.BusinessName ?? "").Trim();
         if (businessName.Length is < 1 or > 80) errors["businessName"] = Text.BusinessNameInvalid;
 
-        var slug = (request.Slug ?? "").Trim().ToLowerInvariant();
+        // Lenient on purpose: whatever was typed is turned into a valid address (capitals to small letters, spaces and
+        // symbols to single hyphens, cut at 40). Only a minimum length is enforced, because the page lives at /b/<address>.
+        var slug = Slug.From(request.Slug ?? "");
         if (slug.Length == 0) slug = Slug.From(businessName);
         if (!Slug.IsValid(slug)) errors["slug"] = Text.SlugInvalid;
 

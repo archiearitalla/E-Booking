@@ -80,6 +80,37 @@ public class AccountServiceTests
     }
 
     [Fact]
+    public async Task The_booking_address_is_accepted_however_it_is_typed_and_only_a_minimum_length_is_required()
+    {
+        var (onboarding, _, _) = await CreateAsync();
+        var tag = Guid.NewGuid().ToString("N")[..6];
+
+        // Capitals, spaces and symbols are turned into a clean address instead of being refused.
+        var typed = await onboarding.RegisterAsync(NewRequest(slug: $"  San Juan {tag}  "));
+        Assert.True(typed.IsSuccess, typed.Message);
+        Assert.Equal($"san-juan-{tag}", typed.Value!.Slug);
+
+        var symbols = await onboarding.RegisterAsync(NewRequest(slug: $"Maria's Salon & Spa!! {tag}"));
+        Assert.True(symbols.IsSuccess, symbols.Message);
+        Assert.Equal($"marias-salon-spa-{tag}", symbols.Value!.Slug);
+
+        // Taken is judged on the cleaned address, so "SAN JUAN x" and "san-juan-x" are the same address.
+        var same = await onboarding.RegisterAsync(NewRequest(slug: $"SAN JUAN {tag}"));
+        Assert.Equal(Text.SlugTaken, same.FieldErrors["slug"]);
+
+        // Too short to be an address: refused with the minimum-length message. Blank uses the shop name.
+        var tooShort = await onboarding.RegisterAsync(NewRequest(slug: "a !"));
+        Assert.Equal(Text.SlugInvalid, tooShort.FieldErrors["slug"]);
+        var blank = await onboarding.RegisterAsync(NewRequest(slug: "   "));
+        Assert.True(blank.IsSuccess || blank.FieldErrors["slug"] == Text.SlugTaken);
+
+        // Long input is cut to 40 characters rather than refused.
+        var longOne = await onboarding.RegisterAsync(NewRequest(slug: new string('x', 80) + tag));
+        Assert.True(longOne.IsSuccess, longOne.Message);
+        Assert.True(longOne.Value!.Slug.Length <= 40);
+    }
+
+    [Fact]
     public async Task Parallel_registrations_for_one_slug_produce_one_success_and_friendly_errors()
     {
         var (onboarding, _, _) = await CreateAsync();
@@ -96,14 +127,14 @@ public class AccountServiceTests
     public async Task Invalid_registration_input_returns_field_errors()
     {
         var (onboarding, _, factory) = await CreateAsync();
-        var result = await onboarding.RegisterAsync(new RegisterRequest("", "A_B", "", "nope", "short"));
+        var result = await onboarding.RegisterAsync(new RegisterRequest("", "A!", "", "nope", "short"));
 
         Assert.Equal(FailureKind.Validation, result.Failure);
         foreach (var field in new[] { "businessName", "slug", "ownerName", "email", "password" })
             Assert.Contains(field, result.FieldErrors.Keys);
         // Other tests create shops in parallel, so check only for rows this request could have created.
         await using var db = factory.CreateDbContext();
-        Assert.False(await db.Businesses.AnyAsync(b => b.Slug == "a_b" || b.Name == ""));
+        Assert.False(await db.Businesses.AnyAsync(b => b.Slug == "a" || b.Name == ""));
         Assert.False(await db.AdminUsers.AnyAsync(u => u.Email == "nope"));
     }
 

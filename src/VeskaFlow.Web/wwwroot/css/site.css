@@ -1,4 +1,4 @@
-﻿/* VeskaFlow styles. Mobile first: base rules target a 360px phone, wider screens only add room. */
+/* VeskaFlow styles. Mobile first: base rules target a 360px phone, wider screens only add room. */
 
 :root {
   color-scheme: dark;
@@ -644,14 +644,11 @@ button.danger { color: #2b0a07; }
   .admin-shell > .subnav a:hover { background: var(--card); border-color: var(--line); }
   .admin-shell > .subnav a[aria-current="page"] { background: var(--brand-soft); color: var(--brand); border-color: var(--line); }
 
-  /* content: cards sit in a grid of equal columns; headings, notices and lists use the full width */
-  .admin-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1.25rem; align-content: start; }
-  .admin-main > h1, .admin-main > h2, .admin-main > p, .admin-main > .notice, .admin-main > .alert,
-  .admin-main > .hint, .admin-main > ul, .admin-main > .daynav, .admin-main > nav { grid-column: 1 / -1; }
-  .admin-main > h1, .admin-main > h2, .admin-main > p { margin: 0; }
-  .admin-main > .card { margin-top: 0; }
+  /* content: cards share each row equally (a lone card fills the row); headings, notices, lists and the filter bar are full width */
+  .admin-main { display: flex; flex-wrap: wrap; gap: 1.25rem; align-content: flex-start; }
+  .admin-main > * { flex: 1 1 100%; min-width: 0; margin: 0; }
+  .admin-main > .card { flex: 1 1 20rem; }
   .admin-main .card + .card, .admin-main .card + p { margin-top: 0; }
-
   /* lists of bookings, services, staff, closures and follow-ups: equal cards, 2 or 3 across */
   .admin-main .bookings { grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1.25rem; align-items: stretch; }
   .admin-main .bookings > li { display: flex; flex-direction: column; }
@@ -712,3 +709,6 @@ button.saved::before {
   border-width: 0 0.15em 0.15em 0;
   transform: rotate(45deg);
 }
+
+/* "New here? Create your shop" under the sign-in button: room above it, and a thin line to set it apart. */
+.auth-alt { margin: 1.5rem 0 0; padding-top: 1.25rem; border-top: 1px solid var(--line); text-align: center; }
