@@ -49,6 +49,21 @@ else
                         <input type="hidden" name="on" value="@((!s.Enabled).ToString().ToLowerInvariant())" />
                         <button type="submit" class="@(s.Enabled ? "danger" : "primary")" data-confirm="@(s.Enabled ? Text.PlatformConfirmOff : Text.PlatformConfirmOn)">@(s.Enabled ? Text.PlatformSwitchOff : Text.PlatformSwitchOn)<span class="sr-only"> @s.Name</span></button>
                     </form>
+                    @if (s.BusinessId != Model.OwnBusinessId)
+                    {
+                        <details class="delete-shop">
+                            <summary class="danger-link">@Text.PlatformDeleteShop<span class="sr-only"> @s.Name</span></summary>
+                            <form method="post" asp-page-handler="Delete">
+                                <input type="hidden" name="id" value="@s.BusinessId" />
+                                <p class="warn">@Text.PlatformDeleteWarning</p>
+                                <div class="field">
+                                    <label for="confirm-@s.BusinessId">@string.Format(Text.PlatformDeleteType, s.Slug)</label>
+                                    <input type="text" id="confirm-@s.BusinessId" name="confirm" autocomplete="off" autocapitalize="none" required />
+                                </div>
+                                <button type="submit" class="danger" data-confirm="@Text.PlatformDeleteAsk">@Text.PlatformDeleteForever</button>
+                            </form>
+                        </details>
+                    }
                     @if (!s.EmailConfirmed)
                     {
                         <form method="post" asp-page-handler="ConfirmNow">

@@ -158,6 +158,67 @@ public class AccountControlTests
         Assert.Equal(FailureKind.NotFound, (await s.Accounts.ConfirmManuallyAsync(unconfirmed.BusinessId)).Failure); // already confirmed
     }
 
+    private static async Task<int> RowsOfAsync(TestDbFactory db, Guid businessId)
+    {
+        await using var ctx = db.CreateDbContext();
+        return await ctx.Businesses.CountAsync(x => x.Id == businessId) + await ctx.AdminUsers.CountAsync(x => x.BusinessId == businessId)
+            + await ctx.StaffMembers.CountAsync(x => x.BusinessId == businessId) + await ctx.Services.CountAsync(x => x.BusinessId == businessId)
+            + await ctx.StaffServices.CountAsync(x => x.BusinessId == businessId) + await ctx.Customers.CountAsync(x => x.BusinessId == businessId)
+            + await ctx.Bookings.CountAsync(x => x.BusinessId == businessId) + await ctx.AuditLogs.CountAsync(x => x.BusinessId == businessId)
+            + await ctx.BusinessHours.CountAsync(x => x.BusinessId == businessId) + await ctx.WeeklyClosures.CountAsync(x => x.BusinessId == businessId)
+            + await ctx.Blackouts.CountAsync(x => x.BusinessId == businessId)
+            + await ctx.WorkingHours.CountAsync(h => ctx.StaffMembers.Any(s => s.Id == h.StaffId && s.BusinessId == businessId));
+    }
+
+    [Fact]
+    public async Task Deleting_a_shop_removes_everything_in_it_only_with_the_typed_address_and_never_touches_another_shop()
+    {
+        var s = await SetupAsync();
+        var doomed = (await RegisterAsync(s, requireEmail: false)).Value!;
+        var keeper = (await RegisterAsync(s, requireEmail: false)).Value!;
+        var me = (await RegisterAsync(s, requireEmail: false)).Value!; // the platform owner's own shop
+
+        // Give the doomed shop real data: a completed booking with a follow-up and a record, a closure, a day off and an audit trail.
+        await using (var ctx = s.Db.CreateDbContext())
+        {
+            var service = await ctx.Services.Where(x => x.BusinessId == doomed.BusinessId && !x.IsOther).Select(x => x.Id).SingleAsync();
+            var staff = await ctx.StaffMembers.Where(x => x.BusinessId == doomed.BusinessId).Select(x => x.Id).SingleAsync();
+            var bookings = new BookingService(s.Db, s.Clock);
+            var booked = (await bookings.CreateAsync(new CreateBookingRequest(doomed.BusinessId, service, staff, Manila(5, 10), "Maria",
+                "09175550101", "maria@example.com", Id("k"), BookingActor.Customer("Maria")))).Value!.Booking;
+            s.Clock.Now = new DateTimeOffset(Manila(5, 10, 10), TimeSpan.Zero);
+            Assert.True((await bookings.TransitionAsync(doomed.BusinessId, booked.Id, VeskaFlow.Core.Domain.BookingStatus.Completed,
+                BookingActor.Staff(doomed.AdminUserId, "Dr"))).IsSuccess);
+            await new VisitRecordService(s.Db).SetNotesAsync(doomed.BusinessId, booked.Id, "Allergic to penicillin");
+            await new FollowUpService(s.Db, s.Clock).SetAsync(doomed.BusinessId, booked.Id, new DateOnly(2030, 4, 5), null);
+            var settings = new ShopSettingsService(s.Db, s.Clock);
+            await settings.AddWeeklyClosureAsync(doomed.BusinessId, new WeeklyClosureInput(null, 0, "Day off"));
+            await settings.AddClosureAsync(doomed.BusinessId, new ClosureInput(null, new DateOnly(2030, 5, 1), new DateOnly(2030, 5, 2), "Holiday"));
+        }
+        var before = new { Doomed = await RowsOfAsync(s.Db, doomed.BusinessId), Keeper = await RowsOfAsync(s.Db, keeper.BusinessId) };
+        Assert.True(before.Doomed > 15);
+
+        // Refused: wrong or empty confirmation, the shop you are in, an unknown shop. Nothing changes.
+        var wrong = await s.Accounts.DeleteShopAsync(doomed.BusinessId, "not-the-address", me.BusinessId);
+        Assert.Equal(FailureKind.Validation, wrong.Failure);
+        Assert.Contains("confirm", wrong.FieldErrors.Keys);
+        Assert.Equal(FailureKind.Validation, (await s.Accounts.DeleteShopAsync(doomed.BusinessId, "", me.BusinessId)).Failure);
+        Assert.Equal(FailureKind.PolicyViolation, (await s.Accounts.DeleteShopAsync(me.BusinessId, me.Slug, me.BusinessId)).Failure);
+        Assert.Equal(FailureKind.NotFound, (await s.Accounts.DeleteShopAsync(Guid.NewGuid(), "x", me.BusinessId)).Failure);
+        Assert.Equal(before.Doomed, await RowsOfAsync(s.Db, doomed.BusinessId));
+
+        // Allowed: the typed address (any letter case, spaces around it ignored).
+        Assert.True((await s.Accounts.DeleteShopAsync(doomed.BusinessId, $"  {doomed.Slug.ToUpperInvariant()} ", me.BusinessId)).IsSuccess);
+
+        Assert.Equal(0, await RowsOfAsync(s.Db, doomed.BusinessId)); // every table, including the owner's account
+        Assert.Equal(before.Keeper, await RowsOfAsync(s.Db, keeper.BusinessId));
+        Assert.True(await RowsOfAsync(s.Db, me.BusinessId) > 0);
+
+        // The address and the email can be used again.
+        var again = await s.Onboarding.RegisterAsync(new RegisterRequest("Clinic", doomed.Slug, "Dr A", doomed.Email, "correct-horse-1"));
+        Assert.True(again.IsSuccess, again.Message);
+    }
+
     [Fact]
     public async Task The_confirmation_email_carries_a_working_link()
     {
@@ -353,10 +414,34 @@ public class AccountControlTests
         var back = await HttpApp.PostFormAsync(tenant, "/Login", new() { ["Input.Email"] = tenantEmail, ["Input.Password"] = "correct-horse-1" });
         Assert.Equal(HttpStatusCode.Redirect, back.StatusCode);
 
+        // Deleting: the page asks for the typed address (and a confirm window); the own shop has no delete at all.
+        var withDelete = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform"));
+        Assert.Contains($"name=\"confirm\"", withDelete);
+        Assert.Contains($"data-confirm=\"{Text.PlatformDeleteAsk}\"", withDelete);
+        var wrongDelete = await HttpApp.PostFormAsync(boss, "/Platform?handler=Delete", new() { ["id"] = tenantShop.Id.ToString(), ["confirm"] = "nope" }, tokenPage: "/Platform");
+        Assert.Equal(HttpStatusCode.Redirect, wrongDelete.StatusCode);
+        Assert.Contains(Text.PlatformDeleteMismatch, WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
+        Assert.True(await ctx.Businesses.AsNoTracking().AnyAsync(b => b.Id == tenantShop.Id));
+
         // The platform owner cannot switch off their own shop (they would be locked out).
         var ownShop = await ctx.Businesses.SingleAsync(b => b.Id == ctx.AdminUsers.Where(u => u.Email == bossEmail).Select(u => u.BusinessId).First());
         await HttpApp.PostFormAsync(boss, "/Platform?handler=Enable", new() { ["id"] = ownShop.Id.ToString(), ["on"] = "false" }, tokenPage: "/Platform");
         Assert.True(await new AccountControlService(new TestDbFactory(await TestDb.ConnectionStringAsync()), TimeProvider.System,
             new ConfigurationBuilder().Build(), new NoEmailSender()).IsEnabledAsync(ownShop.Id));
+
+        // The own shop has no delete form, and a posted delete for it is refused too.
+        var latest = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform"));
+        Assert.DoesNotContain($"confirm-{ownShop.Id}", latest);
+        await HttpApp.PostFormAsync(boss, "/Platform?handler=Delete", new() { ["id"] = ownShop.Id.ToString(), ["confirm"] = ownShop.Slug }, tokenPage: "/Platform");
+        Assert.True(await ctx.Businesses.AsNoTracking().AnyAsync(b => b.Id == ownShop.Id));
+        Assert.Contains(Text.PlatformCannotDeleteOwn, WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
+
+        // With the typed address the shop and its owner's account are gone for good.
+        var gone = await HttpApp.PostFormAsync(boss, "/Platform?handler=Delete", new() { ["id"] = tenantShop.Id.ToString(), ["confirm"] = tenantSlug }, tokenPage: "/Platform");
+        Assert.Equal(HttpStatusCode.Redirect, gone.StatusCode);
+        Assert.Contains(Text.PlatformDeleted, WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
+        Assert.False(await ctx.Businesses.AsNoTracking().AnyAsync(b => b.Id == tenantShop.Id));
+        Assert.False(await ctx.AdminUsers.AsNoTracking().AnyAsync(u => u.Email == tenantEmail));
+        Assert.Equal(HttpStatusCode.NotFound, (await HttpApp.NewClient(factory).GetAsync($"/b/{tenantSlug}")).StatusCode);
     }
 }

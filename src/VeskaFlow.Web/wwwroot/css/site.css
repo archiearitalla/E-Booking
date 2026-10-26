@@ -598,3 +598,8 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 
 /* Medical record text keeps its line breaks. */
 .record { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Platform: delete a shop (hidden behind a disclosure, with a typed confirmation). */
+.delete-shop { flex-basis: 100%; margin-top: 0.5rem; }
+.delete-shop summary { cursor: pointer; color: var(--danger); font-weight: 600; }
+.delete-shop form { margin-top: 0.5rem; }

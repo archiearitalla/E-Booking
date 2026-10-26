@@ -136,6 +136,39 @@ public sealed class AccountControlService(
         return owner is null ? null : await IssueAsync(db, owner, ct);
     }
 
+    /// <summary>
+    /// Permanently deletes a shop and everything in it: bookings, customers, staff, services, hours, closures, follow-ups,
+    /// medical records, the audit log and the owner's account. It cannot be undone. The caller must type the shop's booking
+    /// address as confirmation, and may not delete the shop they are signed in to.
+    /// </summary>
+    public async Task<ServiceResult<bool>> DeleteShopAsync(Guid businessId, string? typedSlug, Guid? actingBusinessId, CancellationToken ct = default)
+    {
+        if (businessId == actingBusinessId)
+            return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.PlatformCannotDeleteOwn);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var slug = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.Slug).FirstOrDefaultAsync(ct);
+        if (slug is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (!string.Equals((typedSlug ?? "").Trim(), slug, StringComparison.OrdinalIgnoreCase))
+            return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["confirm"] = Text.PlatformDeleteMismatch });
+
+        // Children first, one transaction: either the whole shop goes or nothing does.
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.AuditLogs.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.Bookings.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.Customers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.WeeklyClosures.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.Blackouts.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.BusinessHours.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.StaffServices.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.StaffMembers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct); // working hours go with them
+        await db.Services.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.AdminUsers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.Businesses.Where(x => x.Id == businessId).ExecuteDeleteAsync(ct);
+        await tx.CommitAsync(ct);
+        return ServiceResult<bool>.Ok(true);
+    }
+
     public async Task<bool> IsEnabledAsync(Guid businessId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);

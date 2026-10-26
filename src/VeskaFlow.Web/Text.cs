@@ -277,6 +277,14 @@ public static class Text
     public const string PlatformConfirmNow = "Confirm email now";
     public const string PlatformConfirmNowAsk = "Confirm this owner's email address by hand? Only do this if you know the address is theirs.";
     public const string PlatformSendLink = "Send confirmation link";
+    public const string PlatformDeleteShop = "Delete this shop";
+    public const string PlatformDeleteWarning = "This permanently deletes the shop and everything in it: bookings, customers, staff, services, follow-ups, medical records and the owner's account. It cannot be undone. To keep the data but stop the shop, use Switch off instead.";
+    public const string PlatformDeleteType = "Type the booking address ({0}) to confirm";
+    public const string PlatformDeleteForever = "Delete forever";
+    public const string PlatformDeleteAsk = "Delete this shop and all of its data for good? This cannot be undone.";
+    public const string PlatformDeleted = "Shop deleted.";
+    public const string PlatformDeleteMismatch = "That is not the booking address of this shop, so nothing was deleted.";
+    public const string PlatformCannotDeleteOwn = "You cannot delete the shop you are signed in to.";
     public const string PlatformEnabled = "Shop switched on.";
     public const string PlatformDisabled = "Shop switched off.";
     public const string PlatformConfirmed = "Email marked as confirmed.";

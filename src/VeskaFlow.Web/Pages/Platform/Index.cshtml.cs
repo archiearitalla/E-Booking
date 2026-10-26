@@ -9,8 +9,11 @@ namespace VeskaFlow.Web.Pages.Platform;
 /// The platform owner's list of shops: switch a shop on or off, confirm an owner's email by hand, or send a new confirmation
 /// link. Only a signed-in user whose email is listed in <c>Platform:AdminEmails</c> sees it; everyone else gets "not found".
 /// </summary>
-public class IndexModel(AccountControlService accounts, IConfiguration config) : PageModel
+public class IndexModel(AccountControlService accounts, IConfiguration config, ILogger<IndexModel> logger) : PageModel
 {
+    /// <summary>The shop the platform owner is signed in to: it can be switched on or off but never deleted from here.</summary>
+    public Guid? OwnBusinessId => User.BusinessId();
+
     public IReadOnlyList<ShopRow> Shops { get; private set; } = [];
     public bool EmailConfigured => accounts.EmailConfigured;
 
@@ -47,6 +50,20 @@ public class IndexModel(AccountControlService accounts, IConfiguration config) :
         var result = await accounts.SetEnabledAsync(id, on, ct);
         if (!result.IsSuccess) return NotFound();
         Success = on ? Text.PlatformEnabled : Text.PlatformDisabled;
+        return RedirectToPage();
+    }
+
+    /// <summary>Deletes a shop and all its data for good. Needs the booking address typed as confirmation.</summary>
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id, string? confirm, CancellationToken ct)
+    {
+        var result = await accounts.DeleteShopAsync(id, confirm, User.BusinessId(), ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess)
+        {
+            logger.LogWarning("The platform owner deleted a shop and all of its data."); // no names or addresses in the log
+            Success = Text.PlatformDeleted;
+        }
+        else Failure = result.FieldErrors.GetValueOrDefault("confirm") ?? result.Message;
         return RedirectToPage();
     }
 
