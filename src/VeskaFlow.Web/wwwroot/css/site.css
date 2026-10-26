@@ -1,7 +1,7 @@
-/* VeskaFlow styles. Mobile first: base rules target a 360px phone, wider screens only add room. */
+﻿/* VeskaFlow styles. Mobile first: base rules target a 360px phone, wider screens only add room. */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 
   --ink: #0f172a;
   --muted: #526071;
@@ -26,28 +26,39 @@
   --tap: 3rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #e8edf3;
-    --muted: #9aa8b8;
-    --bg: #0d1218;
-    --card: #161d26;
-    --field: #0f151c;
-    --line: #2a3441;
-    --brand: #2dd4bf;
-    --brand-hover: #5eead4;
-    --brand-ink: #04302b;
-    --brand-soft: #123530;
-    --danger: #ff8a80;
-    --danger-soft: #3a1a18;
-    --warn-ink: #fcd9a8;
-    --warn-soft: #3a2a14;
-    --warn-line: #f59e0b;
-    --focus: #7aa7ff;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  }
+/* One dark theme, in the colors of veskacode.com: near-black ground, teal accent, soft aurora glows.
+   It does not follow the device's light or dark setting, so the system looks the same everywhere. */
+:root {
+  --ink: #e8edf2;
+  --muted: #8a97a6;
+  --bg: #05070a;
+  --card: #0e1319;
+  --field: #0a0e13;
+  --line: #212a35;
+  --brand: #2dd4c4;
+  --brand-hover: #5eead4;
+  --brand-ink: #04302b;
+  --brand-soft: #0f2d2b;
+  --danger: #ff8a80;
+  --danger-soft: #3a1a18;
+  --warn-ink: #fcd9a8;
+  --warn-soft: #3a2a14;
+  --warn-line: #f59e0b;
+  --focus: #7aa7ff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
+/* Soft teal and indigo glows behind the page, like the portfolio. Decoration only. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(640px 640px at -6% -8%, rgba(45, 212, 196, 0.13), transparent 62%),
+    radial-gradient(560px 560px at 106% 48%, rgba(99, 102, 241, 0.13), transparent 62%);
+}
 * { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
@@ -416,7 +427,7 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 [data-theme="violet"] { --brand: #6d28d9; --brand-hover: #5b21b6; --brand-soft: #efe7ff; }
 [data-theme="slate"]  { --brand: #334155; --brand-hover: #1e293b; --brand-soft: #e8edf3; }
 
-@media (prefers-color-scheme: dark) {
+@media all {
   [data-theme="blue"]   { --brand: #7aa7ff; --brand-hover: #a5c2ff; --brand-soft: #17274d; --brand-ink: #07142e; }
   [data-theme="orange"] { --brand: #fb923c; --brand-hover: #fdba74; --brand-soft: #3a2210; --brand-ink: #2b1304; }
   [data-theme="rose"]   { --brand: #fb7185; --brand-hover: #fda4af; --brand-soft: #3c1620; --brand-ink: #3b0a14; }
@@ -603,3 +614,6 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 .delete-shop { flex-basis: 100%; margin-top: 0.5rem; }
 .delete-shop summary { cursor: pointer; color: var(--danger); font-weight: 600; }
 .delete-shop form { margin-top: 0.5rem; }
+
+/* Danger buttons: dark text on the soft red so it stays readable on the dark theme. */
+button.danger { color: #2b0a07; }
