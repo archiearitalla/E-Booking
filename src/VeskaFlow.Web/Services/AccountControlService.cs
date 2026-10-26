@@ -117,6 +117,28 @@ public sealed class AccountControlService(
         return changed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(enabled);
     }
 
+    /// <summary>Days the platform owner may add to a shop's access in one step (a week to a year).</summary>
+    public static readonly int[] ExtendChoices = [7, 30, 90, 365];
+
+    /// <summary>
+    /// Adds days to a shop's access end date, counted from today when the date has already passed, so a shop that paid late
+    /// gets the full period. Returns the new end date. Shops with no end date (unlimited) are left alone.
+    /// </summary>
+    public async Task<ServiceResult<DateTime>> ExtendAccessAsync(Guid businessId, int days, CancellationToken ct = default)
+    {
+        if (!ExtendChoices.Contains(days)) return ServiceResult<DateTime>.Fail(FailureKind.Validation, Text.NotAllowed);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var shop = await db.Businesses.FirstOrDefaultAsync(b => b.Id == businessId, ct);
+        if (shop is null) return ServiceResult<DateTime>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (shop.TrialEndsAtUtc is not { } current) return ServiceResult<DateTime>.Fail(FailureKind.PolicyViolation, Text.PlatformNoEndDate);
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var from = DateTime.SpecifyKind(current, DateTimeKind.Utc) > now ? DateTime.SpecifyKind(current, DateTimeKind.Utc) : now;
+        shop.TrialEndsAtUtc = from.AddDays(days);
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<DateTime>.Ok(shop.TrialEndsAtUtc.Value);
+    }
+
     /// <summary>The platform owner confirms an owner's email by hand (for example when no email service is set up).</summary>
     public async Task<ServiceResult<bool>> ConfirmManuallyAsync(Guid businessId, CancellationToken ct = default)
     {

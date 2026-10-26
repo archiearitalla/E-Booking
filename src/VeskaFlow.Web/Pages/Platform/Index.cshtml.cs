@@ -53,6 +53,16 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
         return RedirectToPage();
     }
 
+    /// <summary>Adds days to a shop's access end date (after the client paid, or as a favour).</summary>
+    public async Task<IActionResult> OnPostExtendAsync(Guid id, int days, CancellationToken ct)
+    {
+        var result = await accounts.ExtendAccessAsync(id, days, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.PlatformExtended(result.Value.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture));
+        else Failure = result.Message;
+        return RedirectToPage();
+    }
+
     /// <summary>Deletes a shop and all its data for good. Needs the booking address typed as confirmation.</summary>
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, string? confirm, CancellationToken ct)
     {

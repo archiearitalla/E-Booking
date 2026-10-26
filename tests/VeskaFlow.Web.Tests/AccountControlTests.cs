@@ -135,6 +135,32 @@ public class AccountControlTests
     }
 
     [Fact]
+    public async Task The_platform_owner_can_extend_a_shops_access_from_the_later_of_today_and_the_current_end()
+    {
+        var s = await SetupAsync();
+        var owner = (await RegisterAsync(s, requireEmail: false)).Value!;
+        Assert.Equal(FailureKind.PolicyViolation, (await s.Accounts.ExtendAccessAsync(owner.BusinessId, 30)).Failure); // no end date yet
+
+        var end = s.Clock.GetUtcNow().UtcDateTime.AddDays(30);
+        await using (var ctx = s.Db.CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == owner.BusinessId).ExecuteUpdateAsync(u => u.SetProperty(b => b.TrialEndsAtUtc, end));
+        var shop = () => s.Accounts.ListShopsAsync().ContinueWith(t => t.Result.Single(x => x.BusinessId == owner.BusinessId));
+
+        var first = await s.Accounts.ExtendAccessAsync(owner.BusinessId, 30);
+        Assert.True(first.IsSuccess);
+        Assert.Equal(end.AddDays(30), first.Value, TimeSpan.FromMinutes(1));
+
+        // After the end date has passed, the new period counts from today.
+        s.Clock.Now = s.Clock.Now.AddDays(200);
+        var late = await s.Accounts.ExtendAccessAsync(owner.BusinessId, 7);
+        Assert.Equal(s.Clock.GetUtcNow().UtcDateTime.AddDays(7), late.Value, TimeSpan.FromMinutes(1));
+        Assert.Equal(late.Value, (await shop()).TrialEndsAtUtc!.Value, TimeSpan.FromMinutes(1));
+
+        Assert.Equal(FailureKind.Validation, (await s.Accounts.ExtendAccessAsync(owner.BusinessId, 5)).Failure); // not one of the choices
+        Assert.Equal(FailureKind.NotFound, (await s.Accounts.ExtendAccessAsync(Guid.NewGuid(), 30)).Failure);
+    }
+
+    [Fact]
     public async Task Only_a_confirmed_owner_listed_in_the_platform_emails_is_the_platform_owner()
     {
         var admin = $"{Id("boss")}@example.com";

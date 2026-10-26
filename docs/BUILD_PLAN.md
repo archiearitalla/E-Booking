@@ -182,6 +182,7 @@ Still open: a registration and booking run on a real phone against the live link
 | Customers page: search, visits, spend, CSV download | 6.y3 | tests | page on a real phone |
 | Reports: outcomes, revenue, by service and staff | 6.y4 | tests | page on a real phone |
 | Staff move a confirmed booking (Move button, free times, audit, new reminder) | 6.y5 | tests | page on a real phone |
+| Platform: extend a shop's access by 7, 30, 90 or 365 days | 6.y6 | test | Platform page on a real phone |
 | Email confirmation before use; `/Platform` for the platform owner to switch shops on/off, confirm by hand, send a link; Brevo (or Resend) HTTP email; the check-your-email page continues by itself | 6.z | tests with a fake email sender and a fake Brevo server; migration 009 applied to a database that already had a shop | the pages in a browser (a real email through Brevo arrived on the live site, confirmed by the owner) |
 | "Other" service for visits not in the list (booking and walk-in) with a typed description | 6.w | tests; migration 010 applied to a database that already had a shop | browser |
 | Privacy Notice and Terms pages (draft text, with processor terms), agreement at sign-up with version and time stored, customer data export and delete for the shop | 6.v | tests; migration 011 | **review by a lawyer** (the texts are not legal advice); the pages in a browser; a clinic's actual consent flow |

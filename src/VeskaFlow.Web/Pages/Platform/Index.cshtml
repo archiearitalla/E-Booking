@@ -49,6 +49,20 @@ else
                         <input type="hidden" name="on" value="@((!s.Enabled).ToString().ToLowerInvariant())" />
                         <button type="submit" class="@(s.Enabled ? "danger" : "primary")" data-confirm="@(s.Enabled ? Text.PlatformConfirmOff : Text.PlatformConfirmOn)">@(s.Enabled ? Text.PlatformSwitchOff : Text.PlatformSwitchOn)<span class="sr-only"> @s.Name</span></button>
                     </form>
+                    @if (s.TrialEndsAtUtc is not null)
+                    {
+                        <form method="post" asp-page-handler="Extend" class="inline-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <label for="days-@s.BusinessId" class="sr-only">@Text.PlatformExtendDays @s.Name</label>
+                            <select id="days-@s.BusinessId" name="days">
+                                @foreach (var d in AccountControlService.ExtendChoices)
+                                {
+                                    <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option>
+                                }
+                            </select>
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformExtendAsk">@Text.PlatformExtend<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                    }
                     @if (s.BusinessId != Model.OwnBusinessId)
                     {
                         <details class="delete-shop">

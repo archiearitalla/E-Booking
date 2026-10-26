@@ -419,6 +419,10 @@ The Reports page shows, for this month, last month, the last 30 days or this yea
 
 Staff can move a confirmed booking that has not started to another free time with the same staff member and the same service length (the booking's own old slot counts as free, so a small shift works). The time is re-checked on the server, the database constraint stays the final guard, a taken slot is a normal message, the move is written to the audit log (RESCHEDULED, old to new time) and the booking is due a new reminder. The customer keeps the same link; staff tell them the new time. Customers cannot move bookings themselves.
 
+### 6.y6 Extending a shop's access
+
+The platform owner can add 7, 30, 90 or 365 days to a shop's access end date on the Platform page (after the client paid, or as a favour). The days count from the later of today and the current end date. Shops with no end date are left alone. There is no payment processing: the platform owner records payment by extending.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

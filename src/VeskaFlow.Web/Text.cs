@@ -362,6 +362,12 @@ public static class Text
     public const string PlatformOwner = "Owner";
     public const string PlatformSignedUp = "Signed up";
     public const string PlatformTrialEnds = "trial ends {0}";
+    public const string PlatformNoEndDate = "This shop has no end date, so there is nothing to extend.";
+    public const string PlatformExtend = "Extend access";
+    public const string PlatformExtendDays = "Add days";
+    public const string PlatformExtendAsk = "Add this many days to the shop's access? Use this when the client has paid.";
+    public static string PlatformExtended(string until) => $"Access extended until {until}.";
+    public static string PlatformDaysLabel(int days) => days switch { 7 => "7 days", 30 => "30 days (1 month)", 90 => "90 days (3 months)", 365 => "365 days (1 year)", _ => $"{days} days" };
     public const string PlatformSwitchOn = "Switch on";
     public const string PlatformSwitchOff = "Switch off";
     public const string PlatformConfirmOn = "Switch this shop on?";
