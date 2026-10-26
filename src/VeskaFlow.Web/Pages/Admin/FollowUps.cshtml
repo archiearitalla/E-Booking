@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model VeskaFlow.Web.Pages.Admin.FollowUpsModel
 @{
     ViewData["Title"] = Text.AdminNavFollowUps;
@@ -41,7 +41,7 @@ else
                 <div class="actions">
                     <form method="post" asp-page-handler="Done">
                         <input type="hidden" name="id" value="@r.BookingId" />
-                        <button type="submit" class="secondary">@Text.FollowUpMarkDone<span class="sr-only"> @r.CustomerName</span></button>
+                        <button type="submit" class="secondary" data-confirm="@Text.ConfirmFollowUpDone">@Text.FollowUpMarkDone<span class="sr-only"> @r.CustomerName</span></button>
                     </form>
                 </div>
             </li>

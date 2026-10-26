@@ -72,7 +72,7 @@ else
                         </form>
                         <form method="post" asp-page-handler="SendLink">
                             <input type="hidden" name="id" value="@s.BusinessId" />
-                            <button type="submit" class="secondary">@Text.PlatformSendLink<span class="sr-only"> @s.Name</span></button>
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformSendLinkAsk">@Text.PlatformSendLink<span class="sr-only"> @s.Name</span></button>
                         </form>
                     }
                 </div>

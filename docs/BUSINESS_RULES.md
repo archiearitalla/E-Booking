@@ -1,12 +1,12 @@
-﻿# VeskaFlow â€” Business Rules
+# VeskaFlow — Business Rules
 
 Source of truth for how the booking system behaves. Code, API, database and every client (web, admin, mobile, widget) must follow this document. If a requirement conflicts with an invariant in section 4, raise it here first and change this file in the same pull request as the code.
 
-- **Status:** Draft v0.1 â€” for owner review
+- **Status:** Draft v0.1 — for owner review
 - **Product:** Multi-tenant SaaS booking for small service businesses (barbershops and salons first)
 - **Stack:** ASP.NET Core 8, PostgreSQL 16, EF Core (Npgsql)
 - **Guiding principle: free first.** Build and pilot at zero cost. No paid service until there are paying clients to cover it (section 17).
-- **Legend:** âœ… implemented and verified here Â· ðŸŸ¡ written, not yet compiled or run Â· â¬œ planned Â· â“ open decision (section 15)
+- **Legend:** ✅ implemented and verified here · 🟡 written, not yet compiled or run · ⬜ planned · ❓ open decision (section 15)
 
 ---
 
@@ -42,11 +42,11 @@ Every surface talks to **one** booking API that owns the invariants. Availabilit
 
 | Surface | Users | Responsibility | Status |
 |---|---|---|---|
-| Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | âœ… |
-| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | âœ… (OWNER only; walk-in form built) |
-| JSON API `/api/v1` | Mobile apps, embeddable widget, integrations | Same operations as above over HTTP | â¬œ |
-| Customer / staff mobile app (Flutter, one codebase for Android and iOS) | Customers, staff | Thin client of the JSON API | â¬œ |
-| Embeddable widget | Shop's own website | Iframe or script around the public API | â¬œ |
+| Public booking page (server-rendered) | Customers | Browse services, pick time, confirm, manage/cancel via token | ✅ |
+| Admin back office (server-rendered) | Owner (later manager/staff) | Calendar, status changes, configuration, audit | ✅ (OWNER only; walk-in form built) |
+| JSON API `/api/v1` | Mobile apps, embeddable widget, integrations | Same operations as above over HTTP | ⬜ |
+| Customer / staff mobile app (Flutter, one codebase for Android and iOS) | Customers, staff | Thin client of the JSON API | ⬜ |
+| Embeddable widget | Shop's own website | Iframe or script around the public API | ⬜ |
 
 **Design rules for the platforms**
 
@@ -56,7 +56,7 @@ Every surface talks to **one** booking API that owns the invariants. Availabilit
 4. Clients never send prices, durations, tenant ids or customer ids as trusted values. The server derives them from the service, the slug and the token.
 5. Errors use one shape across platforms (section 8.4).
 
-### 3.1 Planned API surface (`/api/v1`) â¬œ
+### 3.1 Planned API surface (`/api/v1`) ⬜
 
 Public, unauthenticated, rate limited:
 
@@ -72,7 +72,7 @@ Authenticated (owner/staff):
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/auth/login` | Credentials for non-browser clients. â“ token format (section 15) |
+| POST | `/auth/login` | Credentials for non-browser clients. ❓ token format (section 15) |
 | GET | `/admin/bookings?from&to&staffId&status` | Calendar data |
 | POST | `/admin/bookings` | Staff creates a booking for a walk-in or phone customer |
 | POST | `/admin/bookings/{id}/transition` | Complete, no-show, cancel with reason |
@@ -85,24 +85,24 @@ These must hold at all times. Everything else is policy.
 
 | # | Invariant | Enforced by | Verified |
 |---|---|---|---|
-| I1 | A staff member is never double-booked. | PostgreSQL exclusion constraint `no_double_booking` on `(staff_id, active_range)` | âœ… 40 simultaneous inserts of one slot: 1 wins, 39 rejected |
-| I2 | Availability is derived, never stored. A slot is free only if inside working hours, outside blackouts, clear of active bookings plus buffers, after the lead time and inside the horizon. | `AvailabilityCalculator` (pure function), reused at confirmation | âœ… 32 unit checks |
-| I3 | Status changes follow the lifecycle in section 5. Cancelling frees the slot in the same transaction. | `BookingStateMachine` + generated `active_range` column | âœ… |
-| I4 | Instants are stored in UTC. The business's IANA time zone is stored alongside. No naive local times, no fixed offsets. | `timestamptz` columns, `location_time_zone`, `LocalTime` helpers | âœ… DST days verified (23h/25h) |
-| I5 | Holds are temporary and self-expiring. | `hold_expires_at_utc` + expiry job | â¬œ not used in the MVP (no HELD flow yet) |
-| I6 | Money and booking agree. A booking is confirmed only when its required payment state is satisfied. | Not applicable while pay-on-site | â¬œ |
-| I7 | A tenant can never see or modify another tenant's data. | Every query filtered by `business_id`; composite foreign keys `(id, business_id)` in the database | âœ… cross-tenant FK rejected; ðŸŸ¡ query filters |
-| I8 | A customer can access only their own booking, via the manage token. | Lookup by token; unknown token returns not found | âœ… HTTP tests: unknown token, slug and URL return the identical 404 page |
+| I1 | A staff member is never double-booked. | PostgreSQL exclusion constraint `no_double_booking` on `(staff_id, active_range)` | ✅ 40 simultaneous inserts of one slot: 1 wins, 39 rejected |
+| I2 | Availability is derived, never stored. A slot is free only if inside working hours, outside blackouts, clear of active bookings plus buffers, after the lead time and inside the horizon. | `AvailabilityCalculator` (pure function), reused at confirmation | ✅ 32 unit checks |
+| I3 | Status changes follow the lifecycle in section 5. Cancelling frees the slot in the same transaction. | `BookingStateMachine` + generated `active_range` column | ✅ |
+| I4 | Instants are stored in UTC. The business's IANA time zone is stored alongside. No naive local times, no fixed offsets. | `timestamptz` columns, `location_time_zone`, `LocalTime` helpers | ✅ DST days verified (23h/25h) |
+| I5 | Holds are temporary and self-expiring. | `hold_expires_at_utc` + expiry job | ⬜ not used in the MVP (no HELD flow yet) |
+| I6 | Money and booking agree. A booking is confirmed only when its required payment state is satisfied. | Not applicable while pay-on-site | ⬜ |
+| I7 | A tenant can never see or modify another tenant's data. | Every query filtered by `business_id`; composite foreign keys `(id, business_id)` in the database | ✅ cross-tenant FK rejected; 🟡 query filters |
+| I8 | A customer can access only their own booking, via the manage token. | Lookup by token; unknown token returns not found | ✅ HTTP tests: unknown token, slug and URL return the identical 404 page |
 
 ## 5. Booking lifecycle
 
 ```
-              â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ expires (TTL) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-              â–¼                                   â”‚
- (create) â†’ HELD â”€â”€confirmâ”€â”€â†’ PENDING â”€â”€approve/payâ”€â”€â†’ CONFIRMED â”€â”€attendâ”€â”€â†’ COMPLETED
-              â”‚                  â”‚                      â”‚
-              â”‚                  â”‚                      â”œâ”€â”€ cancel â”€â”€â†’ CANCELLED
-              â””â”€â”€â”€â”€ abandon â”€â”€â”€â”€â”€â”´â”€â”€â†’ CANCELLED         â””â”€â”€ absent â”€â”€â†’ NO_SHOW
+              ┌────────── expires (TTL) ─────────┐
+              ▼                                   │
+ (create) → HELD ──confirm──→ PENDING ──approve/pay──→ CONFIRMED ──attend──→ COMPLETED
+              │                  │                      │
+              │                  │                      ├── cancel ──→ CANCELLED
+              └──── abandon ─────┴──→ CANCELLED         └── absent ──→ NO_SHOW
 ```
 
 **MVP behavior:** pay-on-site and instant confirmation, so a booking is created directly as `CONFIRMED`. `HELD` and `PENDING` exist in the model and database for online payment later.
@@ -125,11 +125,11 @@ Configurable per business unless noted. Defaults apply to new businesses.
 | Setting | Default | Allowed | Meaning |
 |---|---|---|---|
 | Slot size | 30 min | 5, 10, 15, 20, 30, 60 | Step between offered start times |
-| Lead time | 60 min | â‰¥ 0 | Cannot book closer than this to now |
-| Horizon | 30 days | 1â€“365 | Cannot book further ahead than this |
-| Cancel cutoff | 2 h | â‰¥ 0 | Customers may cancel until this long before the start |
-| Service duration | 30 min | 5â€“600 | Per service |
-| Service buffer | 0 min | 0â€“240 | Per service. Blocks the staff member after the appointment |
+| Lead time | 60 min | ≥ 0 | Cannot book closer than this to now |
+| Horizon | 30 days | 1–365 | Cannot book further ahead than this |
+| Cancel cutoff | 2 h | ≥ 0 | Customers may cancel until this long before the start |
+| Service duration | 30 min | 5–600 | Per service |
+| Service buffer | 0 min | 0–240 | Per service. Blocks the staff member after the appointment |
 | Time zone | `Asia/Manila` | IANA id | Per business |
 
 **How a free slot is decided** (all must be true):
@@ -137,12 +137,12 @@ Configurable per business unless noted. Defaults apply to new businesses.
 1. The start is inside one of the staff member's windows for that weekday, and `start + duration` fits before the window closes. The buffer may extend past closing time.
 2. It does not overlap a blackout (shop-wide or this staff member). A blackout is either a one-off closure (a date range) or a **weekly closure**: a closed weekday that repeats every week, for the whole shop or one staff member, with an on/off switch. A weekly closure that is on closes that whole local day (walk-ins included); switched off it closes nothing but stays in the list. Closing a day never cancels bookings; the page says how many upcoming bookings fall on it. One page (Closures) lists both kinds together.
 3. `[start, start + duration + buffer)` does not overlap any active booking's occupied range. Back-to-back is allowed: a range ending exactly when another starts is not an overlap.
-4. `start â‰¥ now + lead time` and `start â‰¤ now + horizon`.
+4. `start ≥ now + lead time` and `start ≤ now + horizon`.
 5. The staff member is active and offers the service.
 
 Further rules:
 
-- A day may have several windows (split shift for lunch). A window whose close is before its open crosses midnight (for example 18:00â€“02:00).
+- A day may have several windows (split shift for lunch). A window whose close is before its open crosses midnight (for example 18:00–02:00).
 - Slots are generated in UTC from the window's local open time, so DST transitions never skip or duplicate a slot.
 - **"Any available"** is not stored as null. At confirmation the server assigns a concrete staff member: among free eligible staff, the one with the fewest bookings that day, then by sort order.
 - The server re-runs the availability check at confirmation. A page that was loaded earlier is never trusted.
@@ -151,13 +151,13 @@ Further rules:
 
 | Actor | Cancel | Condition |
 |---|---|---|
-| Customer (token) | Allowed | Booking is active, appointment not started, and now â‰¤ start âˆ’ cutoff |
+| Customer (token) | Allowed | Booking is active, appointment not started, and now ≤ start − cutoff |
 | Staff / owner | Allowed | Any time while the booking is active. Reason recommended, recorded |
 | System | Allowed | Hold expiry (future) |
 
 - A refused customer cancellation shows the shop's cutoff and tells the customer to contact the shop.
 - No-show: marked by staff after the grace period. No fee in the MVP (pay on site). The count per customer is a roadmap item.
-- **Rescheduling** â¬œ: will be atomic. The new slot is secured first, then the old one released, so the customer never loses both. Until then, cancel and rebook.
+- **Rescheduling** ⬜: will be atomic. The new slot is secured first, then the old one released, so the customer never loses both. Until then, cancel and rebook.
 - Closing a shop day or changing hours **never silently cancels** existing bookings. The admin sees a warning with the number of affected bookings and handles them deliberately.
 
 ## 8. Booking creation
@@ -177,13 +177,13 @@ Further rules:
 - **Customer identity:** customers are per business, matched by normalized phone number. A repeat booking updates the name and email on file.
 - **Phone:** digits with an optional leading `+`, 7 to 15 digits.
 - **Staff-created bookings** (walk-ins, phone-ins) skip the lead time, so a booking can start right now. They still must be inside working hours, outside blackouts and free of overlaps, and the database constraint still applies. "Right now" means the slot already in progress: a walk-in may start up to one slot length (the business's slot size) before the current time (decided by the owner). The actor is recorded as `STAFF` in the audit log. The phone number is optional for a staff-created booking: without one the customer is stored with a generated placeholder (prefix `walkin-`), is never shown or dialled, and is never matched with a later visit. A customer booking still needs a valid phone. The back-office page is `/Admin/WalkIn` (pick service and who, choose a free time today, name, optional phone); it books through the same service, so the database constraint and the working-hours rules apply.
-- **Input limits:** name 1â€“80 chars, email â‰¤ 120 chars and valid format, notes none in MVP.
+- **Input limits:** name 1–80 chars, email ≤ 120 chars and valid format, notes none in MVP.
 
 ### 8.3 Race handling
 
 Two customers confirming the last slot at the same moment is expected, not exceptional. Exactly one wins in the database; the loser receives a normal "slot taken" response (HTTP 409 in the API), never a server error.
 
-### 8.4 API error shape â¬œ
+### 8.4 API error shape ⬜
 
 `application/problem+json` with a stable machine-readable `code`:
 
@@ -204,14 +204,14 @@ No SMS gateway is used (it is the only provider cost with no free tier). Message
 - **Customer to shop (SMS):** the confirmation page has a "Message the shop" button that opens the customer's messaging app with the shop's number and a prefilled text (service, date and time, booking reference, manage link).
 - **Customer to shop (Messenger):** if the shop sets its Facebook Page username in settings, the confirmation page also shows "Message us on Messenger", linking to `https://m.me/<page-username>`. Meta's documentation describes `m.me` links for Pages only and documents no way to prefill text, so the button first **copies the booking message to the clipboard** and the customer pastes it into the chat. Once the customer has messaged the Page, the shop continues the conversation from the Page inbox.
 - **Shop to customer:** each booking in the back office has a "Message customer" button that opens the staff member's own messaging app with the customer's number and a prefilled reminder or confirmation text. A "Copy message" button is the fallback when the device cannot open a message app (most desktop browsers).
-- **Messenger limits:** a phone number cannot open a Messenger chat, so the shop cannot start a Messenger conversation with a customer from our data alone. An optional "Messenger link" field on the booking form is deferred â“ (opening a person's chat through `m.me/<username>` is not covered by Meta's documentation, so it needs testing first).
+- **Messenger limits:** a phone number cannot open a Messenger chat, so the shop cannot start a Messenger conversation with a customer from our data alone. An optional "Messenger link" field on the booking form is deferred ❓ (opening a person's chat through `m.me/<username>` is not covered by Meta's documentation, so it needs testing first).
 - The text is prefilled but always editable by the sender. Templates are fixed in English for the MVP.
-- Links are built with the `sms:` URI scheme. The exact form that works on both Android and iOS must be tested on real devices â“.
+- Links are built with the `sms:` URI scheme. The exact form that works on both Android and iOS must be tested on real devices ❓.
 - No delivery tracking, no automatic sending, no cost. Automatic reminders, if wanted, use free email (section 17).
-- Needs new business settings, `contact_phone` and an optional `messenger_page` (the Page username, not a full URL), added by an additive migration `003_*` â¬œ (`002_brand_color.sql` already exists).
+- Needs new business settings, `contact_phone` and an optional `messenger_page` (the Page username, not a full URL), added by an additive migration `003_*` ⬜ (`002_brand_color.sql` already exists).
 - Message bodies must be URL-encoded, and phone numbers are shown only to signed-in staff of that business, never on public pages.
 
-### 8.6 Limits on the open booking page âœ…
+### 8.6 Limits on the open booking page ✅
 
 The public booking page needs no account, so anyone can use it. One person must not be able to double-book or hoard time, and a bot must not be able to fill the day.
 
@@ -223,7 +223,7 @@ The public booking page needs no account, so anyone can use it. One person must 
 - **Bots.** The confirm form carries a hidden field that people never see; if it is filled, nothing is created and the visitor is sent back to the time list. Booking posts are also limited per client IP (`RateLimits:BookingPerMinute`, default 6).
 - **Known limit.** Someone who uses a different phone number for each booking is not caught by these rules; verifying a number needs SMS, which has no free option (section 17). The rate limit, the honeypot and the staff's ability to cancel are the remaining defences.
 
-### 8.7 QR code for the booking link âœ…
+### 8.7 QR code for the booking link ✅
 
 - Settings shows a QR code for the shop's own booking page (`/b/{slug}`), with a download as an SVG file and a Print button whose print layout shows only the code. The signed-in business id decides the shop; a request cannot ask for another shop's code.
 - The address in the code is `App:PublicBaseUrl` when set (production: `https://flow.veskacode.com`), otherwise the address the page was opened on. The code is generated on the server with no external service and the same address always gives the same image.
@@ -237,17 +237,17 @@ The public booking page needs no account, so anyone can use it. One person must 
 
 | Role | MVP status | Can |
 |---|---|---|
-| OWNER | âœ… | Everything for their business |
-| MANAGER | â¬œ | Everything except billing/plan and deleting the business |
-| STAFF | â¬œ | Own schedule, mark complete/no-show, create walk-ins, block own time |
+| OWNER | ✅ | Everything for their business |
+| MANAGER | ⬜ | Everything except billing/plan and deleting the business |
+| STAFF | ⬜ | Own schedule, mark complete/no-show, create walk-ins, block own time |
 
 - Passwords: PBKDF2-SHA256, 600,000 iterations, per-password salt, constant-time compare. Unknown emails take the same code path as wrong passwords.
 - Sign-in and booking endpoints are rate limited per client IP.
 
 ## 10. Pricing and payments
 
-- MVP: pay on site. Prices are shown in pesos (â‚±); the currency is not configurable yet.
-- Online payment â¬œ (PayMongo or Xendit): required deposit moves a booking through `PENDING`; the slot is held for a TTL; payment failure or timeout cancels the hold. Payment and booking endpoints must be idempotent. Captured money must never exist without a held slot (I6).
+- MVP: pay on site. Prices are shown in pesos (₱); the currency is not configurable yet.
+- Online payment ⬜ (PayMongo or Xendit): required deposit moves a booking through `PENDING`; the slot is held for a TTL; payment failure or timeout cancels the hold. Payment and booking endpoints must be idempotent. Captured money must never exist without a held slot (I6).
 
 ## 11. Audit
 
@@ -258,9 +258,9 @@ Every booking status change and creation writes: business, booking, actor type, 
 | Plan | Staff | Notes |
 |---|---|---|
 | FREE | 1 | Enforced server-side when adding staff. During the pilot every feature is free |
-| PRO | â“ | Price and limits to be decided. Billing is not built |
+| PRO | ❓ | Price and limits to be decided. Billing is not built |
 
-Pricing hypotheses (â‚±299â€“â‚±999 per month for PRO, after the free pilot) are assumptions to test with the first 3â€“5 pilot shops, not commitments.
+Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are assumptions to test with the first 3–5 pilot shops, not commitments.
 
 ## 13. Security and privacy
 
@@ -269,8 +269,8 @@ Pricing hypotheses (â‚±299â€“â‚±999 per month for PRO, after the fr
 - Security headers: CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
 - Public availability responses contain times only. No customer names or phone numbers are exposed to other customers.
 - Secrets (connection strings) come from environment variables or a secret store, never from the repository.
-- Phone and email are personal data under the Philippine Data Privacy Act: collect only what is needed, state the purpose on the booking page, support deletion on request. â¬œ privacy notice and deletion tooling.
-- Retention: customer details are kept 24 months after the last booking, then anonymized (name and phone cleared, bookings kept for statistics). A customer can ask for deletion at any time. â¬œ job and tooling.
+- Phone and email are personal data under the Philippine Data Privacy Act: collect only what is needed, state the purpose on the booking page, support deletion on request. ⬜ privacy notice and deletion tooling.
+- Retention: customer details are kept 24 months after the last booking, then anonymized (name and phone cleared, bookings kept for statistics). A customer can ask for deletion at any time. ⬜ job and tooling.
 - Database changes are additive and applied through numbered migrations. No `DROP`, `TRUNCATE` or destructive `ALTER` on existing tables without a reviewed plan and a verified backup.
 
 ## 14. Roadmap (not in the MVP)
@@ -302,21 +302,21 @@ Pricing hypotheses (â‚±299â€“â‚±999 per month for PRO, after the fr
 
 | Area | Status |
 |---|---|
-| Availability, DST, buffers, blackouts, lead time, horizon | âœ… 55 self-checks pass (`tests/VeskaFlow.Core.SelfCheck`) |
-| State machine, cancellation and no-show policy, passwords, slugs | âœ… same run |
-| Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | âœ… 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
-| EF mapping and SQL migrator (`Data/*`) | âœ… compiled; `tests/VeskaFlow.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
-| `BookingService` (availability, create, idempotency, transitions, audit) | âœ… 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
-| Registration, sign-in/out, cookie claims, `/Admin` protection, sign-in rate limit, antiforgery | âœ… 20 tests over services and HTTP against PostgreSQL 16 (`Secure` cookie flag and real-browser rendering not verified) |
-| Public booking pages (`/b/{slug}`, confirm, `/booking/{token}`) | âœ… 12 HTTP tests plus a real-browser run at phone width; not verified: stopwatch timing, Safari or a real phone, screen reader |
-| Admin back office (day view, services, staff and hours, closures, settings, audit, About) | âœ… 30 tests incl. tenant isolation on every endpoint, plan limit, "never silently cancels" warnings; not verified: screen reader, keyboard-only walkthrough of every form, Safari or real phones |
-| Message links | â¬œ not written yet (Step 6 of the build plan) |
-| Integration test of the full booking flow against the real app | â¬œ |
-| Load test of the booking race through the application | â¬œ |
+| Availability, DST, buffers, blackouts, lead time, horizon | ✅ 55 self-checks pass (`tests/VeskaFlow.Core.SelfCheck`) |
+| State machine, cancellation and no-show policy, passwords, slugs | ✅ same run |
+| Database invariants (race, overlaps, buffers, lifecycle, cross-tenant, constraints) | ✅ 20 checks pass against PostgreSQL 16 (`tests/db/double_booking.sh`) |
+| EF mapping and SQL migrator (`Data/*`) | ✅ compiled; `tests/VeskaFlow.Web.ModelCheck` passes against PostgreSQL 16 (all tables, `xmin`, booking round trip, migrator idempotent) |
+| `BookingService` (availability, create, idempotency, transitions, audit) | ✅ 21 integration tests against PostgreSQL 16, including 50 parallel requests for one slot |
+| Registration, sign-in/out, cookie claims, `/Admin` protection, sign-in rate limit, antiforgery | ✅ 20 tests over services and HTTP against PostgreSQL 16 (`Secure` cookie flag and real-browser rendering not verified) |
+| Public booking pages (`/b/{slug}`, confirm, `/booking/{token}`) | ✅ 12 HTTP tests plus a real-browser run at phone width; not verified: stopwatch timing, Safari or a real phone, screen reader |
+| Admin back office (day view, services, staff and hours, closures, settings, audit, About) | ✅ 30 tests incl. tenant isolation on every endpoint, plan limit, "never silently cancels" warnings; not verified: screen reader, keyboard-only walkthrough of every form, Safari or real phones |
+| Message links | ⬜ not written yet (Step 6 of the build plan) |
+| Integration test of the full booking flow against the real app | ⬜ |
+| Load test of the booking race through the application | ⬜ |
 
 ## 17. Providers: free-tier plan (checked 2026-10-17)
 
-Principle: start at â‚±0 and keep every provider behind a configuration switch, so moving to a paid plan or another vendor never touches business logic. The app talks to `IEmailSender` and `ISmsSender` interfaces â¬œ, and the database and secrets come from environment variables.
+Principle: start at ₱0 and keep every provider behind a configuration switch, so moving to a paid plan or another vendor never touches business logic. The app talks to `IEmailSender` and `ISmsSender` interfaces ⬜, and the database and secrets come from environment variables.
 
 | Need | Free choice | Known limits (verify before relying on them) | Risk |
 |---|---|---|---|
@@ -324,8 +324,8 @@ Principle: start at â‚±0 and keep every provider behind a configuration swit
 | Database | **Decided: Neon Postgres, Free plan, PostgreSQL 16** | 1 GB storage, 100 compute-hours per project per month, compute suspends after 5 minutes idle and wakes automatically, no card. `btree_gist` is listed as supported (version 1.7 on PostgreSQL 16) | First query after idle is slower. Hitting a limit suspends compute or blocks writes until upgrade. Free-plan availability of `btree_gist` is not stated in the docs, so it is confirmed by the first migration (see below) |
 | Web hosting | Render free web service (Docker image) or Google Cloud Run always-free | Render: 512 MB RAM, sleeps after 15 idle minutes (about 1 minute to wake), 750 instance-hours per month. Cloud Run: 2M requests per month, card required | Cold start on the first customer. Not for a paying shop without a keep-warm check or a paid plan |
 | Email (confirmations) | Resend free | 3,000 emails per month, 100 per day, 1 verified domain | A busy shop can reach the daily cap. Sending needs a domain you own |
-| Push (Flutter app) | Firebase Cloud Messaging | No per-message charge, as far as I know â“ | Needs the mobile app installed |
-| SMS reminders | **Not used** | No free SMS gateway exists (Semaphore lists about â‚±0.56 per text excluding VAT) | Replaced by message links that open the user's own messaging app (section 8.5) |
+| Push (Flutter app) | Firebase Cloud Messaging | No per-message charge, as far as I know ❓ | Needs the mobile app installed |
+| SMS reminders | **Not used** | No free SMS gateway exists (Semaphore lists about ₱0.56 per text excluding VAT) | Replaced by message links that open the user's own messaging app (section 8.5) |
 | Payments | Not needed (pay on site) | n/a | n/a |
 
 **Rules that follow from this**
@@ -361,7 +361,7 @@ Free-tier limits change over time, so recheck each provider's pricing page befor
 - **Gate before going live:** on the real Neon database, `CREATE EXTENSION btree_gist` must succeed and `tests/db/double_booking.sh` must pass against a separate Neon branch or database (the script wipes its schema, so never point it at live data). If either fails, do not go live; switch database first.
 - **Backups:** the free plan has a very short history window and no scheduled snapshots. Take a regular `pg_dump` and store it outside Neon.
 
-## 18. Industries and the trial ðŸŸ¡ (simple version written and compiled; tests not yet run)
+## 18. Industries and the trial 🟡 (simple version written and compiled; tests not yet run)
 
 Purpose: let a business try the system live for 30 days so it can see how it works. Kept deliberately simple.
 
@@ -369,7 +369,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 - A business has an `industry`: `barbershop`, `salon` or `clinic`, chosen at sign-up.
 - The industry only chooses the starter service (Haircut, Haircut and styling, Consultation). It never changes the booking rules in sections 5 to 8 or the invariants in section 4. Everything can be edited afterwards.
-- Admin â†’ Services has "Add suggested services": it adds the usual services for the industry that the shop does not have yet (matched by name, ignoring case; prices start at 0), links them to all current staff, and never changes or removes existing ones. Running it twice adds nothing the second time.
+- Admin → Services has "Add suggested services": it adds the usual services for the industry that the shop does not have yet (matched by name, ignoring case; prices start at 0), links them to all current staff, and never changes or removes existing ones. Running it twice adds nothing the second time.
 
 ### 6.x Closure times (added with weekly closures)
 
@@ -383,7 +383,7 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 - A service may carry "suggested follow-up after N days" (1 to 730, empty = not applicable). It only suggests a date.
 - Staff can set a follow-up date (and a note up to 200 characters) on a **completed** booking, in Bookings under Done. The date may not be before the visit or more than 2 years after it. Removing it clears it. Other statuses cannot have one.
-- Admin â†’ Follow-ups lists follow-ups not yet done, soonest first, with Overdue and Today badges. Each has a ready-made message (customer first name, shop, service, date, booking link). Staff copy it or send it as a text from their own phone (`sms:` link). The system never sends anything by itself. "Mark done" takes it off the list. Follow-ups that are overdue or due within the next 3 days are announced to staff: a strip at the top of every back-office page and the header bell (its badge counts them). All of it is scoped to the signed-in business.
+- Admin → Follow-ups lists follow-ups not yet done, soonest first, with Overdue and Today badges. Each has a ready-made message (customer first name, shop, service, date, booking link). Staff copy it or send it as a text from their own phone (`sms:` link). The system never sends anything by itself. "Mark done" takes it off the list. Follow-ups that are overdue or due within the next 3 days are announced to staff: a strip at the top of every back-office page and the header bell (its badge counts them). All of it is scoped to the signed-in business.
 - Message tools (under a completed booking in Done, and on each follow-up): a ready-made message (thank-you after the visit, reminder for a follow-up) with Copy, Send as text (`sms:`, customer's number filled in), Send by email (`mailto:`, only when the customer gave an email), Share to another app (the phone's share sheet: Messenger, Viber, WhatsApp and so on; shown only where the browser supports it) and Save contact (a `.vcf` contact card, so staff can find the customer in their phone contacts). The system sends nothing. Walk-ins without a number have no text or contact options. The contact card is scoped to the signed-in business; another business's booking is "not found".
 - Schema: `service.follow_up_days`, `booking.follow_up_on`, `follow_up_note`, `follow_up_done` (migration 006, additive).
 

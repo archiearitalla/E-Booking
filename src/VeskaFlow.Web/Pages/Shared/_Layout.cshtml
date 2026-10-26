@@ -8,7 +8,7 @@
     @await RenderSectionAsync("Head", required: false)
     <script src="~/js/site.js" defer asp-append-version="true"></script>
 </head>
-<body data-theme="@VeskaFlow.Web.Services.BrandColors.Normalize(ViewData["Theme"] as string)">
+<body data-theme="@VeskaFlow.Web.Services.BrandColors.Normalize(ViewData["Theme"] as string)" data-confirm-yes="@Text.ConfirmYes" data-confirm-no="@Text.ConfirmNo">
     <a class="skip-link" href="#main">@Text.SkipToContent</a>
     <header class="site-header">
         <a class="brand" href="/">@Text.AppName</a>

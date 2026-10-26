@@ -97,6 +97,16 @@ public class OtherServiceTests
         Assert.Contains("name=\"serviceNote\"", page);
         Assert.Contains(Text.OtherServiceHint, page);
 
+        // The box is marked so a script shows it only for Other; only the Other option is marked "true".
+        Assert.Contains("data-other-field", page);
+        Assert.Contains($"<option value=\"{otherId}\" selected=\"\" data-other=\"true\"".Replace(" selected=\"\"", ""), page);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(page, "data-other=\"true\""));
+
+        // The service list shows names and prices, not how long a service takes.
+        var options = System.Text.RegularExpressions.Regex.Matches(page, "<option value=\"[0-9a-f-]{36}\"[^>]*>([^<]*)</option>").Select(m => m.Groups[1].Value).ToList();
+        Assert.NotEmpty(options);
+        Assert.All(options, o => Assert.DoesNotContain(" min", o));
+
         // Choosing Other without saying what it is: no times, a clear message.
         var noNote = WebUtility.HtmlDecode(await client.GetStringAsync($"/b/{slug}?serviceId={otherId}"));
         Assert.Contains(Text.OtherServiceRequired, noNote);

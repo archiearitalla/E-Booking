@@ -1,9 +1,73 @@
-// Asks before an action that cannot be undone (cancel, no-show): a button or form with data-confirm shows that
-// question first, and nothing is sent unless the person says yes.
+// Asks before an action that cannot be undone (cancel, no-show, delete, booking): a button or form with data-confirm shows
+// that question in a small dialog first, and nothing is sent unless the person says yes. The dialog is the browser's own
+// <dialog> element styled like the cards (no extra library); very old browsers fall back to the plain confirm box.
+function vfAskConfirm(message, danger, onYes) {
+  var dlg = document.getElementById('vf-confirm');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'vf-confirm';
+    dlg.className = 'confirm-dialog';
+    dlg.setAttribute('aria-labelledby', 'vf-confirm-text');
+    var form = document.createElement('form');
+    form.method = 'dialog';
+    var text = document.createElement('p');
+    text.id = 'vf-confirm-text';
+    var actions = document.createElement('div');
+    actions.className = 'confirm-actions';
+    var no = document.createElement('button');
+    no.type = 'button'; no.value = 'no'; no.className = 'secondary'; no.id = 'vf-confirm-no';
+    no.textContent = document.body.getAttribute('data-confirm-no') || 'Cancel';
+    var yes = document.createElement('button');
+    yes.type = 'button'; yes.value = 'yes'; yes.id = 'vf-confirm-yes';
+    yes.textContent = document.body.getAttribute('data-confirm-yes') || 'Yes, continue';
+    actions.appendChild(no); actions.appendChild(yes);
+    form.appendChild(text); form.appendChild(actions);
+    dlg.appendChild(form);
+    document.body.appendChild(dlg);
+  }
+  if (typeof dlg.showModal !== 'function') { if (window.confirm(message)) onYes(); return; }
+  dlg.querySelector('#vf-confirm-text').textContent = message;
+  dlg.querySelector('#vf-confirm-yes').className = danger ? 'danger' : 'primary';
+  // Both answers act at once (not through the dialog's async close event), then the dialog closes.
+  dlg.querySelector('#vf-confirm-yes').onclick = function () { dlg.close('yes'); onYes(); };
+  dlg.querySelector('#vf-confirm-no').onclick = function () { dlg.close('no'); };
+  dlg.showModal();
+  dlg.querySelector('#vf-confirm-no').focus(); // the safe answer is the one under the finger
+}
+
 document.addEventListener('submit', function (event) {
-  var message = (event.submitter && event.submitter.getAttribute('data-confirm')) || event.target.getAttribute('data-confirm');
-  if (message && !window.confirm(message)) event.preventDefault();
+  var form = event.target;
+  var button = event.submitter;
+  var message = (button && button.getAttribute('data-confirm')) || form.getAttribute('data-confirm');
+  if (!message) return;
+  if (form.vfConfirmed) { form.vfConfirmed = false; return; } // the person already said yes: let it go through
+  event.preventDefault();
+  var danger = !!(button && button.classList.contains('danger'));
+  vfAskConfirm(message, danger, function () {
+    form.vfConfirmed = true;
+    if (form.requestSubmit) form.requestSubmit(button || undefined); else form.submit();
+  });
 });
+
+// A Save button (marked data-save) shows a check for a few seconds once the save went through. A save reloads the page with a
+// green notice, so the pressed button is remembered across the reload and checked when the notice is there.
+document.addEventListener('submit', function (event) {
+  var button = event.submitter;
+  if (event.defaultPrevented || !button || !button.hasAttribute('data-save')) return; // not a save, or still waiting for "yes"
+  try { sessionStorage.setItem('vf-saved', [button.name || '', button.value || '', button.textContent.trim()].join('|')); } catch (e) { /* private mode: no check, the notice still shows */ }
+});
+(function () {
+  var key = null;
+  try { key = sessionStorage.getItem('vf-saved'); sessionStorage.removeItem('vf-saved'); } catch (e) { return; }
+  if (!key || !document.querySelector('.notice[role="status"]')) return; // nothing was saved (an error page has no notice)
+  var parts = key.split('|');
+  var done = Array.prototype.filter.call(document.querySelectorAll('button[data-save]'), function (b) {
+    return (b.name || '') === parts[0] && (b.value || '') === parts[1] && b.textContent.trim() === parts[2];
+  })[0];
+  if (!done) return;
+  done.classList.add('saved');
+  setTimeout(function () { done.classList.remove('saved'); }, 4000);
+})();
 
 // Prevents double submission: the first submit disables the button. The server also treats a repeated
 // submit as the same booking (idempotency key), so this is a courtesy, not the guarantee.
@@ -66,6 +130,22 @@ document.addEventListener('click', function (event) {
   if (!button) return;
   var source = document.getElementById(button.getAttribute('data-share'));
   if (source && navigator.share) navigator.share({ text: source.value }).catch(function () { /* cancelled */ });
+});
+
+// "What service do you need?" appears only while "Other" is chosen (online booking and walk-in). Without JavaScript the box
+// simply stays visible, and the server still asks for it when Other is chosen.
+document.querySelectorAll('[data-other-field]').forEach(function (field) {
+  var form = field.closest('form');
+  if (!form) return;
+  var input = field.querySelector('input');
+  var sync = function () {
+    var chosen = form.querySelector('select[name="serviceId"] option:checked, input[name="serviceId"]:checked');
+    var isOther = !!(chosen && chosen.getAttribute('data-other') === 'true');
+    field.hidden = !isOther;
+    if (!isOther && input) input.value = ''; // forget what was typed for a service that is no longer Other
+  };
+  form.addEventListener('change', sync);
+  sync();
 });
 
 // "Check your email" page: ask the server every few seconds whether the link was opened, then go to sign-in by itself.

@@ -1,4 +1,4 @@
-@page "{id:guid?}"
+﻿@page "{id:guid?}"
 @model VeskaFlow.Web.Pages.Admin.Services.EditModel
 @{
     ViewData["Title"] = Model.IsNew ? Text.ServiceAdd : Text.ServiceEdit;
@@ -53,7 +53,7 @@
             </label>
         </div>
 
-        <button type="submit" class="primary">@Text.ActionSave</button>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveService">@Text.ActionSave</button>
         <a href="/Admin/Services">@Text.ActionBack</a>
     </form>
 </div>

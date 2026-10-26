@@ -1,4 +1,4 @@
-@page "{id:guid?}"
+﻿@page "{id:guid?}"
 @model VeskaFlow.Web.Pages.Admin.Staff.EditModel
 @{
     ViewData["Title"] = Model.IsNew ? Text.StaffAdd : Text.StaffEdit;
@@ -46,7 +46,7 @@
             }
         </fieldset>
 
-        <button type="submit" class="primary">@Text.ActionSave</button>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveStaff">@Text.ActionSave</button>
         <a href="/Admin/Staff">@Text.ActionBack</a>
     </form>
 </div>
@@ -60,7 +60,7 @@
             @if (Model.ErrorFor("hours") is { } he) { <div class="alert" role="alert">@he</div> }
             @await Html.PartialAsync("_HoursGrid", Model.HourFields)
             <p class="hint">@Text.HoursBlankClosed</p>
-            <button type="submit" class="primary">@Text.HoursSave</button>
+            <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveHours">@Text.HoursSave</button>
         </form>
     </div>
 }

@@ -13,7 +13,7 @@
             @foreach (var service in Model.Services)
             {
                 <label class="choice">
-                    <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" required />
+                    <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" data-other="@(service.IsOther ? "true" : "false")" required />
                     <span>
                         <strong>@service.Name</strong>
                         <span class="muted">@DisplayFormat.Duration(service.DurationMinutes)@(service.IsOther ? "" : " · " + DisplayFormat.Price(service.Price))</span>
@@ -23,7 +23,7 @@
         </fieldset>
         @if (Model.Services.Any(s => s.IsOther))
         {
-            <div class="field">
+            <div class="field" data-other-field>
                 <label for="serviceNote">@Text.WalkInOtherLabel</label>
                 <input type="text" id="serviceNote" name="serviceNote" value="@Model.ServiceNote" maxlength="60"
                        aria-invalid="@(Model.ErrorFor("serviceNote") is null ? "false" : "true")" aria-describedby="serviceNote-error" />
@@ -88,7 +88,7 @@
                     @if (Model.ErrorFor("phone") is { } eP) { <p class="error">@eP</p> }
                 </div>
                 <p class="hint">@Text.WalkInNoMedical</p>
-                <button type="submit" class="primary once">@Text.WalkInSave</button>
+                <button type="submit" class="primary once" data-save data-confirm="@Text.ConfirmSaveWalkIn">@Text.WalkInSave</button>
             </form>
         }
     </div>

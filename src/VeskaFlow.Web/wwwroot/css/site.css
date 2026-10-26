@@ -623,7 +623,7 @@ button.danger { color: #2b0a07; }
    area of cards in even proportions. Phones keep the pill menu and one column (nothing above changes for them). */
 
 @media (min-width: 64rem) {
-  .container:has(.admin-shell) { max-width: 80rem; padding: 1.75rem 2rem 2.5rem; }
+  .container:has(.admin-shell) { max-width: 64rem; padding: 1.75rem 2rem 2.5rem; } /* centered on the screen */
 
   .admin-shell { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr); gap: 2rem; align-items: start; }
 
@@ -645,16 +645,15 @@ button.danger { color: #2b0a07; }
   .admin-shell > .subnav a[aria-current="page"] { background: var(--brand-soft); color: var(--brand); border-color: var(--line); }
 
   /* content: cards sit in a grid of equal columns; headings, notices and lists use the full width */
-  .admin-main { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 34rem)); justify-content: start; gap: 1.25rem; align-content: start; }
+  .admin-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1.25rem; align-content: start; }
   .admin-main > h1, .admin-main > h2, .admin-main > p, .admin-main > .notice, .admin-main > .alert,
   .admin-main > .hint, .admin-main > ul, .admin-main > .daynav, .admin-main > nav { grid-column: 1 / -1; }
-  .admin-main > nav.seg { max-width: 34rem; }
   .admin-main > h1, .admin-main > h2, .admin-main > p { margin: 0; }
   .admin-main > .card { margin-top: 0; }
   .admin-main .card + .card, .admin-main .card + p { margin-top: 0; }
 
   /* lists of bookings, services, staff, closures and follow-ups: equal cards, 2 or 3 across */
-  .admin-main .bookings { grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: 1.25rem; align-items: stretch; }
+  .admin-main .bookings { grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1.25rem; align-items: stretch; }
   .admin-main .bookings > li { display: flex; flex-direction: column; }
   .admin-main .bookings > li.card { height: 100%; }
 }
@@ -666,3 +665,50 @@ button.danger { color: #2b0a07; }
 /* Phones: a card followed by a list keeps a gap (on desktop the grid gap does this). */
 .admin-main > .card { margin-bottom: 1rem; }
 @media (min-width: 64rem) { .admin-main > .card { margin-bottom: 0; } }
+
+/* ---------------------------------------------------------------------------------------------
+   Online booking on a wide screen: the same even, proportioned cards as the back office. The shop banner spans the
+   top; the choices sit on the left and the times (or a short "how it works") on the right. Phones keep one column. */
+
+.book-steps { display: none; }
+
+@media (min-width: 64rem) {
+  .container:has(.book-shell) { max-width: 68rem; padding: 2rem; }
+
+  .book-shell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .book-shell > .hero-card, .book-shell > p { grid-column: 1 / -1; margin: 0; }
+  .book-shell > .card { margin-top: 0; }
+  .book-shell > #times { position: sticky; top: 5rem; }
+  .book-steps { display: block; }
+  .book-steps ol { margin: 0 0 1rem; padding-left: 1.25rem; display: grid; gap: 0.5rem; }
+
+  /* confirm page: the summary on the left, the details form on the right */
+  .book-confirm > .card:first-child { position: sticky; top: 5rem; }
+}
+
+/* "Are you sure?" dialog (see site.js): the browser's <dialog>, styled like the cards. */
+.confirm-dialog {
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 1.125rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.confirm-dialog::backdrop { background: rgba(2, 4, 8, 0.7); backdrop-filter: blur(3px); }
+.confirm-dialog p { margin: 0; font-size: 1.0625rem; line-height: 1.5; }
+.confirm-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+.confirm-actions button { width: auto; min-width: 7rem; }
+
+/* A Save button that has just saved shows a check (drawn with CSS, no icon font or emoji). */
+button.saved::before {
+  content: "";
+  display: inline-block;
+  width: 0.3em;
+  height: 0.6em;
+  margin: 0 0.55em 0.15em 0;
+  border: solid currentColor;
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
+}

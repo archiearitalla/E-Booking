@@ -79,7 +79,7 @@
                    aria-invalid="@(Model.ErrorFor("reason") is null ? "false" : "true")" aria-describedby="Reason-error" />
             @if (Model.ErrorFor("reason") is { } e2) { <p class="error" id="Reason-error">@e2</p> }
         </div>
-        <button type="submit" class="primary">@Text.ClosureAddButton</button>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmAddClosure">@Text.ClosureAddButton</button>
     </form>
 </div>
 
@@ -109,11 +109,11 @@ else
                     <form method="post" asp-page-handler="ToggleWeekly">
                         <input type="hidden" name="id" value="@w.Id" />
                         <input type="hidden" name="on" value="@((!w.IsActive).ToString().ToLowerInvariant())" />
-                        <button type="submit" class="secondary">@(w.IsActive ? Text.ClosureTurnOff : Text.ClosureTurnOn)<span class="sr-only"> @ClosuresModel.DayName(w.DayOfWeek)</span></button>
+                        <button type="submit" class="secondary" data-confirm="@(w.IsActive ? Text.ConfirmClosureOff : Text.ConfirmClosureOn)">@(w.IsActive ? Text.ClosureTurnOff : Text.ClosureTurnOn)<span class="sr-only"> @ClosuresModel.DayName(w.DayOfWeek)</span></button>
                     </form>
                     <form method="post" asp-page-handler="DeleteWeekly">
                         <input type="hidden" name="id" value="@w.Id" />
-                        <button type="submit" class="secondary">@Text.ClosureRemove<span class="sr-only"> @ClosuresModel.DayName(w.DayOfWeek)</span></button>
+                        <button type="submit" class="secondary" data-confirm="@Text.ConfirmRemoveClosure">@Text.ClosureRemove<span class="sr-only"> @ClosuresModel.DayName(w.DayOfWeek)</span></button>
                     </form>
                 </div>
             </li>
@@ -136,7 +136,7 @@ else
                 }
                 <form method="post" asp-page-handler="Delete">
                     <input type="hidden" name="id" value="@c.Id" />
-                    <button type="submit" class="secondary">@Text.ClosureRemove<span class="sr-only"> @c.FromDate.ToString("MMM d", invariant)</span></button>
+                    <button type="submit" class="secondary" data-confirm="@Text.ConfirmRemoveClosure">@Text.ClosureRemove<span class="sr-only"> @c.FromDate.ToString("MMM d", invariant)</span></button>
                 </form>
             </li>
         }

@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model VeskaFlow.Web.Pages.Admin.SettingsModel
 @{
     ViewData["Title"] = Text.AdminNavSettings;
@@ -29,7 +29,7 @@
     <form method="post" asp-page-handler="Hours" novalidate>
         @if (Model.ErrorFor("hours") is { } he) { <div class="alert" role="alert">@he</div> }
         @await Html.PartialAsync("_HoursRange", Model.ShopRange)
-        <button type="submit" class="primary">@Text.ShopHoursSave</button>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveShopHours">@Text.ShopHoursSave</button>
     </form>
 </div>
 
@@ -104,6 +104,6 @@
             @if (Model.ErrorFor("brandColor") is { } e7) { <p class="error" id="BrandColor-error">@e7</p> }
         </fieldset>
 
-        <button type="submit" class="primary">@Text.ActionSave</button>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveSettings">@Text.ActionSave</button>
     </form>
 </div>

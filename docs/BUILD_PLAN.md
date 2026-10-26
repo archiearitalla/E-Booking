@@ -1,10 +1,10 @@
-﻿# Build plan
+# Build plan
 
 Ordered steps to finish the MVP. Each step lists the files to touch and the acceptance criteria that prove it works. Do not move on until the current step's criteria pass. Behavior comes from `BUSINESS_RULES.md`; section numbers below refer to it.
 
-Legend: âœ… done and verified Â· ðŸŸ¡ written, not compiled Â· â¬œ not started
+Legend: ✅ done and verified · 🟡 written, not compiled · ⬜ not started
 
-## Step 0: Make the existing code build âœ…
+## Step 0: Make the existing code build ✅
 
 Verified on Windows, .NET SDK 8.0.426 and 10.0.401 installed, PostgreSQL 16.15: build 0 warnings 0 errors; self-check 55/55; `double_booking.sh` 20/20; `tests/VeskaFlow.Web.ModelCheck` confirms the EF model matches the migrated schema and a booking round-trips through EF. The Data files needed no fixes. A placeholder `Program.cs` (with `/healthz`) was added so the project builds; Step 1 replaces it.
 
@@ -20,7 +20,7 @@ Acceptance:
 - `tests/db/double_booking.sh` prints "All database invariants hold."
 - `AppDbContext` model matches the SQL: write a small check that opens the context and runs `db.Bookings.Take(1)`, `db.Staff...` etc. against a migrated database without a column-name error.
 
-## Step 1: Program.cs and startup âœ… (parts unverified)
+## Step 1: Program.cs and startup ✅ (parts unverified)
 
 Verified: empty database gets all tables on first start, second start applies nothing; `/healthz` 200 with version, and 503 after the database was dropped while the app ran; security headers present on responses; `/Error` renders. Verified in Step 3: the `auth` rate-limit policy returns 429 and the `/Admin` folder policy redirects to `/Login`. Still unverified: the `booking` policy (not attached until Step 4), HSTS (HTTPS only), forwarded headers (`Proxy:TrustForwardedHeaders`, off by default).
 
@@ -38,7 +38,7 @@ Acceptance:
 - `/healthz` returns 200 with the version; with the database stopped it returns 503.
 - Response headers contain the security headers.
 
-## Step 2: BookingService âœ…
+## Step 2: BookingService ✅
 
 Files: `Services/BookingService.cs`, `Services/BookingResults.cs`.
 
@@ -54,7 +54,7 @@ Acceptance (integration tests against a real PostgreSQL):
 
 Verified: all of the above in `tests/VeskaFlow.Web.Tests` (21 xunit tests, real PostgreSQL 16, 25 consecutive runs without a failure after the fixes below). Findings while testing: (1) concurrent inserts into the exclusion constraint can deadlock (40P01, wrapped by EF in `InvalidOperationException`) and 50 at once exceeded the 30 s command timeout, so attempts for one staff member are queued with `pg_advisory_xact_lock`; the constraint is still the guarantee. (2) A retry with the same idempotency key that lost the slot race now returns the existing booking instead of `SlotTaken`. Interpretation to confirm: a staff walk-in may start in the slot that is in progress right now (up to one slot length ago). Not verified: HTTP layer (no pages yet), Held/Pending flows beyond the state machine, Neon behaviour of advisory locks.
 
-## Step 3: Onboarding and sign-in âœ…
+## Step 3: Onboarding and sign-in ✅
 
 Files: `Services/OnboardingService.cs`, `Services/AuthService.cs`, `Pages/Register`, `Pages/Login`, `Pages/Logout`.
 
@@ -68,7 +68,7 @@ Acceptance:
 
 Verified: all of the above in `tests/VeskaFlow.Web.Tests` (41 tests now, 20 of them for Step 3; run 5 times in a row without a failure; the HTTP ones drive the real app in-process against PostgreSQL 16) and by starting the real app under Kestrel (pages 200, `/Admin` redirects to `/Login`). Also covered: parallel registrations for one slug give one success and friendly errors; the password is stored as a PBKDF2 hash; open redirects through `ReturnUrl` are ignored; a form post without the antiforgery token is rejected; the auth cookie is `HttpOnly` and `SameSite=Lax`. Notes: the 429 limit counts form posts only (viewing the form is free); `Pages/Admin/Index` is a placeholder until Step 5; `PlanLimits` holds the 1-staff FREE limit for the staff page in Step 5. Not verified: the `Secure` cookie flag (needs HTTPS), real-browser rendering, accessibility checks, and "similar timing" is a loose 0.5x to 2x bound on PBKDF2 time, not a side-channel analysis.
 
-## Step 4: Public booking pages âœ… (one criterion only partly verified)
+## Step 4: Public booking pages ✅ (one criterion only partly verified)
 
 Files: `Pages/Book/Index`, `Pages/Book/Details`, `Pages/Booking/Manage`, `wwwroot/css/site.css`, `wwwroot/js/site.js`.
 
@@ -86,7 +86,7 @@ Verified: 12 new HTTP tests (53 in total, three consecutive full runs without a 
 
 Not verified: the "under one minute" criterion was not timed with a stopwatch (the flow is three screens and four typed fields, and took seven browser actions); only Chrome-based pane tested, no Safari or real phone; no automated accessibility audit (labels, focus styles and ARIA are in place); the radio's accessible name was not inspected with a screen reader; the `Secure` cookie flag still needs HTTPS. Message links ("Message the shop") are Step 6.
 
-## Step 5: Admin back office âœ… (accessibility only partly verified)
+## Step 5: Admin back office ✅ (accessibility only partly verified)
 
 Files: `Pages/Admin/*`, `Pages/Shared/_AdminLayout.cshtml`.
 
@@ -103,7 +103,7 @@ Verified: 30 new tests (83 in total; five consecutive full runs without a failur
 
 Not verified: full keyboard-only walkthrough of every form; screen reader behaviour; contrast checked by eye only; Safari and real phones; the day view and forms were not load tested. Known limits: a signed-in cookie stays valid until it expires even if the user were deactivated (no user management exists yet); only the OWNER role exists, MANAGER and STAFF pages are not built; closures are whole days only; walk-in (staff-created) bookings have no UI yet; "Message customer" is Step 6.
 
-## Step 6: Message links (section 8.5) â¬œ
+## Step 6: Message links (section 8.5) ⬜
 
 Files: `Data/Migrations/003_contact_settings.sql`, entity and settings page updates, a small `MessageLinks` helper in `Services/`.
 
@@ -111,13 +111,13 @@ Acceptance:
 - Correctly URL-encoded `sms:` and `m.me` links; "Copy message" works.
 - The `sms:` form is tested on a real Android and a real iPhone and the result is written back into section 8.5.
 
-## Step 7: Tests in CI â¬œ
+## Step 7: Tests in CI ⬜
 
 Files: `tests/VeskaFlow.Web.Tests/` (xunit), `.github/workflows/ci.yml`.
 
 Acceptance: CI runs the self-check, the SQL invariants (PostgreSQL service container) and the integration tests on every push.
 
-## Step 8: Free deployment ðŸŸ¡ (live on Render and Neon; domain, backups and real-phone check still open)
+## Step 8: Free deployment 🟡 (live on Render and Neon; domain, backups and real-phone check still open)
 
 Files: `Dockerfile`, `.dockerignore`, `render.yaml`, `docs/DEPLOY.md`. Written, and the Release publish was run in Production mode on a PORT from the environment (health check and a booking page answered). The Neon safety gate passed (PostgreSQL 18.6, see rules 17.3.1). Not done: the Docker image build (no Docker on this machine), a Render deploy, the backup job. Those need the owner's accounts; the steps are in `docs/DEPLOY.md`.
 
@@ -128,13 +128,13 @@ Acceptance:
 - A scheduled `pg_dump` backup is stored outside Neon.
 - Booking page works on the free host; cold start behavior is documented.
 
-## Step 9: JSON API and Flutter â¬œ
+## Step 9: JSON API and Flutter ⬜
 
 Files: `Api/` endpoints per section 3.1, problem+json errors per section 8.4, JWT plus refresh token per decision 6. Then the Flutter app.
 
 Acceptance: the API reuses `BookingService`; no business rule is duplicated in a controller.
 
-## Branding: per-shop accent color âœ… (browser check of the settings page still open)
+## Branding: per-shop accent color ✅ (browser check of the settings page still open)
 
 Files: `Data/Migrations/002_brand_color.sql`, `BrandColors` in `Services/ShopSettingsService.cs`, `Pages/Admin/Settings`, `data-theme` rules in `wwwroot/css/site.css`, `Pages/Shared/_Layout.cshtml`.
 
@@ -142,7 +142,7 @@ A shop picks one of six preset colors (teal, blue, orange, rose, violet, slate) 
 
 Verified: solution builds with 0 warnings; Core self-check 55/55; the Web test suite passes against PostgreSQL 16.11 (90 tests, including the preset-only check, the database CHECK and the per-shop theme on the public page). Not verified: the settings page and the five new colors in a browser, contrast of the new colors in a checker, Safari. Logo and cover photo are not built (they need an image storage decision).
 
-## Industries and the 30-day trial âœ… (browser check of Register and the banner still open)
+## Industries and the 30-day trial ✅ (browser check of Register and the banner still open)
 
 Files: `Data/Migrations/003_industry_trial.sql`, `Services/Industries.cs`, `OnboardingService`, `AuthService` (trial claim), `Pages/Register`, `Pages/Shared/_AdminLayout` (banner), `BookingService.CreateAsync` and `ShopCatalogService` (booking closes after the trial), `appsettings.json` (`Trial:Days`).
 

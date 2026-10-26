@@ -1,4 +1,4 @@
-﻿using VeskaFlow.Core.Domain;
+using VeskaFlow.Core.Domain;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
@@ -379,6 +379,6 @@ public class BookingServiceTests
         var customer = await db.Customers.SingleAsync(c => c.BusinessId == shop.BusinessId);
         Assert.Equal("Juan D.", customer.Name);
         Assert.Equal("juan@example.com", customer.Email);
-        Assert.Equal("09171234567", customer.Phone); // one canonical form: +63 917â€¦ is 0917â€¦
+        Assert.Equal("09171234567", customer.Phone); // one canonical form: +63 917… is 0917…
     }
 }

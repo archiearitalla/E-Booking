@@ -8,6 +8,7 @@
     var invariant = System.Globalization.CultureInfo.InvariantCulture;
     var stripDays = Math.Min(shop.HorizonDays + 1, 14);
 }
+<div class="book-shell">
 <section class="hero-card">
     <div>
         <p class="hero-kicker">@Text.BookTitle</p>
@@ -42,13 +43,13 @@
                     <option value="" disabled selected="@(Model.ServiceId is null)">@Text.BookServicePlaceholder</option>
                     @foreach (var service in shop.Services)
                     {
-                        <option value="@service.Id" selected="@(Model.ServiceId == service.Id)">@service.Name &middot; @DisplayFormat.Duration(service.DurationMinutes)@(service.IsOther ? "" : " · " + DisplayFormat.Price(service.Price))</option>
+                        <option value="@service.Id" selected="@(Model.ServiceId == service.Id)" data-other="@(service.IsOther ? "true" : "false")">@service.Name@(service.IsOther ? "" : " · " + DisplayFormat.Price(service.Price))</option>
                     }
                 </select>
             </div>
             @if (shop.Services.Any(s => s.IsOther))
             {
-                <div class="field">
+                <div class="field" data-other-field>
                     <label for="serviceNote">@Text.OtherServiceLabel</label>
                     <input type="text" id="serviceNote" name="serviceNote" value="@Model.ServiceNote" maxlength="60"
                            aria-describedby="serviceNote-hint" />
@@ -133,5 +134,17 @@
 }
 else if (shop.Services.Count > 0)
 {
+    @* Wide screens only: the empty right-hand side says how booking works instead of staying blank. It comes before the
+       hint so it sits beside the form. *@
+    <div class="card book-steps">
+        <h2>@Text.BookStepsTitle</h2>
+        <ol>
+            <li>@Text.BookStep1</li>
+            <li>@Text.BookStep2</li>
+            <li>@Text.BookStep3</li>
+        </ol>
+        <p class="hint">@Text.BookStepsNote</p>
+    </div>
     <p class="muted">@Text.BookPickService</p>
 }
+</div>

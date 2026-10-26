@@ -1,4 +1,4 @@
-@page "/Admin/AfterVisit/{id:guid}"
+﻿@page "/Admin/AfterVisit/{id:guid}"
 @model VeskaFlow.Web.Pages.Admin.AfterVisitModel
 @{
     ViewData["Title"] = Text.AfterVisitTitle;
@@ -23,7 +23,7 @@
             <label for="visitNotes">@Text.VisitNotesLabel</label>
             <textarea id="visitNotes" name="visitNotes" rows="6" maxlength="4000">@b.VisitNotes</textarea>
         </div>
-        <button type="submit" class="primary">@Text.VisitNotesSave</button>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveRecord">@Text.VisitNotesSave</button>
     </form>
 </div>
 
@@ -50,8 +50,8 @@
             <input type="text" id="fun" name="followUpNote" value="@b.FollowUpNote" maxlength="200" />
         </div>
         <div class="actions">
-            <button type="submit" class="primary">@Text.FollowUpSave</button>
-            @if (b.FollowUpOn is not null) { <button type="submit" name="clear" value="1" class="secondary">@Text.FollowUpRemove</button> }
+            <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveFollowUp">@Text.FollowUpSave</button>
+            @if (b.FollowUpOn is not null) { <button type="submit" name="clear" value="1" class="secondary" data-confirm="@Text.ConfirmRemoveFollowUp">@Text.FollowUpRemove</button> }
         </div>
     </form>
 </div>
