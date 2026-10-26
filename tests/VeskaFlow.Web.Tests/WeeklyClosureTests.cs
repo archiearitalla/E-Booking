@@ -1,4 +1,4 @@
-﻿using VeskaFlow.Core.Domain;
+using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
@@ -160,6 +160,40 @@ public class WeeklyClosureTests
     }
 
     [Fact]
+    public async Task A_half_day_needs_only_a_start_or_only_an_end_and_midnight_means_the_end_of_the_day()
+    {
+        var s = await SetupAsync(); // starter hours are Monday to Saturday 9 AM to 6 PM
+
+        // "Close the afternoon": only From is given (12:00 PM), so the rest of the day is closed.
+        var afternoon = await s.Settings.AddClosureAsync(s.Owner.BusinessId, new ClosureInput(null, Tuesday, Tuesday, "Half day", new TimeOnly(12, 0), null));
+        Assert.True(afternoon.IsSuccess, afternoon.Message);
+        Assert.True((await BookAsync(s, Manila(5, 10), "09175550111")).IsSuccess);                            // morning is open
+        Assert.Equal(FailureKind.SlotTaken, (await BookAsync(s, Manila(5, 13), "09175550112")).Failure);      // afternoon is closed
+        Assert.Equal(FailureKind.SlotTaken, (await BookAsync(s, Manila(5, 17), "09175550113")).Failure);      // until closing time
+
+        // "Close the morning": only Until is given (11:00 AM) on Wednesday.
+        Assert.True((await s.Settings.AddClosureAsync(s.Owner.BusinessId, new ClosureInput(null, Wednesday, Wednesday, null, null, new TimeOnly(11, 0)))).IsSuccess);
+        Assert.Equal(FailureKind.SlotTaken, (await BookAsync(s, Manila(6, 9), "09175550114")).Failure);
+        Assert.True((await BookAsync(s, Manila(6, 12), "09175550115")).IsSuccess);
+
+        // Until 12:00 AM after a later start is typed as "to the end of the day" and is not an error.
+        var thursday = Wednesday.AddDays(1);
+        Assert.True((await s.Settings.AddClosureAsync(s.Owner.BusinessId, new ClosureInput(null, thursday, thursday, null, new TimeOnly(14, 0), new TimeOnly(0, 0)))).IsSuccess);
+        Assert.Equal(FailureKind.SlotTaken, (await BookAsync(s, Manila(7, 16), "09175550116")).Failure);
+
+        // They show as "end of day" / "start of day" in the list.
+        var rows = await s.Settings.ListClosuresAsync(s.Owner.BusinessId);
+        Assert.Contains(rows, r => r.StartTime == new TimeOnly(12, 0) && r.EndTime >= ShopSettingsService.EndOfDay);
+        Assert.Contains(rows, r => r.StartTime == TimeOnly.MinValue && r.EndTime == new TimeOnly(11, 0));
+        Assert.Equal("12:00 PM – end of day", VeskaFlow.Web.Pages.Admin.ClosuresModel.TimeText(new TimeOnly(12, 0), ShopSettingsService.EndOfDay));
+        Assert.Equal("start of day – 11:00 AM", VeskaFlow.Web.Pages.Admin.ClosuresModel.TimeText(TimeOnly.MinValue, new TimeOnly(11, 0)));
+
+        // The same for a repeating closure: every Friday from 3 PM.
+        Assert.True((await s.Settings.AddWeeklyClosureAsync(s.Owner.BusinessId, new WeeklyClosureInput(null, (int)DayOfWeek.Friday, null, new TimeOnly(15, 0), null))).IsSuccess);
+        Assert.Equal(FailureKind.SlotTaken, (await BookAsync(s, Manila(8, 16), "09175550117")).Failure);
+        Assert.True((await BookAsync(s, Manila(8, 10), "09175550118")).IsSuccess);
+    }
+    [Fact]
     public async Task A_one_off_closure_can_be_a_time_window_and_times_are_validated()
     {
         var s = await SetupAsync();
@@ -173,7 +207,7 @@ public class WeeklyClosureTests
         Assert.Equal(new TimeOnly(14, 0), row.StartTime);
         Assert.Equal(new TimeOnly(16, 0), row.EndTime);
 
-        Assert.Contains("startTime", (await s.Settings.AddClosureAsync(s.Owner.BusinessId, new ClosureInput(null, Tuesday, Tuesday, null, new TimeOnly(9, 0), null))).FieldErrors.Keys);
+        Assert.Contains("endTime", (await s.Settings.AddClosureAsync(s.Owner.BusinessId, new ClosureInput(null, Tuesday, Tuesday, null, new TimeOnly(15, 0), new TimeOnly(14, 0)))).FieldErrors.Keys); // end before start
         Assert.Contains("endTime", (await s.Settings.AddWeeklyClosureAsync(s.Owner.BusinessId, new WeeklyClosureInput(null, null, null, new TimeOnly(13, 0), new TimeOnly(12, 0)))).FieldErrors.Keys);
     }
 

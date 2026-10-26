@@ -60,6 +60,15 @@
             @if (Model.ErrorFor("password") is { } e5) { <p class="error" id="Password-error">@e5</p> }
         </div>
 
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.Accept" value="true" checked="@Model.Input.Accept"
+                       aria-invalid="@(Model.ErrorFor("accept") is null ? "false" : "true")" aria-describedby="Accept-error" />
+                <span>@Text.AcceptTermsBefore <a href="/Terms" target="_blank" rel="noopener">@Text.TermsLink</a> @Text.AcceptTermsAnd <a href="/Privacy" target="_blank" rel="noopener">@Text.PrivacyLink</a>.</span>
+            </label>
+            @if (Model.ErrorFor("accept") is { } e6) { <p class="error" id="Accept-error">@e6</p> }
+        </div>
+
         <button type="submit" class="primary">@Text.ButtonRegister</button>
     </form>
 </div>

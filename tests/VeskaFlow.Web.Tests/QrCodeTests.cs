@@ -43,7 +43,7 @@ public class QrCodeWebTests
         var slug = Unique("qr");
         var reg = await PostFormAsync(client, "/Register", new()
         {
-            ["Input.BusinessName"] = "QR Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Reyes",
+            ["Input.Accept"] = "true", ["Input.BusinessName"] = "QR Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Reyes",
             ["Input.Email"] = $"{Unique("o")}@example.com", ["Input.Password"] = "correct-horse-1", ["Input.Industry"] = "clinic",
         });
         Assert.Equal(HttpStatusCode.Redirect, reg.StatusCode);

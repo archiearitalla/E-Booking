@@ -23,6 +23,9 @@ public class Business
     public int FollowUpNoticeDays { get; set; } = 3;
     /// <summary>Switched off by the platform owner: nobody signs in and online booking is closed. Nothing is deleted.</summary>
     public bool IsEnabled { get; set; } = true;
+    /// <summary>When the owner agreed to the Terms and Privacy Notice, and which version. Null for shops that signed up before this existed.</summary>
+    public DateTime? TermsAcceptedAtUtc { get; set; }
+    public string? TermsVersion { get; set; }
 }
 
 public class AdminUser

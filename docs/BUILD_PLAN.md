@@ -180,6 +180,8 @@ Still open: a registration and booking run on a real phone against the live link
 | Booking confirmation: copy link, add to calendar (.ics) | | tests | a real phone calendar |
 | Email confirmation before use; `/Platform` for the platform owner to switch shops on/off, confirm by hand, send a link; Brevo (or Resend) HTTP email; the check-your-email page continues by itself | 6.z | tests with a fake email sender and a fake Brevo server; migration 009 applied to a database that already had a shop | **a real email through Brevo**, the pages in a browser, live deploy |
 | "Other" service for visits not in the list (booking and walk-in) with a typed description | 6.w | tests; migration 010 applied to a database that already had a shop | browser |
+| Privacy Notice and Terms pages (draft text, with processor terms), agreement at sign-up with version and time stored, customer data export and delete for the shop | 6.v | tests; migration 011 | **review by a lawyer** (the texts are not legal advice); the pages in a browser; a clinic's actual consent flow |
+| Half-day closures (only From, only Until, 12 AM as end of day); lenient booking address with a 3-character minimum | 6.x2, 18.2 | tests, Core self-check | a phone |
 | `/ping` for a free uptime monitor (does not touch the database) | | test | the monitor itself |
 
 Not built yet: customer messages (confirmation and reminder links), customer list and export, reports, reschedule, MANAGER and STAFF roles, logo and cover photo, online payment, SMS.

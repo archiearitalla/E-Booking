@@ -15,6 +15,22 @@
     </dl>
 </div>
 
+<div class="card">
+    <h2>@Text.CustomerDataTitle</h2>
+    <p class="hint">@Text.CustomerDataHint</p>
+    <p><a class="button secondary" href="/Admin/History/@h.CustomerId?handler=Export">@Text.CustomerDataExport</a></p>
+    <details class="delete-shop">
+        <summary class="danger-link">@Text.CustomerDataDelete</summary>
+        <form method="post" asp-page-handler="Delete" asp-route-id="@h.CustomerId">
+            <div class="field">
+                <label for="confirm">@string.Format(Text.CustomerDataDeleteType, h.Name)</label>
+                <input type="text" id="confirm" name="confirm" autocomplete="off" required />
+            </div>
+            <button type="submit" class="danger" data-confirm="@Text.CustomerDataDeleteAsk">@Text.CustomerDataDelete</button>
+        </form>
+    </details>
+</div>
+
 @if (h.Visits.Count == 0)
 {
     <div class="card empty"><p>@Text.HistoryEmpty</p></div>

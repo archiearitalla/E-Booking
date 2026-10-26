@@ -10,7 +10,8 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record RegisterRequest(
     string? BusinessName, string? Slug, string? OwnerName, string? Email, string? Password, string? TimeZone = null,
-    string? Industry = null, int TrialDays = 0, bool RequireEmailConfirmation = false, bool RequireApproval = false);
+    string? Industry = null, int TrialDays = 0, bool RequireEmailConfirmation = false, bool RequireApproval = false,
+    DateTime? TermsAcceptedAtUtc = null, string? TermsVersion = null);
 
 /// <summary>
 /// <c>ConfirmationToken</c> is set only when the owner still has to confirm the email address: it goes into the email link
@@ -73,6 +74,7 @@ public sealed class OnboardingService(IDbContextFactory<AppDbContext> dbFactory,
             Slug = slug, Name = businessName, TimeZone = timeZone, Industry = industry,
             TrialEndsAtUtc = request.TrialDays > 0 ? clock.GetUtcNow().UtcDateTime.AddDays(request.TrialDays) : null,
             IsEnabled = !request.RequireApproval, // when approval is required the platform owner switches the shop on
+            TermsAcceptedAtUtc = request.TermsAcceptedAtUtc, TermsVersion = request.TermsVersion,
         };
         var now = clock.GetUtcNow().UtcDateTime;
         var owner = new AdminUser

@@ -26,10 +26,19 @@ public class RegisterModel(OnboardingService onboarding, AccountControlService a
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        // The owner must agree to the Terms and the Privacy Notice; when and which version is kept with the shop.
+        if (!Input.Accept)
+        {
+            Errors = new Dictionary<string, string> { ["accept"] = Text.AcceptTermsRequired };
+            Input.Password = null; // never echo a password back
+            return Page();
+        }
+
         var result = await onboarding.RegisterAsync(
             new RegisterRequest(Input.BusinessName, Input.Slug, Input.OwnerName, Input.Email, Input.Password,
                 Industry: Input.Industry, TrialDays: TrialDays,
-                RequireEmailConfirmation: RequireEmailConfirmation, RequireApproval: RequireApproval), ct);
+                RequireEmailConfirmation: RequireEmailConfirmation, RequireApproval: RequireApproval,
+                TermsAcceptedAtUtc: DateTime.UtcNow, TermsVersion: LegalInfo.Version), ct);
 
         if (!result.IsSuccess)
         {
@@ -63,5 +72,6 @@ public class RegisterModel(OnboardingService onboarding, AccountControlService a
         public string? Email { get; set; }
         public string? Password { get; set; }
         public string? Industry { get; set; } = Industries.Default;
+        public bool Accept { get; set; }
     }
 }

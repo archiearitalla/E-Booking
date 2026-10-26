@@ -1,0 +1,50 @@
+@page
+@using VeskaFlow.Web.Services
+@inject IConfiguration Config
+@{
+    ViewData["Title"] = "Terms of Service";
+    var operatorName = LegalInfo.OperatorName(Config);
+    var contact = LegalInfo.ContactText(Config);
+}
+<div class="card legal">
+    <h1>Terms of Service</h1>
+    <p class="muted">Version @LegalInfo.Version</p>
+
+    <h2>The service</h2>
+    <p>VeskaFlow, run by @operatorName, lets a barbershop, salon or clinic take online bookings, manage its day, and keep simple customer and follow-up records. By creating a shop you agree to these Terms and to the <a href="/Privacy">Privacy Notice</a>.</p>
+
+    <h2>Free trial and fees</h2>
+    <p>A new shop gets a free trial (30 days unless we say otherwise). When it ends, online booking closes and the back office is locked until the shop subscribes; nothing is deleted. Prices and how to pay are agreed with @operatorName before any charge, and a price change is announced in advance.</p>
+
+    <h2>Your account</h2>
+    <p>You must confirm your email address. Keep your password private: you are responsible for what is done with your account and for the staff you let in. Tell us if you think someone else has access.</p>
+
+    <h2>What you may and may not do</h2>
+    <ul>
+        <li>Use the service only for your own business, lawfully.</li>
+        <li>Do not use it to send spam, to collect data you have no right to, or to attack or overload the system.</li>
+        <li>Do not enter data about people who have not been told that the shop keeps it.</li>
+    </ul>
+
+    <h2>Your customers' data (data processing)</h2>
+    <p>Your shop is the personal information controller of its customers' data; @operatorName is your processor under the Data Privacy Act of 2012. That means:</p>
+    <ul>
+        <li>@operatorName processes that data only to provide the service and on your instructions, and keeps it confidential.</li>
+        <li><strong>You</strong> are responsible for having a lawful basis and, where needed, the customer's consent. For health information (a clinic's visit notes) you are responsible for getting the patient's consent and for keeping the notes to what you need.</li>
+        <li>We keep the data secure as described in the Privacy Notice, use the service providers listed there, and tell you without undue delay if we learn of a breach that affects your shop.</li>
+        <li>You can export or delete any customer's data in the app, which is how a customer's request to see or erase their data can be met. We help with such requests if you ask.</li>
+        <li>When your shop is deleted, we delete its data.</li>
+    </ul>
+
+    <h2>Availability</h2>
+    <p>We work to keep the service running, but it is provided as it is. It may be down for maintenance or for reasons outside our control, and we do not promise it will be uninterrupted or error-free. Keep your own record of anything you cannot afford to lose.</p>
+
+    <h2>Suspension and ending</h2>
+    <p>We may switch a shop off if these Terms are broken or the service is being abused. You can ask us to delete your shop at any time. Deleting a shop deletes all of its data permanently.</p>
+
+    <h2>Liability</h2>
+    <p>To the extent the law allows, @operatorName is not liable for lost income, lost bookings or indirect damage arising from use of the service, and its total liability is limited to the fees you paid in the 3 months before the claim.</p>
+
+    <h2>Law and contact</h2>
+    <p>These Terms are governed by the laws of the Philippines. Questions: @contact. These Terms are a plain description of the arrangement and are not legal advice.</p>
+</div>

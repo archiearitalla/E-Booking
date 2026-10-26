@@ -47,6 +47,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
 });
 builder.Services.AddScoped<VeskaFlow.Web.Services.AccountControlService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerDataService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
 

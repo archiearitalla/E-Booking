@@ -12,7 +12,7 @@ public class WebFlowTests
 
     private static Dictionary<string, string> RegisterFields(string email, string slug) => new()
     {
-        ["Input.BusinessName"] = "Ben's Barbershop",
+        ["Input.Accept"] = "true", ["Input.BusinessName"] = "Ben's Barbershop",
         ["Input.Slug"] = slug,
         ["Input.OwnerName"] = "Ben Santos",
         ["Input.Email"] = email,

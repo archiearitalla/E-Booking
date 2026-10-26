@@ -111,6 +111,22 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
 
     // ------------------------------------------------------------------ closures
 
+    /// <summary>The last moment of a day, used when a closure runs until the end of the day.</summary>
+    public static readonly TimeOnly EndOfDay = new(23, 59, 59, 999);
+
+    /// <summary>
+    /// Makes a half-day closure easy to enter. Both times empty: the whole day. Only From: from then until the end of the day.
+    /// Only Until: from the start of the day until then. Until 12:00 AM after a later From also means the end of the day.
+    /// </summary>
+    public static (TimeOnly? Start, TimeOnly? End) NormalizeWindow(TimeOnly? start, TimeOnly? end)
+    {
+        if (start is null && end is null) return (null, null);
+        var s = start ?? TimeOnly.MinValue;
+        var e = end ?? EndOfDay;
+        if (e == TimeOnly.MinValue && s > TimeOnly.MinValue) e = EndOfDay;
+        return (s, e);
+    }
+
     /// <summary>Closures that have not ended yet, soonest first, with the number of active bookings each one overlaps.</summary>
     public async Task<IReadOnlyList<ClosureRow>> ListClosuresAsync(Guid businessId, CancellationToken ct = default)
     {
@@ -151,13 +167,14 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     /// </summary>
     public async Task<ServiceResult<SaveOutcome>> AddClosureAsync(Guid businessId, ClosureInput input, CancellationToken ct = default)
     {
+        var (windowStart, windowEnd) = NormalizeWindow(input.StartTime, input.EndTime);
+        input = input with { StartTime = windowStart, EndTime = windowEnd };
         var errors = new Dictionary<string, string>();
         var reason = string.IsNullOrWhiteSpace(input.Reason) ? null : input.Reason.Trim();
         if (reason is { Length: > 120 }) errors["reason"] = Text.ReasonTooLong;
         if (input.ToDate < input.FromDate) errors["toDate"] = Text.ClosureRangeInvalid;
         else if (input.ToDate.DayNumber - input.FromDate.DayNumber > 365) errors["toDate"] = Text.ClosureTooLong;
-        if ((input.StartTime is null) != (input.EndTime is null)) errors["startTime"] = Text.ClosureTimesBoth;
-        else if (input.StartTime is { } st && input.EndTime is { } et && input.FromDate == input.ToDate && et <= st)
+        if (input.StartTime is { } st && input.EndTime is { } et && input.FromDate == input.ToDate && et <= st)
             errors["endTime"] = Text.ClosureTimesOrder;
         if (errors.Count > 0) return ServiceResult<SaveOutcome>.Invalid(errors);
 
@@ -238,12 +255,13 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     /// <summary>Adds a closed day that repeats every week. Existing bookings are not cancelled; the outcome says how many fall on that day.</summary>
     public async Task<ServiceResult<SaveOutcome>> AddWeeklyClosureAsync(Guid businessId, WeeklyClosureInput input, CancellationToken ct = default)
     {
+        var (windowStart, windowEnd) = NormalizeWindow(input.StartTime, input.EndTime);
+        input = input with { StartTime = windowStart, EndTime = windowEnd };
         var errors = new Dictionary<string, string>();
         var reason = string.IsNullOrWhiteSpace(input.Reason) ? null : input.Reason.Trim();
         if (reason is { Length: > 120 }) errors["reason"] = Text.ReasonTooLong;
         if (input.DayOfWeek is < 0 or > 6) errors["weekday"] = Text.ClosureWeekdayInvalid;
-        if ((input.StartTime is null) != (input.EndTime is null)) errors["startTime"] = Text.ClosureTimesBoth;
-        else if (input.StartTime is { } st && input.EndTime is { } et && et <= st) errors["endTime"] = Text.ClosureTimesOrder;
+        if (input.StartTime is { } st && input.EndTime is { } et && et <= st) errors["endTime"] = Text.ClosureTimesOrder;
         if (errors.Count > 0) return ServiceResult<SaveOutcome>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);

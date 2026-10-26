@@ -24,8 +24,14 @@ public class ClosuresModel(ShopSettingsService settings, CatalogAdminService cat
 
     public static string DayName(short? day) => day is null ? "day" : Weekdays.First(w => w.Value == day).Label;
 
-    public static string TimeText(TimeOnly? from, TimeOnly? to) =>
-        from is { } f && to is { } t ? $"{f.ToString("h:mm tt", CultureInfo.InvariantCulture)} – {t.ToString("h:mm tt", CultureInfo.InvariantCulture)}" : "";
+    /// <summary>"12:00 PM – end of day", "start of day – 10:00 AM" or "12:00 PM – 1:00 PM".</summary>
+    public static string TimeText(TimeOnly? from, TimeOnly? to)
+    {
+        if (from is not { } f || to is not { } t) return "";
+        var start = f == TimeOnly.MinValue ? Text.ClosureStartOfDay : f.ToString("h:mm tt", CultureInfo.InvariantCulture);
+        var end = t >= ShopSettingsService.EndOfDay ? Text.ClosureEndOfDay : t.ToString("h:mm tt", CultureInfo.InvariantCulture);
+        return $"{start} – {end}";
+    }
 
     private static bool TryTime(string? text, out TimeOnly? value)
     {
@@ -49,7 +55,7 @@ public class ClosuresModel(ShopSettingsService settings, CatalogAdminService cat
         Input.EndTime = TimeFields.Read(Request.Form, "EndTime");
         if (!TryTime(Input.StartTime, out var startTime) || !TryTime(Input.EndTime, out var endTime))
         {
-            Errors = new Dictionary<string, string> { ["startTime"] = Text.ClosureTimesBoth };
+            Errors = new Dictionary<string, string> { ["startTime"] = Text.ClosureTimeInvalid };
             await LoadAsync(ct);
             return Page();
         }

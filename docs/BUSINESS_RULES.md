@@ -379,6 +379,10 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Opening hours are set once in Settings as ONE range (opens, closes, optional break) that applies to all 7 days (`business_hour`, same shape as `working_hour`; a break is two windows on one day). Days off, such as every Sunday, are set as closures. Saving copies the range to every staff member's weekly hours, replacing them, and new staff start with it. A person's own hours can still be changed on the Staff page afterwards; later Settings saves overwrite those again.
 - The shop's opening hours are a hard limit: nothing outside them can be booked or shown as free, for customers and for walk-ins, even if a staff member's own hours are wider. A time closure outside them is refused because it would close nothing. Shops that never set opening hours (no `business_hour` rows) are not limited this way. Times are picked with hour, minute and AM/PM dropdowns (stored as 24-hour `HH:mm`).
 
+### 6.x2 Half-day closures
+
+- A time closure needs no both-times entry: only **From** closes from then until the end of the day; only **Until** closes from the start of the day until then; both close that part of the day. **Until 12:00 AM** after a later From means the end of the day. The list shows "end of day" and "start of day". Whole-day closures leave both empty. An end that is not after the start is refused.
+
 ### 6.y Follow-up visits
 
 - A service may carry "suggested follow-up after N days" (1 to 730, empty = not applicable). It only suggests a date.
@@ -386,6 +390,13 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Admin → Follow-ups lists follow-ups not yet done, soonest first, with Overdue and Today badges. Each has a ready-made message (customer first name, shop, service, date, booking link). Staff copy it or send it as a text from their own phone (`sms:` link). The system never sends anything by itself. "Mark done" takes it off the list. Follow-ups that are overdue or due within the next 3 days are announced to staff: a strip at the top of every back-office page and the header bell (its badge counts them). All of it is scoped to the signed-in business.
 - Message tools (under a completed booking in Done, and on each follow-up): a ready-made message (thank-you after the visit, reminder for a follow-up) with Copy, Send as text (`sms:`, customer's number filled in), Send by email (`mailto:`, only when the customer gave an email), Share to another app (the phone's share sheet: Messenger, Viber, WhatsApp and so on; shown only where the browser supports it) and Save contact (a `.vcf` contact card, so staff can find the customer in their phone contacts). The system sends nothing. Walk-ins without a number have no text or contact options. The contact card is scoped to the signed-in business; another business's booking is "not found".
 - Schema: `service.follow_up_days`, `booking.follow_up_on`, `follow_up_note`, `follow_up_done` (migration 006, additive).
+
+### 6.v Privacy (Data Privacy Act of 2012, RA 10173)
+
+- Roles: the shop is the personal information controller of its customers' data and the platform operator is its processor; for the owner's own sign-up data the operator is the controller. The roles, what is kept, why, the service providers (Render, Neon, Brevo, Cloudflare), cookies, retention, security and a customer's rights are written in plain language on `/Privacy`; the arrangement, including the processor terms, on `/Terms`. Both are linked in every page footer. They carry a version (`LegalInfo.Version`); change it when the text changes in a way owners should agree to again. They are plain descriptions of how the system works, **not legal advice**, and should be reviewed by a lawyer before a clinic relies on them. `Legal:OperatorName` and `Legal:ContactEmail` fill in who runs it and the contact.
+- Sign-up requires ticking agreement to both; the time and version are stored on the shop (`business.terms_accepted_at_utc`, `terms_version`; migration 011).
+- A customer's right to access and erasure is carried out by the shop on the customer's history page: **Export** (a JSON file of the customer, their bookings with notes and follow-ups, and the audit trail of those bookings) and **Delete** (the customer, their bookings, records, follow-ups and their audit rows, in one transaction; the customer's name must be typed, and a browser confirm window asks first). Both are scoped to the signed-in business; another shop's customer is "not found".
+- Visit notes (a clinic's medical record) are visible only to signed-in staff of that shop, are never shown to the customer and never copied into a message or the audit log.
 
 ### 6.w The "Other" service
 

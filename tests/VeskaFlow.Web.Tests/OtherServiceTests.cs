@@ -83,7 +83,7 @@ public class OtherServiceTests
         var email = $"{Id("o")}@example.com";
         await HttpApp.PostFormAsync(client, "/Register", new()
         {
-            ["Input.BusinessName"] = "Other Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr A", ["Input.Email"] = email,
+            ["Input.Accept"] = "true", ["Input.BusinessName"] = "Other Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr A", ["Input.Email"] = email,
             ["Input.Password"] = "correct-horse-1", ["Input.Industry"] = "clinic",
         });
 

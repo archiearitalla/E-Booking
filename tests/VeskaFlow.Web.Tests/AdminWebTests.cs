@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.RegularExpressions;
 using VeskaFlow.Core.Domain;
 using VeskaFlow.Web.Data;
@@ -26,7 +26,7 @@ public class AdminWebTests
         var slug = Unique("adm");
         var response = await PostFormAsync(client, "/Register", new()
         {
-            ["Input.BusinessName"] = "Admin Test Shop", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Ben Santos",
+            ["Input.Accept"] = "true", ["Input.BusinessName"] = "Admin Test Shop", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Ben Santos",
             ["Input.Email"] = $"{Unique("o")}@example.com", ["Input.Password"] = "correct-horse-1",
         });
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);

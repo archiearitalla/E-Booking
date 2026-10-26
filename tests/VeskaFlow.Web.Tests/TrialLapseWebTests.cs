@@ -15,7 +15,7 @@ public class TrialLapseWebTests
         var slug = Unique("lap");
         var response = await PostFormAsync(client, "/Register", new()
         {
-            ["Input.BusinessName"] = "Lapse Test Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Reyes",
+            ["Input.Accept"] = "true", ["Input.BusinessName"] = "Lapse Test Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Reyes",
             ["Input.Email"] = $"{Unique("o")}@example.com", ["Input.Password"] = "correct-horse-1", ["Input.Industry"] = "clinic",
         });
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);

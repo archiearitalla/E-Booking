@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using VeskaFlow.Web.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -300,7 +300,7 @@ public class AccountControlTests
 
     private static Dictionary<string, string> Form(string email, string slug) => new()
     {
-        ["Input.BusinessName"] = "Dr Santos Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Santos",
+        ["Input.Accept"] = "true", ["Input.BusinessName"] = "Dr Santos Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Santos",
         ["Input.Email"] = email, ["Input.Password"] = "correct-horse-1", ["Input.Industry"] = "clinic",
     };
 

@@ -63,6 +63,9 @@
     <main class="container" id="main" tabindex="-1">
         @RenderBody()
     </main>
-    <footer class="site-footer">@Text.AppName v@(AppInfo.Version)</footer>
+    <footer class="site-footer">
+        <a href="/Terms">@Text.TermsLink</a> &middot; <a href="/Privacy">@Text.PrivacyLink</a><br />
+        @Text.AppName v@(AppInfo.Version)
+    </footer>
 </body>
 </html>

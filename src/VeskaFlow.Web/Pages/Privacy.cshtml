@@ -1,0 +1,49 @@
+@page
+@using VeskaFlow.Web.Services
+@inject IConfiguration Config
+@{
+    ViewData["Title"] = "Privacy Notice";
+    var operatorName = LegalInfo.OperatorName(Config);
+    var contact = LegalInfo.ContactText(Config);
+}
+<div class="card legal">
+    <h1>Privacy Notice</h1>
+    <p class="muted">Version @LegalInfo.Version</p>
+
+    <h2>Who we are</h2>
+    <p>@operatorName runs VeskaFlow, an online booking system for barbershops, salons and clinics. Each shop that uses it decides why and how it collects the details of its own customers. Under the Data Privacy Act of 2012 (Republic Act 10173) the shop is the <strong>personal information controller</strong> for its customers' data, and @operatorName acts as its <strong>personal information processor</strong>. For the details of shop owners and staff who sign up (name and email), @operatorName is the controller.</p>
+
+    <h2>What we keep</h2>
+    <ul>
+        <li><strong>Shop owners and staff:</strong> name, email address, a password (kept only as a salted hash, never as text), the shop's name, address, hours and settings, and when they agreed to the Terms.</li>
+        <li><strong>A shop's customers:</strong> name, mobile number, an email address if given, and their bookings (service, staff member, date and time, status).</li>
+        <li><strong>Notes written by the shop:</strong> a clinic can record a visit note (a medical record) and a follow-up. This can include health information, which the law treats as sensitive. It is visible only to staff who are signed in to that shop. It is never shown to the customer on the booking page and never put into a message by the system.</li>
+    </ul>
+
+    <h2>Why we use it</h2>
+    <p>Only to run the booking service: showing free times, taking and managing bookings, letting the shop see its day, and letting the shop's staff contact their own customers. The system does not send reminders or follow-up messages by itself; staff send them from their own phone. The only emails we send are the confirmation email to a new shop owner.</p>
+
+    <h2>Who sees it</h2>
+    <p>The shop and its signed-in staff. We do not sell data, show advertising or use analytics. We use these service providers to run the system:</p>
+    <ul>
+        <li><strong>Render</strong>: hosting of the application.</li>
+        <li><strong>Neon</strong>: the database (the region we use is Singapore).</li>
+        <li><strong>Brevo</strong>: sends the confirmation email to new shop owners (receives the owner's name and email address).</li>
+        <li><strong>Cloudflare</strong>: the domain name.</li>
+    </ul>
+
+    <h2>Cookies</h2>
+    <p>Only the ones the site needs to work: a sign-in cookie for shop staff, a security token that protects forms, and a short-lived cookie that carries a message to the next page. No tracking or advertising cookies.</p>
+
+    <h2>How long we keep it</h2>
+    <p>For as long as the shop uses the service. A shop can export or permanently delete any one customer's data at any time from the app. When a shop is deleted, everything in it is deleted with it. The database provider may keep recovery copies for a limited time.</p>
+
+    <h2>How we protect it</h2>
+    <p>The site uses HTTPS. Passwords are hashed. Every shop's data is kept apart: staff can only reach their own shop. Sign-in and booking pages limit repeated attempts. Changes to bookings are recorded in an audit log. No system is perfectly secure, so we cannot promise that nothing will ever go wrong. If we learn of a breach that affects a shop's data we will tell that shop without undue delay so it can meet its own duties.</p>
+
+    <h2>Your rights</h2>
+    <p>If you are a customer of a shop you can ask to see, correct or delete your data, to object to how it is used, or to receive a copy of it. Ask the shop first: it can export or delete your data in the app. If you cannot reach the shop, or you are a shop owner, contact us at @contact. You also have the right to complain to the National Privacy Commission (privacy.gov.ph).</p>
+
+    <h2>Changes</h2>
+    <p>When this notice changes we change the version above. This notice is a plain description of how the system works. It is not legal advice.</p>
+</div>

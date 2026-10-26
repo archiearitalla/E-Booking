@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using VeskaFlow.Web.Data;
 using VeskaFlow.Web.Services;
 using Microsoft.EntityFrameworkCore;
@@ -94,7 +94,7 @@ public class WalkInWebTests
         var slug = Unique("wi");
         var reg = await PostFormAsync(client, "/Register", new()
         {
-            ["Input.BusinessName"] = "Walk-in Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Reyes",
+            ["Input.Accept"] = "true", ["Input.BusinessName"] = "Walk-in Clinic", ["Input.Slug"] = slug, ["Input.OwnerName"] = "Dr Reyes",
             ["Input.Email"] = $"{Unique("o")}@example.com", ["Input.Password"] = "correct-horse-1", ["Input.Industry"] = "clinic",
         });
         Assert.Equal(HttpStatusCode.Redirect, reg.StatusCode);
