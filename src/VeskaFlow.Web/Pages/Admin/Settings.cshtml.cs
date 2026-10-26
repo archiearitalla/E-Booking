@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin;
 
+[AdminAccess(AdminLevel.Owner)]
 public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();

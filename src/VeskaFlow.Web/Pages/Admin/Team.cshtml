@@ -1,0 +1,72 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.TeamModel
+@{
+    ViewData["Title"] = Text.AdminNavTeam;
+}
+<h1>@Text.AdminNavTeam</h1>
+<p class="hint">@Text.TeamHint</p>
+
+<ul class="bookings">
+    @foreach (var m in Model.Members)
+    {
+        <li class="card @(m.IsActive ? "" : "inactive")">
+            <div class="booking-head">
+                <strong>@m.DisplayName</strong>
+                <span class="badge">@Text.TeamRoleLabel(m.Role)</span>
+                @if (!m.IsActive) { <span class="badge off">@Text.PlatformOff</span> }
+            </div>
+            <p class="muted">@m.Email</p>
+            @if (m.Role != AdminRoles.Owner)
+            {
+                <div class="actions">
+                    <form method="post" asp-page-handler="Active">
+                        <input type="hidden" name="id" value="@m.Id" />
+                        <input type="hidden" name="on" value="@((!m.IsActive).ToString().ToLowerInvariant())" />
+                        <button type="submit" class="@(m.IsActive ? "danger" : "primary")" data-confirm="@(m.IsActive ? Text.TeamConfirmOff : Text.TeamConfirmOn)">@(m.IsActive ? Text.TeamSwitchOff : Text.TeamSwitchOn)<span class="sr-only"> @m.DisplayName</span></button>
+                    </form>
+                </div>
+                <details>
+                    <summary>@Text.TeamNewPassword<span class="sr-only"> @m.DisplayName</span></summary>
+                    <form method="post" asp-page-handler="Password" class="inline-form">
+                        <input type="hidden" name="id" value="@m.Id" />
+                        <label for="pw-@m.Id">@Text.TeamPasswordLabel</label>
+                        <input type="password" id="pw-@m.Id" name="password" minlength="8" maxlength="128" autocomplete="new-password" required />
+                        <button type="submit" class="secondary" data-confirm="@Text.TeamPasswordAsk">@Text.TeamSetPassword</button>
+                    </form>
+                </details>
+            }
+        </li>
+    }
+</ul>
+
+<div class="card">
+    <h2>@Text.TeamAddTitle</h2>
+    <form method="post" asp-page-handler="Add" novalidate>
+        <div class="field">
+            <label for="Name">@Text.TeamNameLabel</label>
+            <input type="text" id="Name" name="Input.Name" value="@Model.Input.Name" maxlength="80" autocomplete="off"
+                   aria-invalid="@(Model.ErrorFor("name") is null ? "false" : "true")" />
+            @if (Model.ErrorFor("name") is { } eN) { <p class="error">@eN</p> }
+        </div>
+        <div class="field">
+            <label for="Email">@Text.TeamEmailLabel</label>
+            <input type="email" id="Email" name="Input.Email" value="@Model.Input.Email" maxlength="120" autocomplete="off"
+                   aria-invalid="@(Model.ErrorFor("email") is null ? "false" : "true")" />
+            @if (Model.ErrorFor("email") is { } eE) { <p class="error">@eE</p> }
+        </div>
+        <fieldset class="field">
+            <legend>@Text.TeamRoleTitle</legend>
+            <label class="choice"><input type="radio" name="Input.Role" value="STAFF" checked="@(Model.Input.Role != "MANAGER")" /><span><strong>@Text.TeamRoleLabel("STAFF")</strong><span class="muted">@Text.TeamRoleStaffHint</span></span></label>
+            <label class="choice"><input type="radio" name="Input.Role" value="MANAGER" checked="@(Model.Input.Role == "MANAGER")" /><span><strong>@Text.TeamRoleLabel("MANAGER")</strong><span class="muted">@Text.TeamRoleManagerHint</span></span></label>
+            @if (Model.ErrorFor("role") is { } eR) { <p class="error">@eR</p> }
+        </fieldset>
+        <div class="field">
+            <label for="Password">@Text.TeamPasswordLabel</label>
+            <input type="password" id="Password" name="Input.Password" minlength="8" maxlength="128" autocomplete="new-password"
+                   aria-invalid="@(Model.ErrorFor("password") is null ? "false" : "true")" />
+            <p class="hint">@Text.TeamPasswordHint</p>
+            @if (Model.ErrorFor("password") is { } eP) { <p class="error">@eP</p> }
+        </div>
+        <button type="submit" class="primary" data-confirm="@Text.TeamAddAsk">@Text.TeamAdd</button>
+    </form>
+</div>

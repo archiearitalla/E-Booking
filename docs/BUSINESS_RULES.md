@@ -423,6 +423,10 @@ Staff can move a confirmed booking that has not started to another free time wit
 
 The platform owner can add 7, 30, 90 or 365 days to a shop's access end date on the Platform page (after the client paid, or as a favour). The days count from the later of today and the current end date. Shops with no end date are left alone. There is no payment processing: the platform owner records payment by extending.
 
+### 6.y7 Team roles
+
+Three roles sign in to a shop's back office. STAFF run the day: bookings, walk-ins, reminders, follow-ups, visit records, moving a booking. MANAGER do everything STAFF do plus services, staff, closures, customers, reports and the audit log. OWNER also has Settings, the Team page and customer data export and erase. The role and the active flag are read from the database on every request, so switching someone off or changing a role works at once; a page a person may not open is "not found" for them and its menu entry is hidden. The owner adds a MANAGER or STAFF member with a name, email and a password the owner hands over (the owner vouches for the address, so no confirmation email); the owner can switch them off and set a new password. The owner cannot be switched off from the Team page, there is exactly one OWNER per shop, and a shop can have at most 20 people. One email is one account across the whole system.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

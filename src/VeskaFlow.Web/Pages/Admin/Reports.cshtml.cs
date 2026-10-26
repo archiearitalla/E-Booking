@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>Bookings by outcome and revenue for a chosen period, by service and by staff. Staff only.</summary>
+[AdminAccess(AdminLevel.Manager)]
 public class ReportsModel(ReportService reports) : AdminPageModel
 {
     public Report? Report { get; private set; }

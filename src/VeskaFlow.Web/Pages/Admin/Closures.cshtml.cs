@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>One-off closures (dates) and weekly closures (every Sunday and so on), together on one page.</summary>
+[AdminAccess(AdminLevel.Manager)]
 public class ClosuresModel(ShopSettingsService settings, CatalogAdminService catalog) : AdminPageModel
 {
     public const string OnDates = "dates";

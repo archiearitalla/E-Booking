@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin.Services;
 
+[AdminAccess(AdminLevel.Manager)]
 public class IndexModel(CatalogAdminService catalog) : AdminPageModel
 {
     public IReadOnlyList<ServiceRow> Rows { get; private set; } = [];

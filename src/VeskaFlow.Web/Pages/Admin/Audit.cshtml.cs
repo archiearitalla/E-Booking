@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin;
 
+[AdminAccess(AdminLevel.Manager)]
 public class AuditModel(AdminDayService days) : AdminPageModel
 {
     public AuditView? View { get; private set; }

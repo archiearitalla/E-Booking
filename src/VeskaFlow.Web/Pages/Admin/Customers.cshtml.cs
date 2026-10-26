@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>The shop's customers with visits and spend, searchable, and a CSV download. Staff only.</summary>
+[AdminAccess(AdminLevel.Manager)]
 public class CustomersModel(CustomerListService customers, ShopSettingsService settings) : AdminPageModel
 {
     public IReadOnlyList<CustomerRow> Rows { get; private set; } = [];

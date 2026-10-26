@@ -17,6 +17,7 @@ public class HistoryModel(VisitRecordService records, CustomerDataService custom
     /// <summary>Everything the shop keeps about this customer, as a JSON file.</summary>
     public async Task<IActionResult> OnGetExportAsync(Guid id, CancellationToken ct)
     {
+        if (Level < AdminLevel.Owner) return NotFound(); // only the owner exports or erases customer data
         var json = await customerData.ExportJsonAsync(BusinessId, id, ct);
         if (json is null) return NotFound();
         return File(System.Text.Encoding.UTF8.GetBytes(json), "application/json; charset=utf-8", "customer-data.json");
@@ -25,6 +26,7 @@ public class HistoryModel(VisitRecordService records, CustomerDataService custom
     /// <summary>Erases the customer and all their bookings, records and follow-ups for good. The customer's name must be typed.</summary>
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, string? confirm, CancellationToken ct)
     {
+        if (Level < AdminLevel.Owner) return NotFound();
         var result = await customerData.DeleteAsync(BusinessId, id, confirm, ct);
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)

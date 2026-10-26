@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin.Staff;
 
+[AdminAccess(AdminLevel.Manager)]
 public class EditModel(CatalogAdminService catalog) : AdminPageModel
 {
     [BindProperty] public StaffForm Input { get; set; } = new();

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VeskaFlow.Web.Pages.Admin.Services;
 
+[AdminAccess(AdminLevel.Manager)]
 public class EditModel(CatalogAdminService catalog) : AdminPageModel
 {
     [BindProperty] public ServiceForm Input { get; set; } = new();

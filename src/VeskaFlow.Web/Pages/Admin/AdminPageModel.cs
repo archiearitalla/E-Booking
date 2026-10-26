@@ -14,6 +14,9 @@ public abstract class AdminPageModel : FormPageModel
 {
     protected Guid BusinessId => User.BusinessId()!.Value;
 
+    /// <summary>What the signed-in person may do, read from the database on every request.</summary>
+    public AdminLevel Level { get; private set; } = AdminLevel.Staff;
+
     protected BookingActor StaffActor => BookingActor.Staff(User.UserId() ?? Guid.Empty, User.DisplayName() ?? "Staff");
 
     /// <summary>One-shot messages that survive a redirect (post/redirect/get).</summary>
@@ -39,6 +42,24 @@ public abstract class AdminPageModel : FormPageModel
             {
                 await context.HttpContext.SignOutAsync();
                 context.Result = Redirect("/Login?disabled=true");
+                return;
+            }
+
+            // The person's role and state come from the database, so switching someone off or changing their role works at once.
+            var team = context.HttpContext.RequestServices.GetRequiredService<TeamService>();
+            var access = User.UserId() is { } userId ? await team.GetAccessAsync(userId, id, context.HttpContext.RequestAborted) : null;
+            if (access is null || !access.IsActive)
+            {
+                await context.HttpContext.SignOutAsync();
+                context.Result = Redirect("/Login");
+                return;
+            }
+            Level = AdminRoles.LevelOf(access.Role);
+            context.HttpContext.Items[AdminRoles.LevelItemKey] = Level;
+            var needed = GetType().GetCustomAttributes(typeof(AdminAccessAttribute), true).OfType<AdminAccessAttribute>().FirstOrDefault()?.Minimum ?? AdminLevel.Staff;
+            if (Level < needed)
+            {
+                context.Result = NotFound(); // the page does not exist for this person
                 return;
             }
 
