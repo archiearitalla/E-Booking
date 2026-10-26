@@ -407,6 +407,10 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 A confirmed booking that starts within the shop's reminder hours (Settings, 1 to 168, default 24) and has not been marked reminded is listed on the Reminders page, in the header bell and in a strip. Each row has a ready message (first name, service, time, the customer's own manage link) sent by staff by text, email, share or copy; the system sends nothing. Staff mark it reminded after confirming. Cancelled, past and started bookings are never listed. Every query is scoped by the shop.
 
+### 6.y3 Customer list
+
+The Customers page lists the shop's customers with completed visits, no-shows, total spent (sum of completed bookings' prices) and last visit; search by name, phone or email; CSV download of the same list (formula-looking cells are defused). Scoped by the shop.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

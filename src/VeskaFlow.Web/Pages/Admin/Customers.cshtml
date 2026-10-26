@@ -1,0 +1,57 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.CustomersModel
+@{
+    ViewData["Title"] = Text.AdminNavCustomers;
+}
+<h1>@Text.AdminNavCustomers</h1>
+<p class="hint">@Text.CustomersHint</p>
+
+<form method="get" class="card" role="search">
+    <label for="q">@Text.CustomersSearchLabel</label>
+    <input id="q" name="q" type="search" value="@Model.Query" maxlength="80" autocomplete="off" />
+    <div class="actions">
+        <button type="submit">@Text.CustomersSearch</button>
+        @if (Model.Rows.Count > 0)
+        {
+            <a class="button secondary" href="/Admin/Customers?handler=Export&amp;q=@Uri.EscapeDataString(Model.Query ?? "")">@Text.CustomersExport</a>
+        }
+    </div>
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card empty"><p>@Text.CustomersEmpty</p></div>
+}
+else
+{
+    <p class="hint">@Text.CustomersCount(Model.Rows.Count)</p>
+    <div class="table-wrap">
+        <table>
+            <caption class="sr-only">@Text.AdminNavCustomers</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@Text.CustomersName</th>
+                    <th scope="col">@Text.CustomersContact</th>
+                    <th scope="col">@Text.CustomersVisits</th>
+                    <th scope="col">@Text.CustomersSpent</th>
+                    <th scope="col">@Text.CustomersLast</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td><a href="/Admin/History/@r.Id">@r.Name</a></td>
+                        <td>
+                            @if (!DisplayFormat.IsPlaceholderPhone(r.Phone)) { <a href="tel:@r.Phone">@r.Phone</a> }
+                            @if (r.Email is not null) { <div class="muted">@r.Email</div> }
+                        </td>
+                        <td>@r.Visits @if (r.NoShows > 0) { <span class="muted">(@Text.CustomersNoShows(r.NoShows))</span> }</td>
+                        <td>@DisplayFormat.Price(r.Spent)</td>
+                        <td>@(r.LastVisitUtc is { } last ? DisplayFormat.Date(last, Model.TimeZone) : "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
