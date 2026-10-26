@@ -6,10 +6,12 @@
     var alert = User.BusinessId() is { } businessId ? await FollowUps.AlertAsync(businessId) : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
     Context.Items[VeskaFlow.Web.Services.FollowUpAlert.ItemKey] = alert;
     var onFollowUps = path.StartsWith("/Admin/FollowUps", StringComparison.OrdinalIgnoreCase);
+    var onReminders = path.StartsWith("/Admin/Reminders", StringComparison.OrdinalIgnoreCase);
     (string Href, string Label)[] items =
     [
         ("/Admin", Text.AdminNavBookings),
         ("/Admin/WalkIn", Text.AdminNavWalkIn),
+        ("/Admin/Reminders", Text.AdminNavReminders),
         ("/Admin/FollowUps", Text.AdminNavFollowUps),
         ("/Admin/Services", Text.AdminNavServices),
         ("/Admin/Staff", Text.AdminNavStaff),
@@ -33,6 +35,13 @@
 </nav>
 
 <div class="admin-main">
+@if (alert.Reminders > 0 && !onReminders)
+{
+    <div class="notice" role="status">
+        <a href="/Admin/Reminders">@Text.ReminderAlertText(alert.Reminders)</a>
+    </div>
+}
+
 @if (alert.Total > 0 && !onFollowUps)
 {
     <div class="notice" role="status">

@@ -403,6 +403,10 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 - Every shop has a service named "Other" (`service.is_other`, one per shop, linked to every staff member; migration 010 added it to existing shops and onboarding adds it to new ones). It is listed last, for a visit whose service is not in the shop's list, on the online booking page and in walk-in.
 - Choosing it requires a short description (1 to 60 characters, typed by the customer or by staff for a walk-in). The booking keeps it as its service name ("Other: <text>"), so the day view, the customer's page, history and messages show what was asked for. Online booking shows no price for it ("the shop will tell you the price"); the owner sets how long it takes (default 30 minutes) and can switch it off like any service. A description sent with an ordinary service is ignored.
 
+### 6.y2 Appointment reminders
+
+A confirmed booking that starts within the shop's reminder hours (Settings, 1 to 168, default 24) and has not been marked reminded is listed on the Reminders page, in the header bell and in a strip. Each row has a ready message (first name, service, time, the customer's own manage link) sent by staff by text, email, share or copy; the system sends nothing. Staff mark it reminded after confirming. Cancelled, past and started bookings are never listed. Every query is scoped by the shop.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

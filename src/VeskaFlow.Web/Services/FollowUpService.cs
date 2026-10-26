@@ -1,4 +1,4 @@
-﻿using VeskaFlow.Core.Domain;
+using VeskaFlow.Core.Domain;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,12 @@ public sealed record FollowUpRow(
     string? FollowUpServiceName = null);
 
 /// <summary>How many follow-ups need a message soon: overdue, and due today or within the next few days.</summary>
-public sealed record FollowUpAlert(int Overdue, int Soon, int Days = 3)
+public sealed record FollowUpAlert(int Overdue, int Soon, int Days = 3, int Reminders = 0)
 {
     public int Total => Overdue + Soon;
+
+    /// <summary>Everything the header bell counts: follow-ups to message plus customers due a reminder.</summary>
+    public int BellTotal => Total + Reminders;
 
     /// <summary>The request item the admin layout fills so the header bell does not ask the database again.</summary>
     public const string ItemKey = "follow_up_alert";
@@ -33,7 +36,7 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var shop = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new { b.TimeZone, b.FollowUpNoticeDays }).FirstOrDefaultAsync(ct);
+            .Select(b => new { b.TimeZone, b.FollowUpNoticeDays, b.ReminderHours }).FirstOrDefaultAsync(ct);
         if (shop is null) return new FollowUpAlert(0, 0);
         var soonDays = shop.FollowUpNoticeDays;
         var tz = shop.TimeZone;
@@ -44,7 +47,12 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
             .Where(b => b.BusinessId == businessId && b.FollowUpOn != null && !b.FollowUpDone
                         && b.Status == BookingStatus.Completed && b.FollowUpOn <= limit)
             .Select(b => b.FollowUpOn!.Value).ToListAsync(ct);
-        return new FollowUpAlert(dates.Count(d => d < today), dates.Count(d => d >= today), soonDays);
+        // Customers due a reminder: a confirmed appointment within the shop's reminder hours that nobody has reminded yet.
+        var nowUtc = time.GetUtcNow().UtcDateTime;
+        var until = nowUtc.AddHours(shop.ReminderHours);
+        var reminders = await db.Bookings.AsNoTracking().CountAsync(b => b.BusinessId == businessId && b.Status == BookingStatus.Confirmed
+            && b.RemindedAtUtc == null && b.StartsAtUtc > nowUtc && b.StartsAtUtc <= until, ct);
+        return new FollowUpAlert(dates.Count(d => d < today), dates.Count(d => d >= today), soonDays, reminders);
     }
 
     /// <summary>Follow-ups not yet done, soonest first (overdue ones come first).</summary>

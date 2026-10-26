@@ -1,0 +1,44 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.RemindersModel
+@{
+    ViewData["Title"] = Text.AdminNavReminders;
+}
+<h1>@Text.AdminNavReminders</h1>
+<p class="hint">@Text.RemindersHint</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card empty"><p>@Text.RemindersEmpty</p></div>
+}
+else
+{
+    <ul class="bookings">
+        @foreach (var r in Model.Rows)
+        {
+            var hasPhone = !DisplayFormat.IsPlaceholderPhone(r.CustomerPhone);
+            <li class="card">
+                <div class="booking-head">
+                    <strong>@Model.WhenText(r)</strong>
+                </div>
+                <dl class="facts">
+                    <dt>@Text.ManageWho</dt>
+                    <dd>@r.CustomerName
+                        @if (hasPhone) { <text>&middot; <a href="tel:@r.CustomerPhone">@r.CustomerPhone</a></text> }
+                        else { <span class="muted">&middot; @Text.WalkInNoPhone</span> }
+                    </dd>
+                    <dt>@Text.ManageService</dt><dd>@r.ServiceName &middot; @r.StaffName</dd>
+                </dl>
+
+                @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
+                    "r" + r.BookingId.ToString("N"), Model.MessageFor(r), r.CustomerPhone, r.CustomerEmail, Text.ReminderSubject,
+                    $"/Admin?handler=Contact&id={r.BookingId}"))
+                <div class="actions">
+                    <form method="post" asp-page-handler="Reminded">
+                        <input type="hidden" name="id" value="@r.BookingId" />
+                        <button type="submit" class="secondary" data-confirm="@Text.ConfirmReminded">@Text.ReminderSent<span class="sr-only"> @r.CustomerName</span></button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}

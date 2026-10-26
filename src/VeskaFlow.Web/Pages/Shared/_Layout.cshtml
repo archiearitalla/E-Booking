@@ -24,11 +24,11 @@
                     ? known
                     : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
                 var trialEndsNow = User.TrialEndsForBell(Context.Items);
-                @if (trialEndsNow is not null || followUpAlert.Total > 0)
+                @if (trialEndsNow is not null || followUpAlert.BellTotal > 0)
                 {
                     var daysLeft = trialEndsNow is { } trialEnds ? (int)Math.Ceiling((trialEnds - DateTime.UtcNow).TotalDays) : int.MaxValue;
-                    var badgeText = followUpAlert.Total > 0 ? followUpAlert.Total.ToString() : daysLeft > 0 ? daysLeft.ToString() : "!";
-                    var badgeEnd = followUpAlert.Total > 0 || daysLeft <= 0;
+                    var badgeText = followUpAlert.BellTotal > 0 ? followUpAlert.BellTotal.ToString() : daysLeft > 0 ? daysLeft.ToString() : "!";
+                    var badgeEnd = followUpAlert.BellTotal > 0 || daysLeft <= 0;
                     <details class="bell">
                         <summary aria-label="@Text.NotificationsLabel">
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -39,6 +39,11 @@
                             {
                                 <strong>@Text.AdminNavFollowUps</strong>
                                 <p>@Text.FollowUpAlertText(followUpAlert.Overdue, followUpAlert.Soon, followUpAlert.Days) <a href="/Admin/FollowUps">@Text.FollowUpOpen</a></p>
+                            }
+                            @if (followUpAlert.Reminders > 0)
+                            {
+                                <strong>@Text.AdminNavReminders</strong>
+                                <p>@Text.ReminderAlertText(followUpAlert.Reminders) <a href="/Admin/Reminders">@Text.FollowUpOpen</a></p>
                             }
                             @if (trialEndsNow is not null)
                             {

@@ -26,6 +26,8 @@ public class Business
     /// <summary>When the owner agreed to the Terms and Privacy Notice, and which version. Null for shops that signed up before this existed.</summary>
     public DateTime? TermsAcceptedAtUtc { get; set; }
     public string? TermsVersion { get; set; }
+    /// <summary>Customers are due a reminder when their appointment is within this many hours (default 24).</summary>
+    public int ReminderHours { get; set; } = 24;
 }
 
 public class AdminUser
@@ -169,6 +171,8 @@ public class Booking
     public string? FollowUpService { get; set; }
     /// <summary>Optional medical record or notes of the visit, for the customer's history. Staff only: never shown to customers, never in messages or the audit log.</summary>
     public string? VisitNotes { get; set; }
+    /// <summary>When staff marked that this customer was reminded of the appointment. Null means not yet.</summary>
+    public DateTime? RemindedAtUtc { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;

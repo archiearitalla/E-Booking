@@ -7,12 +7,12 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record ShopSettings(
     string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
-    string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null, int FollowUpNoticeDays = 3);
+    string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null, int FollowUpNoticeDays = 3, int ReminderHours = 24);
 
 /// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged.</summary>
 public sealed record SettingsInput(
     string? Name, string? TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
-    string? BrandColor = null, int? FollowUpNoticeDays = null);
+    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null);
 
 /// <summary>The accent colors a shop can pick. The keys match the CHECK constraint and the <c>data-theme</c> rules in site.css.</summary>
 public static class BrandColors
@@ -57,7 +57,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -90,6 +90,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.CancelCutoffHours is < 0 or > 8_760) errors["cancelCutoffHours"] = Text.CutoffInvalid;
         if (input.BrandColor is not null && !BrandColors.IsValid(input.BrandColor)) errors["brandColor"] = Text.BrandColorInvalid;
         if (input.FollowUpNoticeDays is < 0 or > 60) errors["followUpNoticeDays"] = Text.FollowUpNoticeDaysInvalid;
+        if (input.ReminderHours is < 1 or > 168) errors["reminderHours"] = Text.ReminderHoursInvalid;
         if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -98,6 +99,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
 
         if (input.BrandColor is not null) business.BrandColor = input.BrandColor;
         if (input.FollowUpNoticeDays is { } noticeDays) business.FollowUpNoticeDays = noticeDays;
+        if (input.ReminderHours is { } reminderHours) business.ReminderHours = reminderHours;
         var zoneChanged = !string.Equals(business.TimeZone, zone, StringComparison.Ordinal);
         business.Name = name;
         business.TimeZone = zone;

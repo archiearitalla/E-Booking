@@ -48,7 +48,6 @@ public static class Text
     public const string TrialBanner ="Trial: {0} day(s) left. Online bookings stop when the trial ends.";
     public const string TrialEndedBanner = "Your trial has ended. Online bookings are closed; you can still manage existing bookings.";
     public const string TrialEndedPublic = "This business is not taking online bookings right now. Please contact them directly.";
-    public const string BookingPrivacyNotice = "We keep your name and phone number only to manage your appointment, and you can ask the business to delete them.";
     public const string RegisterTitle = "Create your shop";
     public const string LoginTitle = "Sign in";
 
@@ -240,6 +239,22 @@ public static class Text
     public const string ConfirmSaveHours = "Save these hours? They replace this person's current hours.";
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
+    public const string AdminNavReminders = "Reminders";
+    public const string LabelReminderHours = "Remind customers (hours before the appointment)";
+    public const string HintReminderHours = "How many hours before an appointment a customer is due a reminder. The Reminders page then lists them with a ready message, and the bell tells you.";
+    public const string ReminderHoursInvalid = "Enter 1 to 168 hours.";
+    public const string RemindersHint = "Customers with a confirmed appointment coming up. Send each one the ready message (text, email, Messenger or any app), then mark them reminded. Nothing is sent automatically.";
+    public const string RemindersEmpty = "Nobody is due a reminder right now.";
+    public const string ReminderSent = "Mark reminded";
+    public const string ReminderMarked = "Marked as reminded.";
+    public const string ConfirmReminded = "Mark this customer as reminded? They leave the list.";
+    public const string ReminderWhen = "Appointment";
+    public const string ReminderSubject = "Reminder of your appointment";
+    public static string ReminderAlertText(int count) => count == 1
+        ? "1 customer is due a reminder for an upcoming appointment. Send them a message."
+        : $"{count} customers are due a reminder for an upcoming appointment. Send them a message.";
+    public static string ReminderMessage(string firstName, string shop, string service, string whenText, string manageUrl) =>
+        $"Hi {firstName}, this is a reminder of your {service} appointment at {shop} on {whenText}. To see or cancel your booking: {manageUrl} See you!";
     public const string TermsLink = "Terms of Service";
     public const string PrivacyLink = "Privacy Notice";
     public const string AcceptTermsBefore = "I agree to the";
