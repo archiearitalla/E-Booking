@@ -617,3 +617,52 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 
 /* Danger buttons: dark text on the soft red so it stays readable on the dark theme. */
 button.danger { color: #2b0a07; }
+
+/* ---------------------------------------------------------------------------------------------
+   Desktop back office, laid out like the ERP sample on veskacode.com: a side menu on the left and a wide content
+   area of cards in even proportions. Phones keep the pill menu and one column (nothing above changes for them). */
+
+@media (min-width: 64rem) {
+  .container:has(.admin-shell) { max-width: 80rem; padding: 1.75rem 2rem 2.5rem; }
+
+  .admin-shell { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+
+  /* the menu becomes a vertical list that stays in view */
+  .admin-shell > .subnav { position: sticky; top: 4.75rem; margin: 0; }
+  .admin-shell > .subnav ul { flex-direction: column; flex-wrap: nowrap; gap: 0.25rem; padding: 0; overflow: visible; }
+  .admin-shell > .subnav li { flex: none; }
+  .admin-shell > .subnav a {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-weight: 600;
+  }
+  .admin-shell > .subnav a:hover { background: var(--card); border-color: var(--line); }
+  .admin-shell > .subnav a[aria-current="page"] { background: var(--brand-soft); color: var(--brand); border-color: var(--line); }
+
+  /* content: cards sit in a grid of equal columns; headings, notices and lists use the full width */
+  .admin-main { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 34rem)); justify-content: start; gap: 1.25rem; align-content: start; }
+  .admin-main > h1, .admin-main > h2, .admin-main > p, .admin-main > .notice, .admin-main > .alert,
+  .admin-main > .hint, .admin-main > ul, .admin-main > .daynav, .admin-main > nav { grid-column: 1 / -1; }
+  .admin-main > nav.seg { max-width: 34rem; }
+  .admin-main > h1, .admin-main > h2, .admin-main > p { margin: 0; }
+  .admin-main > .card { margin-top: 0; }
+  .admin-main .card + .card, .admin-main .card + p { margin-top: 0; }
+
+  /* lists of bookings, services, staff, closures and follow-ups: equal cards, 2 or 3 across */
+  .admin-main .bookings { grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: 1.25rem; align-items: stretch; }
+  .admin-main .bookings > li { display: flex; flex-direction: column; }
+  .admin-main .bookings > li.card { height: 100%; }
+}
+
+/* Cards everywhere: the same corner, padding and soft border as the ERP sample. */
+.card { border-radius: 1.125rem; }
+@media (min-width: 48rem) { .card { padding: 1.5rem 1.625rem; } }
+
+/* Phones: a card followed by a list keeps a gap (on desktop the grid gap does this). */
+.admin-main > .card { margin-bottom: 1rem; }
+@media (min-width: 64rem) { .admin-main > .card { margin-bottom: 0; } }

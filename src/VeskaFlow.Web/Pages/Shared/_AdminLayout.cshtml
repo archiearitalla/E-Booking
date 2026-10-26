@@ -22,6 +22,7 @@
         ? path.TrimEnd('/').Equals("/Admin", StringComparison.OrdinalIgnoreCase)
         : path.StartsWith(href, StringComparison.OrdinalIgnoreCase);
 }
+<div class="admin-shell">
 <nav class="subnav" aria-label="@Text.AdminNavLabel">
     <ul>
         @foreach (var (href, label) in items)
@@ -31,6 +32,7 @@
     </ul>
 </nav>
 
+<div class="admin-main">
 @if (alert.Total > 0 && !onFollowUps)
 {
     <div class="notice" role="status">
@@ -51,3 +53,5 @@
 }
 
 @RenderBody()
+</div>
+</div>
