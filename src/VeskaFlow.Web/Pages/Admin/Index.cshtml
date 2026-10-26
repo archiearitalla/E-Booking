@@ -93,6 +93,10 @@ else
                 }
                 @if (b.CanCancel)
                 {
+                    <div class="actions"><a class="button secondary" href="/Admin/Reschedule/@b.Id">@Text.RescheduleLink</a></div>
+                }
+                @if (b.CanCancel)
+                {
                     <form method="post" asp-page-handler="Transition" class="actions cancel-form">
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="version" value="@b.Version" />

@@ -240,6 +240,17 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string RescheduleNotAllowed = "Only a confirmed booking that has not started can be moved.";
+    public const string RescheduleTitle = "Move booking";
+    public const string RescheduleHint = "Pick a new date and time. The customer keeps the same link, so tell them the new time (text, call or message).";
+    public const string RescheduleLink = "Move";
+    public const string RescheduleDate = "New date";
+    public const string RescheduleShowTimes = "Show times";
+    public const string RescheduleNoTimes = "No free times on that date. Try another date.";
+    public const string RescheduleSave = "Move booking";
+    public const string ConfirmReschedule = "Move this booking to the new time?";
+    public const string RescheduleDone = "Booking moved. Tell the customer the new time.";
+    public const string RescheduleCurrent = "Now";
     public const string AdminNavReports = "Reports";
     public const string ReportsHint = "How the shop is doing. Revenue counts completed bookings only, at the price they were booked at.";
     public const string ReportsPeriod = "Period";

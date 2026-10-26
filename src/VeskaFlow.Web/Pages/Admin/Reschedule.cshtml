@@ -1,0 +1,50 @@
+@page "/Admin/Reschedule/{id:guid}"
+@model VeskaFlow.Web.Pages.Admin.RescheduleModel
+@{
+    ViewData["Title"] = Text.RescheduleTitle;
+    var b = Model.Booking!;
+}
+<h1>@Text.RescheduleTitle</h1>
+<p class="hint">@Text.RescheduleHint</p>
+
+<div class="card">
+    <dl class="facts">
+        <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; @b.StaffName</dd>
+        <dt>@Text.RescheduleCurrent</dt><dd>@DisplayFormat.Date(b.StartsAtUtc, Model.TimeZone), @DisplayFormat.Time(b.StartsAtUtc, Model.TimeZone)</dd>
+    </dl>
+    <form method="get">
+        <div class="field">
+            <label for="date">@Text.RescheduleDate</label>
+            <input type="date" id="date" name="date" value="@Model.Date" min="@Model.Today" required />
+        </div>
+        <button type="submit" class="secondary">@Text.RescheduleShowTimes</button>
+    </form>
+</div>
+
+@if (Model.Searched)
+{
+    <div class="card">
+        @if (Model.Times.Count == 0)
+        {
+            <p>@Text.RescheduleNoTimes</p>
+        }
+        else
+        {
+            <form method="post">
+                <fieldset class="field">
+                    <legend class="sr-only">@Text.WalkInTimes</legend>
+                    <div class="timechips">
+                        @for (var i = 0; i < Model.Times.Count; i++)
+                        {
+                            <label class="timechip">
+                                <input type="radio" name="start" value="@DisplayFormat.StartParam(Model.Times[i])" checked="@(i == 0)" />
+                                <span>@DisplayFormat.Time(Model.Times[i], Model.TimeZone)</span>
+                            </label>
+                        }
+                    </div>
+                </fieldset>
+                <button type="submit" class="primary" data-confirm="@Text.ConfirmReschedule">@Text.RescheduleSave</button>
+            </form>
+        }
+    </div>
+}

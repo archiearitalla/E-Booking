@@ -288,6 +288,84 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             null, expectedVersion, ct);
     }
 
+    // ---------------------------------------------------------------- reschedule
+
+    /// <summary>
+    /// Free start times for moving a confirmed booking to another local date, with the same staff member and service.
+    /// The booking's own current slot counts as free, so a small shift (10:00 to 10:30) is possible. Staff rules apply
+    /// (no lead time).
+    /// </summary>
+    public async Task<ServiceResult<IReadOnlyList<DateTime>>> GetRescheduleStartsAsync(
+        Guid businessId, Guid bookingId, DateOnly localDate, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var booking = await db.Bookings.AsNoTracking().FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
+        var business = booking is null ? null : await LoadBusinessAsync(db, businessId, ct);
+        var service = booking is null ? null : await db.Services.AsNoTracking().FirstOrDefaultAsync(s => s.Id == booking.ServiceId && s.BusinessId == businessId, ct);
+        if (booking is null || business is null || service is null)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.NotFound, Text.NotFound);
+        return ServiceResult<IReadOnlyList<DateTime>>.Ok(
+            await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, true, ct, booking.Id));
+    }
+
+    /// <summary>
+    /// Moves a confirmed booking that has not started to a new start time (same staff member, same length). Staff only: the
+    /// customer is told by the shop. The time is re-checked on the server and the database constraint stays the final guard.
+    /// </summary>
+    public async Task<ServiceResult<BookingSummary>> RescheduleAsync(
+        Guid businessId, Guid bookingId, DateTime newStartUtc, BookingActor actor, CancellationToken ct = default)
+    {
+        if (actor.Kind != ActorKind.Staff) return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.NotAllowed);
+        var start = LocalTime.AsUtc(newStartUtc);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
+        if (booking is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+        var business = await LoadBusinessAsync(db, businessId, ct);
+        var service = await db.Services.AsNoTracking().FirstOrDefaultAsync(s => s.Id == booking.ServiceId && s.BusinessId == businessId, ct);
+        if (business is null || service is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        var now = time.GetUtcNow().UtcDateTime;
+        if (booking.Status != BookingStatus.Confirmed || booking.StartsAtUtc <= now)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.RescheduleNotAllowed);
+
+        var localDate = LocalTime.LocalDateOf(start, business.TimeZone);
+        var free = await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, true, ct, booking.Id);
+        if (!free.Contains(start) || start <= now) return ServiceResult<BookingSummary>.Fail(FailureKind.SlotTaken, Text.SlotTaken);
+
+        var oldStart = booking.StartsAtUtc;
+        try
+        {
+            await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({booking.StaffId.ToString()}, 0))", ct);
+            booking.StartsAtUtc = start;
+            booking.EndsAtUtc = start.AddMinutes(service.DurationMinutes);
+            booking.OccupiedUntilUtc = booking.EndsAtUtc.AddMinutes(service.BufferMinutes);
+            booking.RemindedAtUtc = null; // the customer is due a reminder for the new time
+            booking.UpdatedAtUtc = now;
+            db.AuditLogs.Add(new AuditLog
+            {
+                BusinessId = businessId,
+                BookingId = booking.Id,
+                ActorType = actor.TypeCode,
+                ActorId = actor.Id,
+                ActorLabel = actor.Label,
+                Action = "RESCHEDULED",
+                FromStatus = booking.Status.ToDb(),
+                ToStatus = booking.Status.ToDb(),
+                Reason = $"{DisplayFormat.Date(oldStart, business.TimeZone)} {DisplayFormat.Time(oldStart, business.TimeZone)} to {DisplayFormat.Date(start, business.TimeZone)} {DisplayFormat.Time(start, business.TimeZone)}",
+                AtUtc = now,
+            });
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+        catch (Exception ex) when (FindPostgres(ex) is { SqlState: ExclusionViolation or DeadlockDetected })
+        {
+            return ServiceResult<BookingSummary>.Fail(FailureKind.SlotTaken, Text.SlotTaken);
+        }
+        return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!);
+    }
+
     private async Task<ServiceResult<BookingSummary>> ApplyTransitionAsync(
         AppDbContext db, Booking booking, BookingStatus to, BookingActor actor,
         string? reason, uint? expectedVersion, CancellationToken ct)
@@ -425,14 +503,15 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
     /// begin in the slot that is in progress right now (BUSINESS_RULES 8.2); everything else still applies.
     /// </summary>
     private async Task<IReadOnlyList<DateTime>> FreeStartsForStaffAsync(
-        AppDbContext db, Business business, Service service, Guid staffId, DateOnly localDate, bool walkIn, CancellationToken ct)
+        AppDbContext db, Business business, Service service, Guid staffId, DateOnly localDate, bool walkIn, CancellationToken ct,
+        Guid? ignoreBookingId = null)
     {
         var (dayStart, dayEnd) = LocalTime.DayRangeUtc(localDate, business.TimeZone);
         var rangeStart = dayStart.AddDays(-1);
         var rangeEnd = dayEnd.AddDays(1);
 
         var occupied = await db.Bookings.AsNoTracking()
-            .Where(b => b.BusinessId == business.Id && b.StaffId == staffId
+            .Where(b => b.BusinessId == business.Id && b.StaffId == staffId && b.Id != ignoreBookingId
                         && b.StartsAtUtc < rangeEnd && b.OccupiedUntilUtc > rangeStart
                         && (b.Status == BookingStatus.Held || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
             .Select(b => new TimeRange(b.StartsAtUtc, b.OccupiedUntilUtc))

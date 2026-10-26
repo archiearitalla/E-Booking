@@ -415,6 +415,10 @@ The Customers page lists the shop's customers with completed visits, no-shows, t
 
 The Reports page shows, for this month, last month, the last 30 days or this year (in the shop's time zone): bookings by outcome, revenue (completed bookings only, at the price they were booked at), and completed visits and revenue by service and by staff member. Scoped by the shop.
 
+### 6.y5 Moving a booking
+
+Staff can move a confirmed booking that has not started to another free time with the same staff member and the same service length (the booking's own old slot counts as free, so a small shift works). The time is re-checked on the server, the database constraint stays the final guard, a taken slot is a normal message, the move is written to the audit log (RESCHEDULED, old to new time) and the booking is due a new reminder. The customer keeps the same link; staff tell them the new time. Customers cannot move bookings themselves.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.
