@@ -116,3 +116,10 @@ UPDATE business SET trial_ends_at_utc = NULL WHERE slug = '<slug>';
 ```
 
 The first deploy of a change that sets the trial needs a restart-free redeploy only; the lock is checked on every request.
+
+## Keeping the free Render service awake
+
+Render's free web service sleeps after 15 minutes without traffic, and the first visit then waits about a minute. Two free ways to avoid that, both calling `/ping` (no database, so Neon can still sleep):
+
+1. **GitHub Actions** (already in the repo): `.github/workflows/keepalive.yml` calls `https://flow.veskacode.com/ping` every 14 minutes. GitHub may delay a run by a few minutes and pauses scheduled runs after 60 days without repository activity. If the repository is private, the free monthly minutes (2,000) may run out; then use option 2.
+2. **An outside monitor** (UptimeRobot or cron-job.org, free account): add an HTTP monitor for `https://flow.veskacode.com/ping` every 5 minutes. It also emails you when the site is down.

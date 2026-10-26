@@ -1,0 +1,19 @@
+# Calls /ping every 14 minutes so the free Render service does not fall asleep (it sleeps after 15 minutes without traffic).
+# /ping never touches the database, so Neon is allowed to sleep. GitHub can delay scheduled runs by a few minutes, which
+# is why the interval is 14 and not 15. To stop it, delete this file or disable the workflow in the Actions tab.
+name: keepalive
+
+on:
+  schedule:
+    - cron: "*/14 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Wake the app
+        run: curl --silent --show-error --fail --max-time 60 --retry 2 --retry-delay 10 https://flow.veskacode.com/ping
