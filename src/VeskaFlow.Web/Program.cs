@@ -160,7 +160,7 @@ app.MapRazorPages();
 
 // A plain "I am awake" answer that never touches the database. A free uptime monitor can call it every few minutes
 // so the hosting does not put the app to sleep, without keeping the database awake.
-app.MapGet("/ping", () => Results.Text("ok"));
+app.MapMethods("/ping", ["GET", "HEAD"], () => Results.Text("ok")); // uptime monitors often use HEAD
 
 // The shop's logo for the booking page. The browser keeps it and asks again each time (ETag), so a new logo shows at once.
 app.MapGet("/logo/{slug}", async (string slug, HttpContext http, VeskaFlow.Web.Services.LogoService logos, CancellationToken ct) =>
@@ -174,7 +174,7 @@ app.MapGet("/logo/{slug}", async (string slug, HttpContext http, VeskaFlow.Web.S
     return Results.Bytes(logo.Data, logo.ContentType);
 });
 
-app.MapGet("/healthz", async (IDbContextFactory<AppDbContext> factory, CancellationToken ct) =>
+app.MapMethods("/healthz", ["GET", "HEAD"], async (IDbContextFactory<AppDbContext> factory, CancellationToken ct) =>
 {
     using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
     timeout.CancelAfter(TimeSpan.FromSeconds(3));

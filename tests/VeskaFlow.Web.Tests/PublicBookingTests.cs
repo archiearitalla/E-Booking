@@ -100,6 +100,8 @@ public class PublicBookingTests
         Assert.Contains("href=\"/Privacy\"", form);
         Assert.Contains($"data-confirm=\"{Text.ConfirmBooking}\"", WebUtility.HtmlDecode(form)); // asks before booking
         Assert.Equal("ok", await client.GetStringAsync("/ping")); // the keep-awake address answers without the database
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/ping"))).StatusCode); // uptime monitors ask with HEAD
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/healthz"))).StatusCode);
 
         var response = await client.PostAsync(url, new FormUrlEncodedContent(Customer(HiddenFields(form))));
 
