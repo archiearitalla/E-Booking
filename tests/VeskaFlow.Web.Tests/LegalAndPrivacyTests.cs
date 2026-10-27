@@ -32,6 +32,8 @@ public class LegalAndPrivacyTests
         Assert.Contains("Render", privacy);
         Assert.Contains("Neon", privacy);
         Assert.Contains("Brevo", privacy);
+        Assert.Contains("GitHub", privacy); // the encrypted backups
+        Assert.Contains("password reset", privacy); // the emails we send are not only the sign-up confirmation
         Assert.Contains($"Version {LegalInfo.Version}", privacy);
 
         var terms = WebUtility.HtmlDecode(await client.GetStringAsync("/Terms"));

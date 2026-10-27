@@ -11,35 +11,41 @@
     <p class="muted">Version @LegalInfo.Version</p>
 
     <h2>Who we are</h2>
-    <p>@operatorName runs VeskaFlow, an online booking system for barbershops, salons and clinics. Each shop that uses it decides why and how it collects the details of its own customers. Under the Data Privacy Act of 2012 (Republic Act 10173) the shop is the <strong>personal information controller</strong> for its customers' data, and @operatorName acts as its <strong>personal information processor</strong>. For the details of shop owners and staff who sign up (name and email), @operatorName is the controller.</p>
+    <p>@operatorName runs VeskaFlow, an online booking system for barbershops, salons and clinics. Each shop that uses it decides why and how it collects the details of its own customers. Under the Data Privacy Act of 2012 (Republic Act 10173) the shop is the <strong>personal information controller</strong> for its customers' data, and @operatorName acts as its <strong>personal information processor</strong>. For the details of shop owners and staff who sign up (name and email), @operatorName is the controller. For privacy questions and requests, contact us at @contact.</p>
 
     <h2>What we keep</h2>
     <ul>
-        <li><strong>Shop owners and staff:</strong> name, email address, a password (kept only as a salted hash, never as text), the shop's name, address, hours and settings, and when they agreed to the Terms.</li>
+        <li><strong>Shop owners and staff:</strong> name, email address, a password (kept only as a salted hash, never as text), the shop's name, address, hours and settings, a logo if the owner uploads one, and when they agreed to the Terms.</li>
         <li><strong>A shop's customers:</strong> name, mobile number, an email address if given, and their bookings (service, staff member, date and time, status).</li>
         <li><strong>Notes written by the shop:</strong> a clinic can record a visit note (a medical record) and a follow-up. This can include health information, which the law treats as sensitive. It is visible only to staff who are signed in to that shop. It is never shown to the customer on the booking page and never put into a message by the system.</li>
+        <li><strong>Technical records:</strong> a change log of bookings (who did what and when), and the standard technical logs our hosting keeps (such as the time of a request and the network address it came from) for a limited time, used to run and protect the service.</li>
     </ul>
 
     <h2>Why we use it</h2>
-    <p>Only to run the booking service: showing free times, taking and managing bookings, letting the shop see its day, and letting the shop's staff contact their own customers. The system does not send reminders or follow-up messages by itself; staff send them from their own phone. The only emails we send are the confirmation email to a new shop owner.</p>
+    <p>Only to run the booking service: showing free times, taking and managing bookings, letting the shop see its day, and letting the shop's staff contact their own customers. The system does not send reminders or follow-up messages to a shop's customers by itself; staff send them from their own phone. The emails the system sends go only to shop owners: the confirmation of a new sign-up, a password reset link when they ask for it, and a notice a few days before their access ends.</p>
 
     <h2>Who sees it</h2>
     <p>The shop and its signed-in staff. We do not sell data, show advertising or use analytics. We use these service providers to run the system:</p>
     <ul>
         <li><strong>Render</strong>: hosting of the application.</li>
         <li><strong>Neon</strong>: the database (the region we use is Singapore).</li>
-        <li><strong>Brevo</strong>: sends the confirmation email to new shop owners (receives the owner's name and email address).</li>
-        <li><strong>Cloudflare</strong>: the domain name.</li>
+        <li><strong>Brevo</strong>: sends the emails to shop owners listed above (it receives the owner's name and email address and the message).</li>
+        <li><strong>Cloudflare</strong>: the domain name and, when it is switched on, a "are you a person" check on sign-up and on the forgotten-password page (it receives what your browser sends with the check, such as the network address).</li>
+        <li><strong>GitHub</strong>: holds our nightly backup of the database. The backup is encrypted before it is stored, and only we hold the key.</li>
     </ul>
+    <p>Some of these providers keep data outside the Philippines. We choose providers that protect data, and we remain responsible for it as the shop's processor.</p>
 
     <h2>Cookies</h2>
     <p>Only the ones the site needs to work: a sign-in cookie for shop staff, a security token that protects forms, and a short-lived cookie that carries a message to the next page. No tracking or advertising cookies.</p>
 
     <h2>How long we keep it</h2>
-    <p>For as long as the shop uses the service. A shop can export or permanently delete any one customer's data at any time from the app. When a shop is deleted, everything in it is deleted with it. The database provider may keep recovery copies for a limited time.</p>
+    <p>For as long as the shop uses the service, and after its access ends we keep the shop's data for at least 90 days so it can come back; we tell the owner by email before deleting a shop that stayed inactive. A shop can export or permanently delete any one customer's data at any time from the app. When a shop is deleted, everything in it is deleted with it. Encrypted backup copies age out after 14 days, and the copies we save from time to time for safekeeping are kept for up to 12 months; deleted data can stay in those copies until they are removed.</p>
 
     <h2>How we protect it</h2>
-    <p>The site uses HTTPS. Passwords are hashed. Every shop's data is kept apart: staff can only reach their own shop. Sign-in and booking pages limit repeated attempts. Changes to bookings are recorded in an audit log. No system is perfectly secure, so we cannot promise that nothing will ever go wrong. If we learn of a breach that affects a shop's data we will tell that shop without undue delay so it can meet its own duties.</p>
+    <p>The site uses HTTPS. Passwords are hashed. Every shop's data is kept apart: staff can only reach their own shop. Sign-in and booking pages limit repeated attempts. Changes to bookings are recorded in an audit log. Backups are encrypted. No system is perfectly secure, so we cannot promise that nothing will ever go wrong. If we learn of a breach that affects a shop's data we will tell that shop without undue delay so it can meet its own duties, including telling the National Privacy Commission and the people affected where the law requires.</p>
+
+    <h2>Children</h2>
+    <p>The service is for businesses. A shop's customers may include children (for example a child's haircut). The shop is responsible for having a parent's or guardian's permission to keep a child's details. Do not sign up for a shop account if you are under 18.</p>
 
     <h2>Your rights</h2>
     <p>If you are a customer of a shop you can ask to see, correct or delete your data, to object to how it is used, or to receive a copy of it. Ask the shop first: it can export or delete your data in the app. If you cannot reach the shop, or you are a shop owner, contact us at @contact. You also have the right to complain to the National Privacy Commission (privacy.gov.ph).</p>
