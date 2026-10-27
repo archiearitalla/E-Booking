@@ -166,3 +166,8 @@ document.querySelectorAll('[data-other-field]').forEach(function (field) {
 document.addEventListener('click', function (event) {
   if (event.target.closest('[data-print]')) window.print();
 });
+
+// Back office only: register the tiny service worker so phones can install it as an app.
+if ('serviceWorker' in navigator && location.pathname.toLowerCase().startsWith('/admin')) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+}

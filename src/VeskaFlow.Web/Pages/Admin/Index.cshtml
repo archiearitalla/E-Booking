@@ -30,6 +30,18 @@
     </form>
 </div>
 
+@{
+    var dayBookings = view.Bookings;
+    var kpiRevenue = dayBookings.Where(x => x.Status == BookingStatus.Completed).Sum(x => x.Price);
+}
+<section class="kpis" aria-label="@Text.KpiLabel">
+    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.Confirmed)</span><span class="kpi-label">@Text.KpiToDo</span></div>
+    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.Completed)</span><span class="kpi-label">@Text.KpiDone</span></div>
+    <div class="kpi"><span class="kpi-value">@DisplayFormat.Price(kpiRevenue)</span><span class="kpi-label">@Text.KpiRevenue</span></div>
+    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.NoShow)</span><span class="kpi-label">@Text.KpiNoShows</span></div>
+    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.Cancelled)</span><span class="kpi-label">@Text.KpiCancelled</span></div>
+</section>
+
 <nav class="seg" aria-label="@Text.FilterLabel">
     @foreach (var (key, label) in filters)
     {
