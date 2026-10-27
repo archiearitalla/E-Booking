@@ -45,6 +45,9 @@ public class AdminUser
     /// <summary>SHA-256 (hex) of the confirmation link token. The token itself is only ever in the email.</summary>
     public string? EmailTokenHash { get; set; }
     public DateTime? EmailTokenExpiresUtc { get; set; }
+    /// <summary>SHA-256 (hex) of the forgot-password link token. The token itself is only ever in the email.</summary>
+    public string? PasswordResetHash { get; set; }
+    public DateTime? PasswordResetExpiresUtc { get; set; }
 }
 
 public class Staff

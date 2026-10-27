@@ -1,0 +1,31 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.AccountModel
+@{
+    ViewData["Title"] = Text.AdminNavAccount;
+}
+<h1>@Text.AdminNavAccount</h1>
+
+<div class="card">
+    <h2>@Text.AccountChangePassword</h2>
+    <form method="post" novalidate>
+        <div class="field">
+            <label for="Current">@Text.AccountCurrentPassword</label>
+            <input type="password" id="Current" name="Input.Current" maxlength="256" autocomplete="current-password" required
+                   aria-invalid="@(Model.ErrorFor("current") is null ? "false" : "true")" />
+            @if (Model.ErrorFor("current") is { } e1) { <p class="error">@e1</p> }
+        </div>
+        <div class="field">
+            <label for="NewPassword">@Text.ResetNewPassword</label>
+            <input type="password" id="NewPassword" name="Input.NewPassword" minlength="8" maxlength="128" autocomplete="new-password" required
+                   aria-invalid="@(Model.ErrorFor("newPassword") is null ? "false" : "true")" />
+            <p class="hint">@Text.PasswordHint</p>
+            @if (Model.ErrorFor("newPassword") is { } e2) { <p class="error">@e2</p> }
+        </div>
+        <div class="field">
+            <label for="Confirm">@Text.ResetConfirmPassword</label>
+            <input type="password" id="Confirm" name="Input.Confirm" minlength="8" maxlength="128" autocomplete="new-password" required />
+            @if (Model.ErrorFor("confirm") is { } e3) { <p class="error">@e3</p> }
+        </div>
+        <button type="submit" class="primary" data-confirm="@Text.AccountChangeAsk">@Text.AccountChangePassword</button>
+    </form>
+</div>

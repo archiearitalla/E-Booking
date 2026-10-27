@@ -77,6 +77,81 @@ public sealed class AccountControlService(
 
     public static string ConfirmUrl(string baseUrl, string token) => $"{baseUrl.TrimEnd('/')}/ConfirmEmail?token={Uri.EscapeDataString(token)}";
 
+    // ------------------------------------------------------------------ forgot password
+
+    /// <summary>How long a forgot-password link works.</summary>
+    public static readonly TimeSpan ResetLifetime = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// A one-hour reset link for an active account in an enabled shop. Null (silently) for anything else, so the page cannot
+    /// be used to find out which emails have an account. A second request within a minute is ignored (no mail flooding).
+    /// </summary>
+    public async Task<IssuedConfirmation?> IssuePasswordResetAsync(string? emailAddress, CancellationToken ct = default)
+    {
+        var normalized = (emailAddress ?? "").Trim();
+        if (normalized.Length is < 3 or > 120) return null;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized.ToLower() && u.IsActive, ct);
+        if (user is null) return null;
+        if (!await db.Businesses.AnyAsync(b => b.Id == user.BusinessId && b.IsEnabled, ct)) return null;
+
+        var now = time.GetUtcNow().UtcDateTime;
+        if (user.PasswordResetExpiresUtc is { } current && current > now.Add(ResetLifetime).AddMinutes(-1)) return null;
+
+        var (token, hash) = EmailTokens.NewToken();
+        user.PasswordResetHash = hash;
+        user.PasswordResetExpiresUtc = now.Add(ResetLifetime);
+        await db.SaveChangesAsync(ct);
+        return new IssuedConfirmation(token, user.Email, user.DisplayName);
+    }
+
+    public Task<bool> SendPasswordResetAsync(IssuedConfirmation issued, string baseUrl, CancellationToken ct = default)
+    {
+        var link = ResetUrl(baseUrl, issued.Token);
+        return email.SendAsync(issued.Email, Text.ResetEmailSubject, Text.ResetEmailBody(issued.Name, link), Text.ResetEmailHtml(issued.Name, link), ct);
+    }
+
+    public static string ResetUrl(string baseUrl, string token) => $"{baseUrl.TrimEnd('/')}/ResetPassword?token={Uri.EscapeDataString(token)}";
+
+    /// <summary>True when the link is still valid. Used to show the form or the "link expired" message.</summary>
+    public async Task<bool> IsResetTokenValidAsync(string? token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 200) return false;
+        var hash = EmailTokens.Hash(token);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = time.GetUtcNow().UtcDateTime;
+        return await db.AdminUsers.AsNoTracking().AnyAsync(u => u.PasswordResetHash == hash && u.PasswordResetExpiresUtc > now, ct);
+    }
+
+    /// <summary>
+    /// Sets the new password from a valid link and uses the link up. Opening the link proves the address is theirs, so an
+    /// unconfirmed email counts as confirmed.
+    /// </summary>
+    public async Task<ServiceResult<bool>> ResetPasswordAsync(string? token, string? newPassword, CancellationToken ct = default)
+    {
+        var password = newPassword ?? "";
+        if (password.Length is < 8 or > 128)
+            return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["password"] = Text.PasswordInvalid });
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 200)
+            return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.ResetLinkInvalid);
+
+        var hash = EmailTokens.Hash(token);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = time.GetUtcNow().UtcDateTime;
+        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.PasswordResetHash == hash, ct);
+        if (user is null || user.PasswordResetExpiresUtc is not { } expires || expires < now)
+            return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.ResetLinkInvalid);
+
+        user.PasswordHash = VeskaFlow.Core.Security.PasswordHasher.Hash(password);
+        user.PasswordResetHash = null;
+        user.PasswordResetExpiresUtc = null;
+        user.EmailConfirmedAtUtc ??= now;
+        user.EmailTokenHash = null;
+        user.EmailTokenExpiresUtc = null;
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Ok(true);
+    }
+
     // ------------------------------------------------------------------ platform owner
 
     /// <summary>True when the signed-in user's email is listed in <c>Platform:AdminEmails</c> and confirmed.</summary>

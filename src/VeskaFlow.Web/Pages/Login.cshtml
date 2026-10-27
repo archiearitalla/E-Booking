@@ -8,6 +8,7 @@
     @if (Model.Disabled) { <div class="alert" role="alert">@Text.ShopDisabled</div> }
     @if (Model.Confirmed) { <div class="notice" role="status">@Text.ConfirmDone</div> }
     @if (Model.Pending) { <div class="notice" role="status">@Text.SignupPending</div> }
+    @if (Model.Reset) { <div class="notice" role="status">@Text.ResetDone</div> }
     <form method="post" novalidate>
         @if (Model.Errors.Count > 0)
         {
@@ -34,5 +35,6 @@
             <button type="submit" class="secondary">@Text.ConfirmResend</button>
         </form>
     }
+    <p class="auth-alt"><a href="/ForgotPassword">@Text.LoginForgot</a></p>
     <p class="auth-alt">@Text.LoginNew <a href="/Register">@Text.NavRegister</a></p>
 </div>

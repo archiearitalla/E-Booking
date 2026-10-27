@@ -40,6 +40,26 @@ public sealed class AuthService(IDbContextFactory<AppDbContext> dbFactory)
         return ServiceResult<SignedInUser>.Ok(new SignedInUser(user.Id, user.BusinessId, user.Role, user.DisplayName, shop.TrialEndsAtUtc));
     }
 
+    /// <summary>A signed-in person changes their own password. The current one must be right.</summary>
+    public async Task<ServiceResult<bool>> ChangePasswordAsync(Guid userId, string? current, string? newPassword, CancellationToken ct = default)
+    {
+        var errors = new Dictionary<string, string>();
+        var next = newPassword ?? "";
+        if (next.Length is < 8 or > 128) errors["newPassword"] = Text.PasswordInvalid;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+        var given = string.IsNullOrEmpty(current) ? "\0" : current.Length > MaxPasswordLength ? current[..MaxPasswordLength] : current;
+        if (!PasswordHasher.Verify(given, user.PasswordHash) || string.IsNullOrEmpty(current)) errors["current"] = Text.PasswordWrong;
+        if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
+
+        user.PasswordHash = PasswordHasher.Hash(next);
+        user.PasswordResetHash = null;
+        user.PasswordResetExpiresUtc = null;
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Ok(true);
+    }
+
     /// <summary>The cookie identity. The business id here is the only source of tenant scoping in the back office.</summary>
     public static ClaimsPrincipal CreatePrincipal(
         Guid adminUserId, Guid businessId, string role, string displayName, DateTime? trialEndsAtUtc = null)

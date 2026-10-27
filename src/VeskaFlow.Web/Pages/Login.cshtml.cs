@@ -30,6 +30,10 @@ public class LoginModel(AuthService auth) : FormPageModel
     [BindProperty(SupportsGet = true)]
     public bool Pending { get; set; }
 
+    /// <summary>Set after a password was reset from the emailed link.</summary>
+    [BindProperty(SupportsGet = true)]
+    public bool Reset { get; set; }
+
     public IActionResult OnGet() =>
         User.Identity?.IsAuthenticated == true ? Redirect("/Admin") : Page();
 

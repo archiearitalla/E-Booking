@@ -240,6 +240,43 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string AdminNavAccount = "My account";
+    public const string AccountChangePassword = "Change password";
+    public const string AccountCurrentPassword = "Current password";
+    public const string AccountChangeAsk = "Change your password?";
+    public const string AccountPasswordChanged = "Password changed.";
+    public const string PasswordWrong = "That is not your current password.";
+    public const string PasswordHint = "At least 8 characters.";
+    public const string LoginForgot = "Forgot your password?";
+    public const string ForgotTitle = "Forgot your password?";
+    public const string ForgotHint = "Enter the email you sign in with. We email you a link to choose a new password. It works for one hour.";
+    public const string ForgotSend = "Send the link";
+    public const string ForgotSent = "If that email has an account, we sent a link to choose a new password. Check your inbox and spam folder. It works for one hour.";
+    public const string ResetNoEmail = "Email is not set up on this system yet, so we cannot send the link. Please contact the person who runs VeskaFlow.";
+    public const string ResetTitle = "Choose a new password";
+    public const string ResetNewPassword = "New password";
+    public const string ResetConfirmPassword = "Type it again";
+    public const string ResetSave = "Save password";
+    public const string ResetMismatch = "The two passwords are not the same.";
+    public const string ResetLinkInvalid = "This link has expired or was already used. Ask for a new one.";
+    public const string ResetAskAgain = "Send me a new link";
+    public const string ResetBackToSignIn = "Back to sign in";
+    public const string ResetDone = "Your password was changed. Sign in with the new one.";
+    public const string ResetEmailSubject = "Choose a new password";
+    public static string ResetEmailBody(string name, string link) =>
+        $"Hi {name},\n\nWe got a request to reset your password. Open this link to choose a new one:\n\n{link}\n\nThe link works for 1 hour and only once. If you did not ask for this, ignore this message; your password stays the same.\n";
+    public static string ResetEmailHtml(string name, string link)
+    {
+        var n = System.Net.WebUtility.HtmlEncode(name);
+        var l = System.Net.WebUtility.HtmlEncode(link);
+        return "<div style=\"font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0d1220\">"
+            + "<h2 style=\"font-size:20px;margin:0 0 12px\">Choose a new password</h2>"
+            + $"<p style=\"color:#5c6678;font-size:15px;line-height:1.6;margin:0 0 20px\">Hi {n}, we got a request to reset your password. Tap the button to choose a new one. The link works for 1 hour and only once.</p>"
+            + $"<a href=\"{l}\" style=\"display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-weight:600;padding:13px 26px;border-radius:10px\">Choose a new password</a>"
+            + $"<p style=\"color:#5c6678;font-size:13px;line-height:1.6;margin:22px 0 0\">Or paste this link in your browser:<br><span style=\"word-break:break-all\">{l}</span></p>"
+            + "<p style=\"color:#5c6678;font-size:13px;line-height:1.6;margin:18px 0 0\">If you did not ask for this, ignore this message. Your password stays the same.</p>"
+            + "</div>";
+    }
     public const string LogoTitle = "Logo";
     public const string LogoHint = "Shown at the top of your online booking page. A square picture works best: PNG, JPEG or WebP, up to 256 KB.";
     public const string LogoAlt = "Your current logo";

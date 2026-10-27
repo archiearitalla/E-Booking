@@ -51,7 +51,7 @@ Mark anything not compiled or not run as unverified, in the commit message and i
 
 ## Current state
 
-Verified: Core (65 self-checks), the database schema (20 checks on PostgreSQL 16), the EF model against the schema (ModelCheck) and the Web test suite (191 tests on PostgreSQL 16.11). Checked in a local browser (desktop and phone size): Reports, Team, Settings logo upload to booking page, Customers. Not verified: the rest of the newer pages on a real phone, and email delivery through Resend (see the table in `docs/BUILD_PLAN.md`).
+Verified: Core (65 self-checks), the database schema (20 checks on PostgreSQL 16), the EF model against the schema (ModelCheck) and the Web test suite (195 tests on PostgreSQL 16.11). Checked in a local browser (desktop and phone size): Reports, Team, Settings logo upload to booking page, Customers. Not verified: the rest of the newer pages on a real phone, and email delivery through Resend (see the table in `docs/BUILD_PLAN.md`).
 Compiled and checked against PostgreSQL 16 (Step 0 done): `src/VeskaFlow.Web/Data/*`, `AppInfo.cs`; run `tests/VeskaFlow.Web.ModelCheck` (needs `ConnectionStrings__Default` pointing at a disposable database) to confirm the EF model matches the schema. `Services/BookingService.cs` (Step 2) is covered by `tests/VeskaFlow.Web.Tests` against real PostgreSQL.
 
 ## Working from two places (VS Code and mobile)
