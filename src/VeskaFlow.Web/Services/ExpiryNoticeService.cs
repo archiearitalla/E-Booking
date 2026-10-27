@@ -51,7 +51,7 @@ public sealed class ExpiryNoticeService(
 
             var endText = LocalDate(end, shop.TimeZone);
             var ok = await email.SendAsync(owner.Email, Text.ExpirySubject(stage),
-                Text.ExpiryBody(owner.DisplayName, shop.Name, endText, stage, billing.Price, billing.PayTo, billing.Note, baseUrl + "/Login"), null, ct);
+                Text.ExpiryBody(owner.DisplayName, shop.Name, endText, stage, billing.Price, billing.PayTo, billing.Note, baseUrl + "/Login", billing.ContactUrl), null, ct);
             if (!ok)
             {
                 log.LogWarning("An expiry reminder email was not accepted by the email service."); // no address in the log

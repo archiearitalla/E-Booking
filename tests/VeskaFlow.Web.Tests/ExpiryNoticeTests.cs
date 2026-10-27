@@ -24,7 +24,7 @@ public class ExpiryNoticeTests
 
     private static BillingInfo Billing() => new(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
     {
-        ["Billing:Price"] = "PHP 499 per month", ["Billing:PayTo"] = "GCash 09XX XXX XXXX (Test Name)",
+        ["Billing:Price"] = "PHP 499 per month", ["Billing:PayTo"] = "GCash 09XX XXX XXXX (Test Name)", ["Trial:ContactUrl"] = "https://m.me/test.shop",
     }).Build());
 
     private sealed record Shop(TestDbFactory Db, TestClock Clock, RegisteredOwner Owner, string Email);
@@ -82,6 +82,7 @@ public class ExpiryNoticeTests
         Assert.Contains("PHP 499 per month", first.Body);
         Assert.Contains("GCash 09XX XXX XXXX (Test Name)", first.Body);
         Assert.Contains("screenshot", first.Body); // how to send the proof
+        Assert.Contains("https://m.me/test.shop", first.Body); // where to send it
 
         s.Clock.Now = new DateTimeOffset(end.AddDays(-2.5), TimeSpan.Zero);
         await service.SendDueAsync();

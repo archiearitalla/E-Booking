@@ -245,8 +245,9 @@ public static class Text
     public const string BillingPayToLabel = "Pay to";
     public const string BillingProof = "After you pay, send a screenshot of the payment with your shop name and the email you sign in with. We reopen your account as soon as we see it.";
     public const string BillingAccessEnds = "Your access ends on";
+    public const string BillingSendProof = "Send proof of payment";
     public static string ExpirySubject(int days) => days == 1 ? "Your VeskaFlow access ends tomorrow" : $"Your VeskaFlow access ends in {days} days";
-    public static string ExpiryBody(string name, string shop, string endText, int days, string price, string payTo, string note, string loginUrl)
+    public static string ExpiryBody(string name, string shop, string endText, int days, string price, string payTo, string note, string loginUrl, string contactUrl = "")
     {
         var sb = new System.Text.StringBuilder();
         sb.Append($"Hi {name},\n\n");
@@ -259,6 +260,7 @@ public static class Text
         if (payTo.Length > 0) sb.Append($"- Pay to: {payTo}\n");
         sb.Append($"- {(note.Length > 0 ? note : BillingProof)}\n");
         if (loginUrl.Length > "/Login".Length) sb.Append($"\nSign in: {loginUrl}\n");
+        if (contactUrl.Length > 0) sb.Append($"Send your proof of payment here: {contactUrl}\n");
         sb.Append("\nIf you already paid, thank you; ignore this message.\n");
         return sb.ToString();
     }

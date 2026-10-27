@@ -35,5 +35,9 @@
             @if (Model.Billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@Model.Billing.PayTo</dd> }
         </dl>
         @if (Model.Billing.HasDetails) { <p class="hint">@(Model.Billing.Note.Length > 0 ? Model.Billing.Note : Text.BillingProof)</p> }
+        @if (Model.Billing.ContactUrl.Length > 0)
+        {
+            <p><a class="button" href="@Model.Billing.ContactUrl" target="_blank" rel="noopener">@Text.BillingSendProof</a></p>
+        }
     </div>
 }
