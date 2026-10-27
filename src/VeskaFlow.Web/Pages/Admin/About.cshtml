@@ -24,3 +24,16 @@
         <li><strong>@Text.InstallIphone</strong> @Text.InstallIphoneSteps</li>
     </ul>
 </div>
+
+@if (Model.AccessEndsUtc is { } accessEnds)
+{
+    <div class="card">
+        <h2>@Text.BillingTitle</h2>
+        <dl class="facts">
+            <dt>@Text.BillingAccessEnds</dt><dd>@DisplayFormat.Date(accessEnds, Model.TimeZone)</dd>
+            @if (Model.Billing.Price.Length > 0) { <dt>@Text.BillingPriceLabel</dt><dd>@Model.Billing.Price</dd> }
+            @if (Model.Billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@Model.Billing.PayTo</dd> }
+        </dl>
+        @if (Model.Billing.HasDetails) { <p class="hint">@(Model.Billing.Note.Length > 0 ? Model.Billing.Note : Text.BillingProof)</p> }
+    </div>
+}

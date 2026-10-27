@@ -54,6 +54,9 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ReportService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.TeamService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.LogoService>();
+builder.Services.AddSingleton<VeskaFlow.Web.Services.BillingInfo>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.ExpiryNoticeService>();
+builder.Services.AddHostedService<VeskaFlow.Web.Services.ExpiryNoticeWorker>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
 

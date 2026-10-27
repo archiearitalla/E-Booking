@@ -8,9 +8,9 @@ namespace VeskaFlow.Web.Pages.Admin;
 /// Where a signed-in owner lands once the trial has ended. Deliberately not an AdminPageModel (that base class
 /// redirects here), and it uses the plain layout so none of the locked back-office navigation appears.
 /// </summary>
-public class TrialEndedModel(ShopSettingsService settings, IConfiguration config) : PageModel
+public class TrialEndedModel(ShopSettingsService settings, BillingInfo billing) : PageModel
 {
-    public string ContactUrl => config["Trial:ContactUrl"] is { Length: > 0 } url ? url : "";
+    public BillingInfo Billing => billing;
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {

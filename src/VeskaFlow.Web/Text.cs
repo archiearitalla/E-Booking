@@ -240,6 +240,28 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string BillingTitle = "How to renew";
+    public const string BillingPriceLabel = "Price";
+    public const string BillingPayToLabel = "Pay to";
+    public const string BillingProof = "After you pay, send a screenshot of the payment with your shop name and the email you sign in with. We reopen your account as soon as we see it.";
+    public const string BillingAccessEnds = "Your access ends on";
+    public static string ExpirySubject(int days) => days == 1 ? "Your VeskaFlow access ends tomorrow" : $"Your VeskaFlow access ends in {days} days";
+    public static string ExpiryBody(string name, string shop, string endText, int days, string price, string payTo, string note, string loginUrl)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"Hi {name},\n\n");
+        sb.Append(days == 1
+            ? $"Your VeskaFlow access for {shop} ends tomorrow, {endText}."
+            : $"Your VeskaFlow access for {shop} ends in {days} days, on {endText}.");
+        sb.Append("\nAfter that, online booking closes and the back office is locked. Your data is kept.\n\n");
+        sb.Append("To keep going:\n");
+        if (price.Length > 0) sb.Append($"- Price: {price}\n");
+        if (payTo.Length > 0) sb.Append($"- Pay to: {payTo}\n");
+        sb.Append($"- {(note.Length > 0 ? note : BillingProof)}\n");
+        if (loginUrl.Length > "/Login".Length) sb.Append($"\nSign in: {loginUrl}\n");
+        sb.Append("\nIf you already paid, thank you; ignore this message.\n");
+        return sb.ToString();
+    }
     public const string InstallTitle = "Install on your phone";
     public const string InstallHint = "Open the back office like an app: its own icon on the home screen, full screen, no address bar. It is the same website, so nothing to download from a store.";
     public const string InstallAndroid = "Android (Chrome):";

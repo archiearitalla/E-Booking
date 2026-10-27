@@ -3,13 +3,23 @@
 @{
     Layout = "_Layout";
     ViewData["Title"] = Text.TrialEndedTitle;
+    var billing = Model.Billing;
 }
 <div class="card">
     <h1>@Text.TrialEndedTitle</h1>
     <p>@Text.TrialEndedBody</p>
-    @if (Model.ContactUrl.Length > 0)
+    @if (billing.HasDetails)
     {
-        <p><a class="button" href="@Model.ContactUrl">@Text.TrialEndedContact</a></p>
+        <h2>@Text.BillingTitle</h2>
+        <dl class="facts">
+            @if (billing.Price.Length > 0) { <dt>@Text.BillingPriceLabel</dt><dd>@billing.Price</dd> }
+            @if (billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@billing.PayTo</dd> }
+        </dl>
+        <p class="hint">@(billing.Note.Length > 0 ? billing.Note : Text.BillingProof)</p>
+    }
+    @if (billing.ContactUrl.Length > 0)
+    {
+        <p><a class="button" href="@billing.ContactUrl">@Text.TrialEndedContact</a></p>
     }
     <form method="post" asp-page="/Logout">
         <button type="submit" class="secondary">@Text.NavSignOut</button>

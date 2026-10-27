@@ -18,6 +18,9 @@ public class Business
     public string BrandColor { get; set; } = "teal";
     public string Industry { get; set; } = "barbershop";
     public DateTime? TrialEndsAtUtc { get; set; }
+    /// <summary>The days left (7, 3 or 1) the last expiry reminder email was sent for, and for which end date.</summary>
+    public int? ExpiryNoticeDays { get; set; }
+    public DateTime? ExpiryNoticeForEndUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     /// <summary>Staff are reminded to message a customer this many days before the follow-up date.</summary>
     public int FollowUpNoticeDays { get; set; } = 3;

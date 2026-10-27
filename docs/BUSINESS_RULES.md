@@ -447,6 +447,10 @@ The Platform page shows a Database backup card: a link to the nightly backups, t
 
 The Bookings page shows the chosen day at a glance: still to do (confirmed), done, earned (completed bookings' prices), no-shows and cancelled. The back office can be installed on a phone as an app (web app manifest, icons, a service worker that caches nothing, so every page is fresh): Android Chrome "Install app", iPhone Safari "Add to Home Screen". Only back office pages offer it; the customers' booking page does not. It is the same website, not a store app.
 
+### 6.y13 Renewing and reminders
+
+A shop's access has an end date. The owner is emailed 7, 3 and 1 days before it (once each, only with an email service, only for an enabled shop with a confirmed owner, never after the end date; an extension starts the reminders over). The trial-ended page and About show the price and where to pay from settings (Billing:Price, Billing:PayTo, Billing:Note), never from code. Payment is manual for now (GCash): the platform owner extends access on the Platform page.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.
