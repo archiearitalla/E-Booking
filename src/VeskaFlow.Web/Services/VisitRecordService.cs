@@ -19,14 +19,14 @@ public sealed class VisitRecordService(IDbContextFactory<AppDbContext> dbFactory
     public const int MaxNotesLength = 4000;
 
     /// <summary>Saves (or clears, when blank) the visit notes of a completed booking.</summary>
-    public async Task<ServiceResult<bool>> SetNotesAsync(Guid businessId, Guid bookingId, string? notes, CancellationToken ct = default)
+    public async Task<ServiceResult<bool>> SetNotesAsync(Guid businessId, Guid bookingId, string? notes, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         var clean = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         if (clean is { Length: > MaxNotesLength })
             return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["visitNotes"] = Text.VisitNotesTooLong });
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
+        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId), ct);
         if (booking is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
         if (booking.Status != BookingStatus.Completed)
             return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.VisitNotesOnlyCompleted);
@@ -44,14 +44,14 @@ public sealed class VisitRecordService(IDbContextFactory<AppDbContext> dbFactory
     }
 
     /// <summary>A customer's completed visits, newest first, with their notes. Null for an unknown id or another business's customer.</summary>
-    public async Task<CustomerHistory?> GetHistoryAsync(Guid businessId, Guid customerId, CancellationToken ct = default)
+    public async Task<CustomerHistory?> GetHistoryAsync(Guid businessId, Guid customerId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var customer = await db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == customerId && c.BusinessId == businessId, ct);
         if (customer is null) return null;
 
         var rows = await db.Bookings.AsNoTracking()
-            .Where(b => b.BusinessId == businessId && b.CustomerId == customerId && b.Status == BookingStatus.Completed)
+            .Where(b => b.BusinessId == businessId && b.CustomerId == customerId && (onlyStaffId == null || b.StaffId == onlyStaffId) && b.Status == BookingStatus.Completed)
             .OrderByDescending(b => b.StartsAtUtc)
             .Select(b => new { b.Id, b.StartsAtUtc, b.LocationTimeZone, b.ServiceNameSnapshot, StaffName = b.Staff.Name, b.VisitNotes })
             .ToListAsync(ct);

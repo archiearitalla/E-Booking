@@ -3,7 +3,8 @@
     Layout = "_Layout";
     var path = Context.Request.Path.Value ?? "";
     // Follow-ups that need a message soon: shown as a strip here and in the header bell (the layout reuses this result).
-    var alert = User.BusinessId() is { } businessId ? await FollowUps.AlertAsync(businessId) : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
+    var scopeStaff = Context.Items.TryGetValue(VeskaFlow.Web.Services.AdminRoles.ScopeItemKey, out var sc) ? sc as Guid? : null;
+    var alert = User.BusinessId() is { } businessId ? await FollowUps.AlertAsync(businessId, default, scopeStaff) : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
     Context.Items[VeskaFlow.Web.Services.FollowUpAlert.ItemKey] = alert;
     var onFollowUps = path.StartsWith("/Admin/FollowUps", StringComparison.OrdinalIgnoreCase);
     var onReminders = path.StartsWith("/Admin/Reminders", StringComparison.OrdinalIgnoreCase);

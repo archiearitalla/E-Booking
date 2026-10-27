@@ -41,6 +41,8 @@ public class AdminUser
     public string DisplayName { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public string Role { get; set; } = "OWNER";
+    /// <summary>For a STAFF user: the bookable staff member they are. They then see only that person's bookings. Null = the whole shop.</summary>
+    public Guid? StaffId { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     /// <summary>When the owner proved the email address is theirs. Null means not confirmed: no sign-in yet.</summary>

@@ -5,20 +5,21 @@ namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>The people who can sign in: the owner adds managers and staff, switches them off, and sets a new password. Owner only.</summary>
 [AdminAccess(AdminLevel.Owner)]
-public class TeamModel(TeamService team) : AdminPageModel
+public class TeamModel(TeamService team, CatalogAdminService catalog) : AdminPageModel
 {
     public IReadOnlyList<TeamMember> Members { get; private set; } = [];
+    public IReadOnlyList<StaffRow> StaffOptions { get; private set; } = [];
     [BindProperty] public NewMemberForm Input { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
-        Members = await team.ListAsync(BusinessId, ct);
+        await LoadAsync(ct);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAddAsync(CancellationToken ct)
     {
-        var result = await team.AddAsync(BusinessId, Input.Name, Input.Email, Input.Role, Input.Password, ct);
+        var result = await team.AddAsync(BusinessId, Input.Name, Input.Email, Input.Role, Input.Password, ct, Input.StaffId);
         if (result.IsSuccess)
         {
             Success = string.Format(Text.TeamAdded, result.Value!.DisplayName);
@@ -27,8 +28,24 @@ public class TeamModel(TeamService team) : AdminPageModel
         if (result.Failure == FailureKind.Validation) Errors = result.FieldErrors;
         else Failure = result.Message;
         Input.Password = null; // never send a password back to the page
-        Members = await team.ListAsync(BusinessId, ct);
+        await LoadAsync(ct);
         return Page();
+    }
+
+    private async Task LoadAsync(CancellationToken ct)
+    {
+        Members = await team.ListAsync(BusinessId, ct);
+        StaffOptions = (await catalog.ListStaffAsync(BusinessId, ct)).Where(s => s.IsActive).ToList();
+    }
+
+    /// <summary>Ties a Staff login to one staff member (they then see only that person's bookings), or to the whole shop.</summary>
+    public async Task<IActionResult> OnPostLinkAsync(Guid id, Guid? staffId, CancellationToken ct)
+    {
+        var result = await team.SetStaffLinkAsync(BusinessId, id, staffId, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.TeamLinkSaved;
+        else Failure = result.FieldErrors.GetValueOrDefault("staffId") ?? result.Message;
+        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostActiveAsync(Guid id, bool on, CancellationToken ct)
@@ -56,5 +73,6 @@ public class TeamModel(TeamService team) : AdminPageModel
         public string? Email { get; set; }
         public string? Role { get; set; } = AdminRoles.Staff;
         public string? Password { get; set; }
+        public Guid? StaffId { get; set; }
     }
 }

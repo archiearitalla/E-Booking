@@ -16,6 +16,21 @@
                 @if (!m.IsActive) { <span class="badge off">@Text.PlatformOff</span> }
             </div>
             <p class="muted">@m.Email</p>
+            @if (m.Role == AdminRoles.Staff)
+            {
+                <form method="post" asp-page-handler="Link" class="inline-form">
+                    <input type="hidden" name="id" value="@m.Id" />
+                    <label for="link-@m.Id">@Text.TeamWhichStaff</label>
+                    <select id="link-@m.Id" name="staffId">
+                        <option value="">@Text.TeamWholeShop</option>
+                        @foreach (var s in Model.StaffOptions)
+                        {
+                            <option value="@s.Id" selected="@(m.StaffId == s.Id)">@s.Name</option>
+                        }
+                    </select>
+                    <button type="submit" class="secondary" data-confirm="@Text.TeamLinkAsk">@Text.TeamSaveLink<span class="sr-only"> @m.DisplayName</span></button>
+                </form>
+            }
             @if (m.Role != AdminRoles.Owner)
             {
                 <div class="actions">
@@ -60,6 +75,18 @@
             <label class="choice"><input type="radio" name="Input.Role" value="MANAGER" checked="@(Model.Input.Role == "MANAGER")" /><span><strong>@Text.TeamRoleLabel("MANAGER")</strong><span class="muted">@Text.TeamRoleManagerHint</span></span></label>
             @if (Model.ErrorFor("role") is { } eR) { <p class="error">@eR</p> }
         </fieldset>
+        <div class="field">
+            <label for="StaffId">@Text.TeamWhichStaff</label>
+            <select id="StaffId" name="Input.StaffId">
+                <option value="">@Text.TeamWholeShop</option>
+                @foreach (var s in Model.StaffOptions)
+                {
+                    <option value="@s.Id" selected="@(Model.Input.StaffId == s.Id)">@s.Name</option>
+                }
+            </select>
+            <p class="hint">@Text.TeamWhichStaffHint</p>
+            @if (Model.ErrorFor("staffId") is { } eS) { <p class="error">@eS</p> }
+        </div>
         <div class="field">
             <label for="Password">@Text.TeamPasswordLabel</label>
             <input type="password" id="Password" name="Input.Password" minlength="8" maxlength="128" autocomplete="new-password"

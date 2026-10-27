@@ -40,7 +40,7 @@ public class AfterVisitModel(
     /// <summary>Saves the optional medical record of this visit.</summary>
     public async Task<IActionResult> OnPostNotesAsync(Guid id, string? visitNotes, CancellationToken ct)
     {
-        var result = await records.SetNotesAsync(BusinessId, id, visitNotes, ct);
+        var result = await records.SetNotesAsync(BusinessId, id, visitNotes, ct, ScopeStaffId);
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (result.IsSuccess) Success = Text.VisitNotesSaved;
         else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;
@@ -62,7 +62,7 @@ public class AfterVisitModel(
             when = parsed;
         }
 
-        var result = await followUps.SetAsync(BusinessId, id, when, followUpNote, followUpServiceId, ct);
+        var result = await followUps.SetAsync(BusinessId, id, when, followUpNote, followUpServiceId, ct, ScopeStaffId);
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (result.IsSuccess) Success = when is null ? Text.FollowUpCleared : Text.FollowUpSaved;
         else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;
@@ -71,7 +71,7 @@ public class AfterVisitModel(
 
     private async Task<IActionResult?> LoadAsync(Guid id, CancellationToken ct)
     {
-        Booking = await days.GetBookingAsync(BusinessId, id, ct);
+        Booking = await days.GetBookingAsync(BusinessId, id, ct, ScopeStaffId);
         var shop = await settings.GetSettingsAsync(BusinessId, ct);
         if (Booking is null || shop is null) return NotFound(); // unknown id and another business's id look the same
 

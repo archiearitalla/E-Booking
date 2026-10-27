@@ -16,7 +16,7 @@ public sealed record ReminderRow(
 public sealed class ReminderService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
     /// <summary>Customers due a reminder, soonest appointment first.</summary>
-    public async Task<IReadOnlyList<ReminderRow>> ListPendingAsync(Guid businessId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ReminderRow>> ListPendingAsync(Guid businessId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var hours = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => (int?)b.ReminderHours).FirstOrDefaultAsync(ct);
@@ -25,7 +25,7 @@ public sealed class ReminderService(IDbContextFactory<AppDbContext> dbFactory, T
         var now = time.GetUtcNow().UtcDateTime;
         var until = now.AddHours(hours.Value);
         return await db.Bookings.AsNoTracking()
-            .Where(b => b.BusinessId == businessId && b.Status == BookingStatus.Confirmed && b.RemindedAtUtc == null
+            .Where(b => b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId) && b.Status == BookingStatus.Confirmed && b.RemindedAtUtc == null
                         && b.StartsAtUtc > now && b.StartsAtUtc <= until)
             .OrderBy(b => b.StartsAtUtc)
             .Select(b => new ReminderRow(b.Id, b.Customer.Name, b.Customer.Phone, b.Customer.Email, b.ServiceNameSnapshot, b.Staff.Name,
@@ -34,11 +34,11 @@ public sealed class ReminderService(IDbContextFactory<AppDbContext> dbFactory, T
     }
 
     /// <summary>Takes a customer off the reminder list. Another business's booking is "not found".</summary>
-    public async Task<ServiceResult<bool>> MarkRemindedAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
+    public async Task<ServiceResult<bool>> MarkRemindedAsync(Guid businessId, Guid bookingId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var now = time.GetUtcNow().UtcDateTime;
-        var changed = await db.Bookings.Where(b => b.Id == bookingId && b.BusinessId == businessId)
+        var changed = await db.Bookings.Where(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId))
             .ExecuteUpdateAsync(s => s.SetProperty(b => b.RemindedAtUtc, now), ct);
         return changed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(true);
     }

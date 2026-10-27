@@ -32,7 +32,7 @@ public sealed record AuditView(string TimeZone, IReadOnlyList<AuditRow> Rows);
 /// <summary>Read models for the back office day view and audit log. Every query is scoped by the caller's business id.</summary>
 public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
-    public async Task<DayView?> GetDayAsync(Guid businessId, DateOnly? date, CancellationToken ct = default)
+    public async Task<DayView?> GetDayAsync(Guid businessId, DateOnly? date, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var business = await db.Businesses.AsNoTracking().FirstOrDefaultAsync(b => b.Id == businessId, ct);
@@ -43,7 +43,7 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
         var (start, end) = LocalTime.DayRangeUtc(day, business.TimeZone);
 
         var rows = await db.Bookings.AsNoTracking()
-            .Where(b => b.BusinessId == businessId && b.StartsAtUtc >= start && b.StartsAtUtc < end)
+            .Where(b => b.BusinessId == businessId && b.StartsAtUtc >= start && b.StartsAtUtc < end && (onlyStaffId == null || b.StaffId == onlyStaffId))
             .OrderBy(b => b.StartsAtUtc).ThenBy(b => b.Staff.Name)
             .Select(b => new
             {
@@ -70,23 +70,42 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
     }
 
     /// <summary>One booking of this business as the day view shows it, or null (unknown id, or another business's booking).</summary>
-    public async Task<DayBooking?> GetBookingAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
+    public async Task<DayBooking?> GetBookingAsync(Guid businessId, Guid bookingId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var found = await db.Bookings.AsNoTracking().Where(b => b.Id == bookingId && b.BusinessId == businessId)
+        var found = await db.Bookings.AsNoTracking().Where(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId))
             .Select(b => new { b.StartsAtUtc, b.LocationTimeZone }).FirstOrDefaultAsync(ct);
         if (found is null) return null;
 
-        var day = await GetDayAsync(businessId, LocalTime.LocalDateOf(found.StartsAtUtc, found.LocationTimeZone), ct);
+        var day = await GetDayAsync(businessId, LocalTime.LocalDateOf(found.StartsAtUtc, found.LocationTimeZone), ct, onlyStaffId);
         return day?.Bookings.FirstOrDefault(b => b.Id == bookingId);
     }
 
     /// <summary>The customer of one booking of this business, for "Save contact". Another business's booking is "not found" (null).</summary>
-    public async Task<CustomerContact?> GetContactAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
+    public async Task<CustomerContact?> GetContactAsync(Guid businessId, Guid bookingId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Bookings.AsNoTracking().Where(b => b.Id == bookingId && b.BusinessId == businessId)
+        return await db.Bookings.AsNoTracking().Where(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId))
             .Select(b => new CustomerContact(b.Customer.Name, b.Customer.Phone, b.Customer.Email)).FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// True when this booking of this business may be used by someone limited to <paramref name="onlyStaffId"/> (null: no limit,
+    /// the booking just has to exist in the business). A booking of another business or another staff member is false.
+    /// </summary>
+    public async Task<bool> BookingInScopeAsync(Guid businessId, Guid bookingId, Guid? onlyStaffId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Bookings.AsNoTracking().AnyAsync(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId), ct);
+    }
+
+    /// <summary>True when this customer has a booking with the staff member the person is limited to (null: no limit, the customer just has to exist).</summary>
+    public async Task<bool> CustomerInScopeAsync(Guid businessId, Guid customerId, Guid? onlyStaffId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return onlyStaffId is null
+            ? await db.Customers.AsNoTracking().AnyAsync(c => c.Id == customerId && c.BusinessId == businessId, ct)
+            : await db.Bookings.AsNoTracking().AnyAsync(b => b.BusinessId == businessId && b.CustomerId == customerId && b.StaffId == onlyStaffId, ct);
     }
 
     /// <summary>The latest audit entries of this business, newest first. Rows are never edited or deleted by the application.</summary>

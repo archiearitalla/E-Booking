@@ -30,6 +30,8 @@
                 @if (Model.ErrorFor("serviceNote") is { } eO) { <p class="error" id="serviceNote-error">@eO</p> }
             </div>
         }
+        @if (Model.ScopeStaffId is null)
+        {
         <div class="field">
             <label for="staffId">@Text.ManageWith</label>
             <select id="staffId" name="staffId">
@@ -40,6 +42,7 @@
                 }
             </select>
         </div>
+        }
         <button type="submit" class="primary">@Text.WalkInShowTimes</button>
     </form>
 </div>

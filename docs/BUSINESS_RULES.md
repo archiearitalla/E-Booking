@@ -451,6 +451,10 @@ The Bookings page shows the chosen day at a glance: still to do (confirmed), don
 
 A shop's access has an end date. The owner is emailed 7, 3 and 1 days before it (once each, only with an email service, only for an enabled shop with a confirmed owner, never after the end date; an extension starts the reminders over). The trial-ended page and About show the price and where to pay from settings (Billing:Price, Billing:PayTo, Billing:Note), never from code. Payment is manual for now (GCash): the platform owner extends access on the Platform page.
 
+### 6.y14 A staff login tied to one staff member
+
+A STAFF login can be tied to one bookable staff member (for example a barber) on the Team page. It then sees only that person's bookings, reminders, follow-ups and customers (customers that person has served, with only that person's visits), cannot open, change or move another staff member's booking (it is "not found"), and the walk-in page books for that person only. The alerts count only their work. A STAFF login with no tie sees the whole shop, as before. Managers and the owner always see the whole shop and cannot be tied. The tie is checked against the database on every request. Only the owner can change it.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

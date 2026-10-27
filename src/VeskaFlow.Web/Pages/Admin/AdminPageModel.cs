@@ -17,6 +17,13 @@ public abstract class AdminPageModel : FormPageModel
     /// <summary>What the signed-in person may do, read from the database on every request.</summary>
     public AdminLevel Level { get; private set; } = AdminLevel.Staff;
 
+    /// <summary>The staff member this person is limited to (their own bookings only), or null for the whole shop.</summary>
+    public Guid? ScopeStaffId { get; private set; }
+
+    /// <summary>True when the booking may be used by this person: it exists in the shop and, if they are limited to one staff member, is theirs.</summary>
+    protected async Task<bool> CanUseBookingAsync(Guid bookingId, CancellationToken ct) =>
+        await HttpContext.RequestServices.GetRequiredService<AdminDayService>().BookingInScopeAsync(BusinessId, bookingId, ScopeStaffId, ct);
+
     protected BookingActor StaffActor => BookingActor.Staff(User.UserId() ?? Guid.Empty, User.DisplayName() ?? "Staff");
 
     /// <summary>One-shot messages that survive a redirect (post/redirect/get).</summary>
@@ -55,6 +62,9 @@ public abstract class AdminPageModel : FormPageModel
                 return;
             }
             Level = AdminRoles.LevelOf(access.Role);
+            // A Staff login tied to a staff member sees only that person's work; managers and the owner see the whole shop.
+            ScopeStaffId = Level == AdminLevel.Staff ? access.StaffId : null;
+            context.HttpContext.Items[AdminRoles.ScopeItemKey] = ScopeStaffId;
             context.HttpContext.Items[AdminRoles.LevelItemKey] = Level;
             var needed = GetType().GetCustomAttributes(typeof(AdminAccessAttribute), true).OfType<AdminAccessAttribute>().FirstOrDefault()?.Minimum ?? AdminLevel.Staff;
             if (Level < needed)

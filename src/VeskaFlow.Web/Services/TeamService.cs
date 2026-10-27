@@ -29,11 +29,14 @@ public static class AdminRoles
 
     /// <summary>Request item set by back-office pages with the level read from the database.</summary>
     public const string LevelItemKey = "admin_level";
+
+    /// <summary>Request item set by back-office pages with the staff member the person is limited to (a Guid), or null.</summary>
+    public const string ScopeItemKey = "admin_scope_staff";
 }
 
-public sealed record TeamMember(Guid Id, string DisplayName, string Email, string Role, bool IsActive, DateTime CreatedAtUtc);
+public sealed record TeamMember(Guid Id, string DisplayName, string Email, string Role, bool IsActive, DateTime CreatedAtUtc, Guid? StaffId = null, string? StaffName = null);
 
-public sealed record TeamAccess(string Role, bool IsActive);
+public sealed record TeamAccess(string Role, bool IsActive, Guid? StaffId = null);
 
 /// <summary>
 /// The people who can sign in to one shop's back office. The owner adds them with a password to hand over; they can be
@@ -48,20 +51,21 @@ public sealed class TeamService(IDbContextFactory<AppDbContext> dbFactory, TimeP
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.AdminUsers.AsNoTracking().Where(u => u.Id == userId && u.BusinessId == businessId)
-            .Select(u => new TeamAccess(u.Role, u.IsActive)).FirstOrDefaultAsync(ct);
+            .Select(u => new TeamAccess(u.Role, u.IsActive, u.StaffId)).FirstOrDefaultAsync(ct);
     }
 
     public async Task<IReadOnlyList<TeamMember>> ListAsync(Guid businessId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.AdminUsers.AsNoTracking().Where(u => u.BusinessId == businessId)
-            .Select(u => new TeamMember(u.Id, u.DisplayName, u.Email, u.Role, u.IsActive, u.CreatedAtUtc)).ToListAsync(ct);
+            .Select(u => new TeamMember(u.Id, u.DisplayName, u.Email, u.Role, u.IsActive, u.CreatedAtUtc, u.StaffId,
+                u.StaffId == null ? null : db.StaffMembers.Where(s => s.Id == u.StaffId).Select(s => s.Name).FirstOrDefault())).ToListAsync(ct);
         return rows.OrderBy(r => AdminRoles.LevelOf(r.Role) == AdminLevel.Owner ? 0 : 1).ThenBy(r => r.CreatedAtUtc).ToList();
     }
 
     /// <summary>Adds a manager or staff member who can sign in straight away (the owner vouches for the email address).</summary>
     public async Task<ServiceResult<TeamMember>> AddAsync(
-        Guid businessId, string? name, string? email, string? role, string? password, CancellationToken ct = default)
+        Guid businessId, string? name, string? email, string? role, string? password, CancellationToken ct = default, Guid? staffId = null)
     {
         var errors = new Dictionary<string, string>();
         var cleanName = (name ?? "").Trim();
@@ -79,6 +83,15 @@ public sealed class TeamService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         if (await db.AdminUsers.AnyAsync(u => u.Email.ToLower() == cleanEmail.ToLower(), ct))
             return ServiceResult<TeamMember>.Invalid(new Dictionary<string, string> { ["email"] = Text.EmailTaken });
 
+        // Only a STAFF user is tied to one bookable staff member, and that person must be in this shop.
+        Guid? linked = null;
+        if (staffId is { } wanted && role == AdminRoles.Staff)
+        {
+            if (!await db.StaffMembers.AnyAsync(s => s.Id == wanted && s.BusinessId == businessId, ct))
+                return ServiceResult<TeamMember>.Invalid(new Dictionary<string, string> { ["staffId"] = Text.TeamStaffInvalid });
+            linked = wanted;
+        }
+
         var now = time.GetUtcNow().UtcDateTime;
         var user = new AdminUser
         {
@@ -87,6 +100,7 @@ public sealed class TeamService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             DisplayName = cleanName,
             PasswordHash = PasswordHasher.Hash(pw),
             Role = role!,
+            StaffId = linked,
             CreatedAtUtc = now,
             EmailConfirmedAtUtc = now,
         };
@@ -100,7 +114,24 @@ public sealed class TeamService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             // Two people added the same email at once: the unique index decided.
             return ServiceResult<TeamMember>.Invalid(new Dictionary<string, string> { ["email"] = Text.EmailTaken });
         }
-        return ServiceResult<TeamMember>.Ok(new TeamMember(user.Id, user.DisplayName, user.Email, user.Role, true, user.CreatedAtUtc));
+        return ServiceResult<TeamMember>.Ok(new TeamMember(user.Id, user.DisplayName, user.Email, user.Role, true, user.CreatedAtUtc, user.StaffId));
+    }
+
+    /// <summary>
+    /// Ties a STAFF user to a bookable staff member of this shop (so they see only that person's bookings), or clears the tie
+    /// with null (they see the whole shop again). Managers and the owner always see the whole shop, so they cannot be tied.
+    /// </summary>
+    public async Task<ServiceResult<bool>> SetStaffLinkAsync(Guid businessId, Guid userId, Guid? staffId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == userId && u.BusinessId == businessId, ct);
+        if (user is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (user.Role != AdminRoles.Staff) return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.TeamLinkOnlyStaff);
+        if (staffId is { } wanted && !await db.StaffMembers.AnyAsync(s => s.Id == wanted && s.BusinessId == businessId, ct))
+            return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["staffId"] = Text.TeamStaffInvalid });
+        user.StaffId = staffId;
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Ok(true);
     }
 
     /// <summary>Switches a manager or staff member on or off. The owner can never be switched off.</summary>

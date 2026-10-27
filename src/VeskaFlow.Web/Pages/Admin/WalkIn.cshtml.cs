@@ -30,6 +30,7 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         await LoadAsync(ct);
+        if (ScopeStaffId is { } only) StaffId = only; // a Staff login tied to one person books for that person only
         ServiceNote = ServiceNote?.Trim();
         if (SelectedIsOther && string.IsNullOrEmpty(ServiceNote))
         {
@@ -44,6 +45,7 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         await LoadAsync(ct);
+        if (ScopeStaffId is { } fixedStaff) StaffId = fixedStaff;
         if (ServiceId is null || !Services.Any(s => s.Id == ServiceId && s.IsActive)) return NotFound();
         if (!DateTime.TryParse(Input.Start, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var start))
         {

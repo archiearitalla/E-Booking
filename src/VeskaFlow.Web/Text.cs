@@ -240,6 +240,15 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string TeamStaffInvalid = "Choose one of your staff members.";
+    public const string TeamLinkOnlyStaff = "Only a Staff login can be tied to one staff member. Managers and the owner see the whole shop.";
+    public const string TeamWhichStaff = "Which staff member are they?";
+    public const string TeamWhichStaffHint = "A Staff login then sees only that person's bookings, reminders and follow-ups. Leave it empty to let them see the whole shop.";
+    public const string TeamWholeShop = "Whole shop";
+    public const string TeamSeesOnly = "Sees only the bookings of";
+    public const string TeamSaveLink = "Save";
+    public const string TeamLinkAsk = "Change what this person can see?";
+    public const string TeamLinkSaved = "Saved.";
     public const string BillingTitle = "How to renew";
     public const string BillingPriceLabel = "Price";
     public const string BillingPayToLabel = "Pay to";

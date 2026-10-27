@@ -32,7 +32,7 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
     /// The number of follow-ups overdue and due within the shop's notice days (Settings, today included), for the bell and
     /// the strip. With 0 notice days only follow-ups due today and overdue ones are announced.
     /// </summary>
-    public async Task<FollowUpAlert> AlertAsync(Guid businessId, CancellationToken ct = default)
+    public async Task<FollowUpAlert> AlertAsync(Guid businessId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var shop = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
@@ -44,19 +44,19 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
         var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, tz);
         var limit = today.AddDays(soonDays);
         var dates = await db.Bookings.AsNoTracking()
-            .Where(b => b.BusinessId == businessId && b.FollowUpOn != null && !b.FollowUpDone
+            .Where(b => b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId) && b.FollowUpOn != null && !b.FollowUpDone
                         && b.Status == BookingStatus.Completed && b.FollowUpOn <= limit)
             .Select(b => b.FollowUpOn!.Value).ToListAsync(ct);
         // Customers due a reminder: a confirmed appointment within the shop's reminder hours that nobody has reminded yet.
         var nowUtc = time.GetUtcNow().UtcDateTime;
         var until = nowUtc.AddHours(shop.ReminderHours);
-        var reminders = await db.Bookings.AsNoTracking().CountAsync(b => b.BusinessId == businessId && b.Status == BookingStatus.Confirmed
+        var reminders = await db.Bookings.AsNoTracking().CountAsync(b => b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId) && b.Status == BookingStatus.Confirmed
             && b.RemindedAtUtc == null && b.StartsAtUtc > nowUtc && b.StartsAtUtc <= until, ct);
         return new FollowUpAlert(dates.Count(d => d < today), dates.Count(d => d >= today), soonDays, reminders);
     }
 
     /// <summary>Follow-ups not yet done, soonest first (overdue ones come first).</summary>
-    public async Task<IReadOnlyList<FollowUpRow>> ListAsync(Guid businessId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<FollowUpRow>> ListAsync(Guid businessId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var tz = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
@@ -64,7 +64,7 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
 
         var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, tz);
         var rows = await db.Bookings.AsNoTracking()
-            .Where(b => b.BusinessId == businessId && b.FollowUpOn != null && !b.FollowUpDone && b.Status == BookingStatus.Completed)
+            .Where(b => b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId) && b.FollowUpOn != null && !b.FollowUpDone && b.Status == BookingStatus.Completed)
             .OrderBy(b => b.FollowUpOn).ThenBy(b => b.StartsAtUtc)
             .Select(b => new { b.Id, CustomerName = b.Customer.Name, CustomerPhone = b.Customer.Phone, CustomerEmail = b.Customer.Email, b.ServiceNameSnapshot, b.StartsAtUtc, b.FollowUpOn, b.FollowUpNote, b.FollowUpService })
             .ToListAsync(ct);
@@ -80,14 +80,14 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
     /// The date may not be before the visit or more than two years after it.
     /// </summary>
     public async Task<ServiceResult<bool>> SetAsync(
-        Guid businessId, Guid bookingId, DateOnly? date, string? note, Guid? followUpServiceId = null, CancellationToken ct = default)
+        Guid businessId, Guid bookingId, DateOnly? date, string? note, Guid? followUpServiceId = null, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         var cleanNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         if (cleanNote is { Length: > 200 })
             return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["followUpNote"] = Text.ReasonTooLong });
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
+        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId), ct);
         if (booking is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
         if (booking.Status != BookingStatus.Completed)
             return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.FollowUpOnlyCompleted);
@@ -126,10 +126,10 @@ public sealed class FollowUpService(IDbContextFactory<AppDbContext> dbFactory, T
     }
 
     /// <summary>Takes a follow-up off the list (the customer came back, or was contacted).</summary>
-    public async Task<ServiceResult<bool>> MarkDoneAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
+    public async Task<ServiceResult<bool>> MarkDoneAsync(Guid businessId, Guid bookingId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var changed = await db.Bookings.Where(b => b.Id == bookingId && b.BusinessId == businessId && b.FollowUpOn != null)
+        var changed = await db.Bookings.Where(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId) && b.FollowUpOn != null)
             .ExecuteUpdateAsync(s => s.SetProperty(b => b.FollowUpDone, true), ct);
         return changed == 0 ? ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<bool>.Ok(true);
     }

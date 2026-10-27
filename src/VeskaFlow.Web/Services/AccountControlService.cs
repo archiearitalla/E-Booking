@@ -287,10 +287,10 @@ public sealed class AccountControlService(
         await db.Blackouts.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.BusinessHours.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.BusinessLogos.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.AdminUsers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct); // before the staff they may be linked to
         await db.StaffServices.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.StaffMembers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct); // working hours go with them
         await db.Services.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
-        await db.AdminUsers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.Businesses.Where(x => x.Id == businessId).ExecuteDeleteAsync(ct);
         await tx.CommitAsync(ct);
         return ServiceResult<bool>.Ok(true);

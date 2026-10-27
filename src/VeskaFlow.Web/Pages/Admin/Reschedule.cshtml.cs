@@ -35,6 +35,7 @@ public class RescheduleModel(BookingService bookings, ShopSettingsService settin
 
     public async Task<IActionResult> OnPostAsync(Guid id, string? start, CancellationToken ct)
     {
+        if (!await CanUseBookingAsync(id, ct)) return NotFound();
         if (!DisplayFormat.TryParseStart(start, out var utc)) return RedirectToPage(new { id });
         var result = await bookings.RescheduleAsync(BusinessId, id, utc, StaffActor, ct);
         if (result.Failure == FailureKind.NotFound) return NotFound();
@@ -50,6 +51,7 @@ public class RescheduleModel(BookingService bookings, ShopSettingsService settin
     private async Task<bool> LoadAsync(Guid id, CancellationToken ct)
     {
         Booking = await bookings.LoadSummaryAsync(BusinessId, id, ct);
+        if (Booking is not null && ScopeStaffId is { } only && Booking.StaffId != only) Booking = null; // another staff member's booking
         if (Booking is null) return false;
         TimeZone = (await settings.GetSettingsAsync(BusinessId, ct))?.TimeZone ?? "Asia/Manila";
         Today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, TimeZone).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

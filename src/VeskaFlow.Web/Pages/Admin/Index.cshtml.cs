@@ -10,7 +10,7 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
     /// <summary>Downloads the customer as a contact card (.vcf) to save to the phone's contacts.</summary>
     public async Task<IActionResult> OnGetContactAsync(Guid id, CancellationToken ct)
     {
-        var contact = await days.GetContactAsync(BusinessId, id, ct);
+        var contact = await days.GetContactAsync(BusinessId, id, ct, ScopeStaffId);
         var shop = await settings.GetSettingsAsync(BusinessId, ct);
         if (contact is null || shop is null) return NotFound(); // unknown id and another business's id look the same
         return File(System.Text.Encoding.UTF8.GetBytes(ContactFile.Vcf(contact.Name, contact.Phone, contact.Email, shop.Name)),
@@ -43,7 +43,7 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
-        View = await days.GetDayAsync(BusinessId, Date, ct);
+        View = await days.GetDayAsync(BusinessId, Date, ct, ScopeStaffId);
         return View is null ? NotFound() : Page();
     }
 
@@ -70,6 +70,7 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
         }
 
         // The booking must belong to the signed-in business; another tenant's id is simply "not found".
+        if (!await CanUseBookingAsync(id, ct)) return NotFound(); // another staff member's booking looks the same as an unknown one
         var result = await bookings.TransitionAsync(BusinessId, id, target.Value, StaffActor, trimmed, version, ct);
         if (result.Failure == FailureKind.NotFound) return NotFound();
 

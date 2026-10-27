@@ -19,13 +19,13 @@ public class RemindersModel(ReminderService reminders, ShopSettingsService setti
         ShopName = shop.Name;
         TimeZone = shop.TimeZone;
         _baseUrl = config["App:PublicBaseUrl"] is { Length: > 0 } configured ? configured.Trim().TrimEnd('/') : $"{Request.Scheme}://{Request.Host}";
-        Rows = await reminders.ListPendingAsync(BusinessId, ct);
+        Rows = await reminders.ListPendingAsync(BusinessId, ct, ScopeStaffId);
         return Page();
     }
 
     public async Task<IActionResult> OnPostRemindedAsync(Guid id, CancellationToken ct)
     {
-        var result = await reminders.MarkRemindedAsync(BusinessId, id, ct);
+        var result = await reminders.MarkRemindedAsync(BusinessId, id, ct, ScopeStaffId);
         if (!result.IsSuccess) return NotFound();
         Success = Text.ReminderMarked;
         return RedirectToPage();
