@@ -12,6 +12,8 @@ this repository can make its own copy every night.
 2. **encrypts** it with AES-256 using your passphrase (the file holds customer names and phone numbers, and workflow
    artifacts can be read by anyone with access to the repository),
 3. reads it back to check it opens, and fails the run if it does not,
+   then **restores it into a throwaway PostgreSQL** that exists only for that run (`scripts/restore-check.sh`) and counts
+   the rows, so every night proves the backup can really be restored (the run log shows only the counts),
 4. keeps it as the workflow artifact `veskaflow-backup` for 14 days.
 
 If a run fails, GitHub emails you. Nothing in the backup is ever written unencrypted.
@@ -29,7 +31,9 @@ If a run fails, GitHub emails you. Nothing in the backup is ever written unencry
 
 Never paste the connection string or the passphrase in a chat, a commit or an issue.
 
-## Restore (try it once, so you know it works)
+## Restore by hand
+
+Use a PostgreSQL client of the **same or a newer version** than the one that made the file (the workflow uses 18; an older `pg_restore`, such as 16, answers "unsupported version (1.16) in file header"). If you do not have one, a throwaway PostgreSQL 18 in Docker or a hosted one works.
 
 You need PostgreSQL client tools (`pg_restore`, `createdb`) and `gpg`. Download the artifact from the run page and unzip it.
 

@@ -15,6 +15,19 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # A throwaway PostgreSQL that exists only for this run, used to prove the backup can be restored.
+    services:
+      scratch:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: scratch-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +53,12 @@ jobs:
           DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: bash scripts/backup.sh backups
+
+      - name: Prove the backup restores (into the throwaway database only)
+        env:
+          RESTORE_URL: postgresql://postgres:scratch-only@localhost:5432/postgres
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: bash scripts/restore-check.sh backups
 
       - name: Keep the encrypted file for 14 days
         uses: actions/upload-artifact@v4
