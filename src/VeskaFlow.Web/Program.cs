@@ -37,6 +37,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.AdminDayService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.FollowUpService>();
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.BrevoEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.ResendEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<VeskaFlow.Web.Services.ICaptcha, VeskaFlow.Web.Services.TurnstileVerifier>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
 {
     // Brevo first (no domain needed), then Resend. With neither the platform owner confirms by hand.
@@ -128,15 +129,20 @@ else
     app.UseHsts();
 }
 
+// With Turnstile set up, its script and frame are the only outside sources the pages may load.
+var turnstileOn = !string.IsNullOrWhiteSpace(app.Configuration["Turnstile:SiteKey"]) && !string.IsNullOrWhiteSpace(app.Configuration["Turnstile:SecretKey"]);
+var contentSecurityPolicy =
+    "default-src 'self'; script-src 'self'" + (turnstileOn ? " https://challenges.cloudflare.com" : "") + "; style-src 'self'; img-src 'self' data:; font-src 'self'; " +
+    (turnstileOn ? "frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; " : "") +
+    "frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+
 app.Use(async (ctx, next) =>
 {
     var h = ctx.Response.Headers;
     h["X-Content-Type-Options"] = "nosniff";
     h["X-Frame-Options"] = "DENY";
     h["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    h["Content-Security-Policy"] =
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; " +
-        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    h["Content-Security-Policy"] = contentSecurityPolicy;
     await next();
 });
 

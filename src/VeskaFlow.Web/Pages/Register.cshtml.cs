@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace VeskaFlow.Web.Pages;
 
 [EnableRateLimiting(RateLimitPolicies.Auth)]
-public class RegisterModel(OnboardingService onboarding, AccountControlService accounts, IConfiguration config) : FormPageModel
+public class RegisterModel(OnboardingService onboarding, AccountControlService accounts, IConfiguration config, ICaptcha captcha) : FormPageModel
 {
     /// <summary>Trial length in days for new sign-ups. 0 turns trials off (for example on a dedicated deployment).</summary>
     private int TrialDays => config.GetValue("Trial:Days", 0);
@@ -26,6 +26,13 @@ public class RegisterModel(OnboardingService onboarding, AccountControlService a
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        if (!await captcha.VerifyAsync(Request.Form["cf-turnstile-response"], HttpContext.Connection.RemoteIpAddress?.ToString(), ct))
+        {
+            Errors = new Dictionary<string, string> { ["captcha"] = Text.CaptchaFailed };
+            Input.Password = null; // never echo a password back
+            return Page();
+        }
+
         // The owner must agree to the Terms and the Privacy Notice; when and which version is kept with the shop.
         if (!Input.Accept)
         {

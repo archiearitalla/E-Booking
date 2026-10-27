@@ -435,6 +435,10 @@ The owner can upload one logo (PNG, JPEG or WebP, at most 256 KB) in Settings an
 
 On the sign-in page, "Forgot your password?" asks for the email and sends a link that works for one hour and once. The page gives the same answer for every address, so it cannot reveal who has an account; only an active person in an enabled shop gets a link, and a second request within a minute sends nothing new. Opening the link and choosing a new password (8 to 128 characters) also counts as confirming the email. Only the SHA-256 of the token is stored. Without an email service the page says so. Anyone signed in can change their own password under My account by giving the current one. Existing sessions stay signed in until they end.
 
+### 6.y10 Sign-up bot check
+
+When Turnstile:SiteKey and Turnstile:SecretKey are both configured, sign-up and forgot password require a passed Cloudflare Turnstile check, verified on the server; a missing, failed or unreachable check refuses the request. The content policy allows challenges.cloudflare.com only while the keys are set. With no keys there is no check and nothing changes.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

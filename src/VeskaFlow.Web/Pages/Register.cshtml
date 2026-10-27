@@ -69,6 +69,8 @@
             @if (Model.ErrorFor("accept") is { } e6) { <p class="error" id="Accept-error">@e6</p> }
         </div>
 
+        <partial name="_Captcha" />
+        @if (Model.ErrorFor("captcha") is { } captchaError) { <p class="error">@captchaError</p> }
         <button type="submit" class="primary">@Text.ButtonRegister</button>
     </form>
 </div>

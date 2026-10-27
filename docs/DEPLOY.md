@@ -123,3 +123,13 @@ Render's free web service sleeps after 15 minutes without traffic, and the first
 
 1. **GitHub Actions** (already in the repo): `.github/workflows/keepalive.yml` calls `https://flow.veskacode.com/ping` every 14 minutes. GitHub may delay a run by a few minutes and pauses scheduled runs after 60 days without repository activity. If the repository is private, the free monthly minutes (2,000) may run out; then use option 2.
 2. **An outside monitor** (UptimeRobot or cron-job.org, free account): add an HTTP monitor for `https://flow.veskacode.com/ping` every 5 minutes. It also emails you when the site is down.
+
+## Sign-up bot check (Cloudflare Turnstile, free)
+
+Sign-up and forgot password can ask visitors to pass a quick "are you a person" check. It is off until both keys are set:
+
+1. In Cloudflare, **Turnstile**, **Add widget**. Hostname: `flow.veskacode.com`. Mode: Managed. Copy the **Site key** and the **Secret key**.
+2. In Render, Environment, add `Turnstile__SiteKey` (the site key) and `Turnstile__SecretKey` (the secret key), then deploy. Keep the secret key out of chats, commits and screenshots.
+3. Open the sign-up page: the check box appears above the button. Try a sign-up on a test email.
+
+To switch it off, remove the two variables. With the keys set, a failed or unreachable check always refuses the request (it never lets a bot through); if Cloudflare is down, sign-ups wait. The page's content policy then also allows `challenges.cloudflare.com`, and only when the keys are set.

@@ -9,7 +9,7 @@ namespace VeskaFlow.Web.Pages;
 /// cannot be used to find out who has an account.
 /// </summary>
 [EnableRateLimiting(RateLimitPolicies.Auth)]
-public class ForgotPasswordModel(AccountControlService accounts, IConfiguration config, ILogger<ForgotPasswordModel> logger) : FormPageModel
+public class ForgotPasswordModel(AccountControlService accounts, IConfiguration config, ILogger<ForgotPasswordModel> logger, ICaptcha captcha) : FormPageModel
 {
     [BindProperty] public string? Email { get; set; }
     public bool Sent { get; private set; }
@@ -22,6 +22,11 @@ public class ForgotPasswordModel(AccountControlService accounts, IConfiguration 
         if (!EmailConfigured)
         {
             Errors = new Dictionary<string, string> { ["form"] = Text.ResetNoEmail };
+            return Page();
+        }
+        if (!await captcha.VerifyAsync(Request.Form["cf-turnstile-response"], HttpContext.Connection.RemoteIpAddress?.ToString(), ct))
+        {
+            Errors = new Dictionary<string, string> { ["form"] = Text.CaptchaFailed };
             return Page();
         }
         var issued = await accounts.IssuePasswordResetAsync(Email, ct);

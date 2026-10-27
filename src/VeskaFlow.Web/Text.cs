@@ -240,6 +240,7 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string CaptchaFailed = "We could not check that you are a person. Wait a moment, tick the box again and try once more.";
     public const string AdminNavAccount = "My account";
     public const string AccountChangePassword = "Change password";
     public const string AccountCurrentPassword = "Current password";
