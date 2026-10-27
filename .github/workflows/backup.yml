@@ -1,0 +1,50 @@
+# Nightly encrypted backup of the production database (Neon). The file is encrypted with BACKUP_PASSPHRASE before it
+# leaves the runner, because it holds customer names and phone numbers; GitHub keeps it for 14 days as a workflow artifact.
+# Setup and restore steps: docs/BACKUP.md. To stop it, delete this file or disable the workflow in the Actions tab.
+name: backup
+
+on:
+  schedule:
+    - cron: "0 19 * * *" # 03:00 in Manila
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets are set
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$DATABASE_URL" ] || { echo "Secret BACKUP_DATABASE_URL is not set (see docs/BACKUP.md)" >&2; exit 1; }
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "Secret BACKUP_PASSPHRASE is not set (see docs/BACKUP.md)" >&2; exit 1; }
+
+      - name: Install a current PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-18 || sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Back up the database
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: bash scripts/backup.sh backups
+
+      - name: Keep the encrypted file for 14 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: veskaflow-backup
+          path: backups/*.dump.gpg
+          retention-days: 14
+          if-no-files-found: error
