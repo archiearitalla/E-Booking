@@ -10,7 +10,8 @@ public sealed record DayBooking(
     DateTime StartsAtUtc, DateTime EndsAtUtc, BookingStatus Status, decimal Price, uint Version,
     bool CanComplete, bool CanNoShow, bool CanCancel,
     DateOnly? FollowUpOn = null, string? FollowUpNote = null, bool FollowUpDone = false, DateOnly? SuggestedFollowUp = null,
-    string? CustomerEmail = null, string? FollowUpService = null, string? VisitNotes = null, Guid CustomerId = default);
+    string? CustomerEmail = null, string? FollowUpService = null, string? VisitNotes = null, Guid CustomerId = default,
+    bool CanMove = false);
 
 /// <summary>A customer's contact details for saving to the staff phone's contacts (a .vcf file).</summary>
 public sealed record CustomerContact(string Name, string Phone, string? Email);
@@ -62,7 +63,8 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
             BookingPolicy.CanCancel(r.Status, r.StartsAtUtc, now, ActorKind.Staff, business.CancelCutoffHours).Allowed,
             r.FollowUpOn, r.FollowUpNote, r.FollowUpDone,
             r.ServiceFollowUpDays is { } days ? LocalTime.LocalDateOf(r.StartsAtUtc, business.TimeZone).AddDays(days) : null,
-            r.CustomerEmail, r.FollowUpService, r.VisitNotes, r.CustomerId)).ToList();
+            r.CustomerEmail, r.FollowUpService, r.VisitNotes, r.CustomerId,
+            CanMove: r.Status == BookingStatus.Confirmed && r.StartsAtUtc > now)).ToList();
 
         return new DayView(day, business.TimeZone, bookings, LocalTime.LocalDateOf(now, business.TimeZone));
     }

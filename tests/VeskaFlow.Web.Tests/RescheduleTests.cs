@@ -69,6 +69,24 @@ public class RescheduleTests
     }
 
     [Fact]
+    public async Task The_move_option_is_offered_only_for_a_confirmed_booking_that_has_not_started()
+    {
+        var s = await ShopAsync();
+        var booking = await BookAsync(s, 5, 10, "09175550505");
+        var days = new AdminDayService(s.Db, s.Clock);
+
+        async Task<bool> CanMove() => (await days.GetDayAsync(s.Owner.BusinessId, new DateOnly(2030, 3, 5)))!.Bookings.Single(b => b.Id == booking.Id).CanMove;
+        Assert.True(await CanMove());
+
+        s.Clock.Now = new DateTimeOffset(Manila(5, 11), TimeSpan.Zero); // it has started
+        Assert.False(await CanMove());
+
+        s.Clock.Now = new DateTimeOffset(Manila(4, 9), TimeSpan.Zero);
+        Assert.True((await s.Bookings.TransitionAsync(s.Owner.BusinessId, booking.Id, BookingStatus.Cancelled, Staff(s), reason: "test")).IsSuccess);
+        Assert.False(await CanMove()); // cancelled
+    }
+
+    [Fact]
     public async Task Another_shop_cannot_move_or_list_times_for_this_booking()
     {
         var s = await ShopAsync();

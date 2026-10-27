@@ -12,6 +12,8 @@
         <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; @b.StaffName</dd>
         <dt>@Text.RescheduleCurrent</dt><dd>@DisplayFormat.Date(b.StartsAtUtc, Model.TimeZone), @DisplayFormat.Time(b.StartsAtUtc, Model.TimeZone)</dd>
     </dl>
+    @if (Model.CanMove)
+    {
     <form method="get">
         <div class="field">
             <label for="date">@Text.RescheduleDate</label>
@@ -19,9 +21,10 @@
         </div>
         <button type="submit" class="secondary">@Text.RescheduleShowTimes</button>
     </form>
+    }
 </div>
 
-@if (Model.Searched)
+@if (Model.Searched && Model.CanMove)
 {
     <div class="card">
         @if (Model.Times.Count == 0)
