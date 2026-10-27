@@ -54,3 +54,9 @@ database, point `ConnectionStrings__Default` in Render at it and redeploy; the a
   hours; use Neon's restore feature for that.
 - 14 days of copies. Download one now and then to your own computer or drive for a longer history.
 - If the repository is private, artifact storage counts against the free GitHub quota; the file is small (a few hundred KB at first).
+
+## Monthly reminder in the Platform page
+
+The Platform page (`/Platform`, the platform owner only) has a **Database backup** card. It links to the backups on GitHub,
+shows when you last saved a copy on your own drive, and warns after 30 days. Download a copy, then press **I saved a copy**.
+The link can be changed with the `Platform__BackupUrl` setting.

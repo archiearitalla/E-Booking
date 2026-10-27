@@ -205,3 +205,11 @@ public class BusinessLogo
     public byte[] Data { get; set; } = [];
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
+
+/// <summary>A note the platform owner keeps about the whole system, for example when a backup copy was last saved (migration 015).</summary>
+public class PlatformSetting
+{
+    public string Key { get; set; } = "";
+    public string Value { get; set; } = "";
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}

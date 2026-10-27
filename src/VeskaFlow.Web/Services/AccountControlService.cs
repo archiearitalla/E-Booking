@@ -152,6 +152,35 @@ public sealed class AccountControlService(
         return ServiceResult<bool>.Ok(true);
     }
 
+    // ------------------------------------------------------------------ backup reminder
+
+    /// <summary>How many days without saving a copy of the backup before the Platform page warns.</summary>
+    public const int BackupWarnDays = 30;
+
+    private const string BackupSavedKey = "backup_copy_saved";
+
+    /// <summary>When the platform owner last said they saved a copy of the backup on their own drive, or null.</summary>
+    public async Task<DateTime?> GetBackupCopySavedAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await db.PlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == BackupSavedKey, ct);
+        return row is null ? null : DateTime.SpecifyKind(row.UpdatedAtUtc, DateTimeKind.Utc);
+    }
+
+    public async Task MarkBackupCopySavedAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = time.GetUtcNow().UtcDateTime;
+        var row = await db.PlatformSettings.FirstOrDefaultAsync(s => s.Key == BackupSavedKey, ct);
+        if (row is null) db.PlatformSettings.Add(new PlatformSetting { Key = BackupSavedKey, Value = "saved", UpdatedAtUtc = now });
+        else row.UpdatedAtUtc = now;
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Whole days since the last saved copy at <paramref name="now"/>, or null when none was ever recorded.</summary>
+    public static int? DaysSince(DateTime? savedAtUtc, DateTime now) =>
+        savedAtUtc is { } saved ? Math.Max(0, (int)(now - saved).TotalDays) : null;
+
     // ------------------------------------------------------------------ platform owner
 
     /// <summary>True when the signed-in user's email is listed in <c>Platform:AdminEmails</c> and confirmed.</summary>

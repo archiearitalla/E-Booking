@@ -439,6 +439,10 @@ On the sign-in page, "Forgot your password?" asks for the email and sends a link
 
 When Turnstile:SiteKey and Turnstile:SecretKey are both configured, sign-up and forgot password require a passed Cloudflare Turnstile check, verified on the server; a missing, failed or unreachable check refuses the request. The content policy allows challenges.cloudflare.com only while the keys are set. With no keys there is no check and nothing changes.
 
+### 6.y11 Backup reminder
+
+The Platform page shows a Database backup card: a link to the nightly backups, the date the platform owner last recorded saving a copy on their own drive (kept in platform_setting, migration 015), and a warning when none was recorded or 30 days have passed. Only the platform owner sees it or can press "I saved a copy".
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

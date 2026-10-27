@@ -17,6 +17,13 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     public IReadOnlyList<ShopRow> Shops { get; private set; } = [];
     public bool EmailConfigured => accounts.EmailConfigured;
 
+    /// <summary>Where the nightly backups are kept (the GitHub Actions page of the repository).</summary>
+    public string BackupUrl => config["Platform:BackupUrl"] is { Length: > 0 } u ? u : "https://github.com/archiearitalla/E-Booking/actions/workflows/backup.yml";
+
+    public DateTime? BackupCopySavedAtUtc { get; private set; }
+    public int? BackupDaysSince { get; private set; }
+    public bool BackupOverdue => BackupDaysSince is null || BackupDaysSince >= AccountControlService.BackupWarnDays;
+
     [TempData] public string? Success { get; set; }
     [TempData] public string? Failure { get; set; }
 
@@ -36,6 +43,8 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Shops = await accounts.ListShopsAsync(ct);
+        BackupCopySavedAtUtc = await accounts.GetBackupCopySavedAsync(ct);
+        BackupDaysSince = AccountControlService.DaysSince(BackupCopySavedAtUtc, DateTime.UtcNow);
         return Page();
     }
 
@@ -50,6 +59,14 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
         var result = await accounts.SetEnabledAsync(id, on, ct);
         if (!result.IsSuccess) return NotFound();
         Success = on ? Text.PlatformEnabled : Text.PlatformDisabled;
+        return RedirectToPage();
+    }
+
+    /// <summary>The platform owner says they saved a copy of the backup on their own drive.</summary>
+    public async Task<IActionResult> OnPostBackupSavedAsync(CancellationToken ct)
+    {
+        await accounts.MarkBackupCopySavedAsync(ct);
+        Success = Text.PlatformBackupMarked;
         return RedirectToPage();
     }
 

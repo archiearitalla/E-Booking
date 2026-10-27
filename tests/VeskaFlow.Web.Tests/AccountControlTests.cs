@@ -135,6 +135,52 @@ public class AccountControlTests
     }
 
     [Fact]
+    public async Task The_backup_reminder_remembers_when_a_copy_was_saved_and_counts_the_days()
+    {
+        var s = await SetupAsync();
+        await using (var ctx = s.Db.CreateDbContext())
+            await ctx.PlatformSettings.Where(x => x.Key == "backup_copy_saved").ExecuteDeleteAsync(); // the test database is shared
+        Assert.Null(await s.Accounts.GetBackupCopySavedAsync());
+        Assert.Null(AccountControlService.DaysSince(null, s.Clock.GetUtcNow().UtcDateTime));
+
+        await s.Accounts.MarkBackupCopySavedAsync();
+        var saved = await s.Accounts.GetBackupCopySavedAsync();
+        Assert.Equal(s.Clock.GetUtcNow().UtcDateTime, saved!.Value, TimeSpan.FromSeconds(1));
+        Assert.Equal(0, AccountControlService.DaysSince(saved, s.Clock.GetUtcNow().UtcDateTime));
+        Assert.Equal(31, AccountControlService.DaysSince(saved, saved.Value.AddDays(31).AddHours(3)));
+
+        s.Clock.Now = s.Clock.Now.AddDays(5);
+        await s.Accounts.MarkBackupCopySavedAsync(); // pressing the button again moves the date, it does not add a row
+        Assert.Equal(s.Clock.GetUtcNow().UtcDateTime, (await s.Accounts.GetBackupCopySavedAsync())!.Value, TimeSpan.FromSeconds(1));
+        await using var check = s.Db.CreateDbContext();
+        Assert.Equal(1, await check.PlatformSettings.CountAsync(x => x.Key == "backup_copy_saved"));
+    }
+
+    [Fact]
+    public async Task The_platform_page_shows_the_backup_card_and_only_the_platform_owner_can_record_a_saved_copy()
+    {
+        var bossEmail = $"{Id("boss")}@example.com";
+        var (factory, _) = await HttpApp.StartAsync(platformAdminEmails: bossEmail);
+        using var _f = factory;
+        var boss = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(boss, "/Register", Form(bossEmail, Id("bs")));
+        var tenant = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(tenant, "/Register", Form($"{Id("shop")}@example.com", Id("ts")));
+
+        var page = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform"));
+        Assert.Contains(Text.PlatformBackupTitle, page);
+        Assert.Contains("href=\"https://github.com/archiearitalla/E-Booking/actions/workflows/backup.yml\"", page);
+        Assert.Contains($"data-confirm=\"{Text.PlatformBackupAsk}\"", page);
+
+        var marked = await HttpApp.PostFormAsync(boss, "/Platform?handler=BackupSaved", new(), tokenPage: "/Platform");
+        Assert.Equal(HttpStatusCode.Redirect, marked.StatusCode);
+        Assert.Contains("Last copy saved", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
+
+        var other = await HttpApp.PostFormAsync(tenant, "/Platform?handler=BackupSaved", new(), tokenPage: "/Admin");
+        Assert.Equal(HttpStatusCode.NotFound, other.StatusCode); // a shop owner finds nothing there
+    }
+
+    [Fact]
     public async Task The_platform_owner_can_extend_a_shops_access_from_the_later_of_today_and_the_current_end()
     {
         var s = await SetupAsync();

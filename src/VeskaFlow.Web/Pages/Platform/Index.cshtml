@@ -23,6 +23,25 @@
     </div>
 }
 
+<div class="card">
+    <h2>@Text.PlatformBackupTitle</h2>
+    <p class="hint">@Text.PlatformBackupHint</p>
+    @if (Model.BackupDaysSince is { } days)
+    {
+        <p class="@(Model.BackupOverdue ? "warn" : "muted")">@Text.PlatformBackupLast(Model.BackupCopySavedAtUtc!.Value.ToString("MMM d, yyyy", invariant), days)@(Model.BackupOverdue ? " " + Text.PlatformBackupOverdue : "")</p>
+    }
+    else
+    {
+        <p class="warn">@Text.PlatformBackupNever</p>
+    }
+    <div class="actions">
+        <a class="button secondary" href="@Model.BackupUrl" target="_blank" rel="noopener">@Text.PlatformBackupOpen</a>
+        <form method="post" asp-page-handler="BackupSaved">
+            <button type="submit" class="secondary" data-confirm="@Text.PlatformBackupAsk">@Text.PlatformBackupSaved</button>
+        </form>
+    </div>
+</div>
+
 @if (Model.Shops.Count == 0)
 {
     <div class="card empty"><p>@Text.PlatformEmpty</p></div>

@@ -240,6 +240,15 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string PlatformBackupTitle = "Database backup";
+    public const string PlatformBackupHint = "A copy of everything is made every night (encrypted) and kept on GitHub for 14 days. Once a month, download one and keep it on your own drive: open the link, pick the newest green run, and download veskaflow-backup under Artifacts. The passphrase is in your password manager.";
+    public const string PlatformBackupNever = "No copy saved yet. Download one and press the button below.";
+    public static string PlatformBackupLast(string date, int days) => days == 0 ? $"Last copy saved today ({date})." : $"Last copy saved {date} ({days} days ago).";
+    public const string PlatformBackupOverdue = "Time to save a new one.";
+    public const string PlatformBackupOpen = "Open the backups";
+    public const string PlatformBackupSaved = "I saved a copy";
+    public const string PlatformBackupAsk = "Record that you saved a copy of the backup today?";
+    public const string PlatformBackupMarked = "Noted. We will remind you again in a month.";
     public const string CaptchaFailed = "We could not check that you are a person. Wait a moment, tick the box again and try once more.";
     public const string AdminNavAccount = "My account";
     public const string AccountChangePassword = "Change password";
