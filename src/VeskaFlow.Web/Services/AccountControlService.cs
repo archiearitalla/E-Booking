@@ -5,7 +5,7 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record ShopRow(
     Guid BusinessId, string Slug, string Name, string Industry, Guid OwnerUserId, string OwnerName, string OwnerEmail,
-    DateTime CreatedAtUtc, bool EmailConfirmed, bool Enabled, DateTime? TrialEndsAtUtc);
+    DateTime CreatedAtUtc, bool EmailConfirmed, bool Enabled, DateTime? TrialEndsAtUtc, DateTime? EmailAddonUntilUtc = null);
 
 /// <summary>A confirmation link that has been issued: the raw token (only ever in the email) and who it is for.</summary>
 public sealed record IssuedConfirmation(string Token, string Email, string Name);
@@ -201,7 +201,7 @@ public sealed class AccountControlService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var shops = await db.Businesses.AsNoTracking().OrderByDescending(b => b.CreatedAtUtc)
-            .Select(b => new { b.Id, b.Slug, b.Name, b.Industry, b.CreatedAtUtc, b.IsEnabled, b.TrialEndsAtUtc }).ToListAsync(ct);
+            .Select(b => new { b.Id, b.Slug, b.Name, b.Industry, b.CreatedAtUtc, b.IsEnabled, b.TrialEndsAtUtc, b.EmailAddonUntilUtc }).ToListAsync(ct);
         var owners = (await db.AdminUsers.AsNoTracking().Where(u => u.Role == "OWNER").OrderBy(u => u.CreatedAtUtc)
                 .Select(u => new { u.Id, u.BusinessId, u.DisplayName, u.Email, Confirmed = u.EmailConfirmedAtUtc != null }).ToListAsync(ct))
             .GroupBy(u => u.BusinessId).ToDictionary(g => g.Key, g => g.First());
@@ -210,7 +210,7 @@ public sealed class AccountControlService(
         {
             var owner = owners.GetValueOrDefault(s.Id);
             return new ShopRow(s.Id, s.Slug, s.Name, s.Industry, owner?.Id ?? Guid.Empty, owner?.DisplayName ?? "", owner?.Email ?? "",
-                s.CreatedAtUtc, owner?.Confirmed ?? false, s.IsEnabled, s.TrialEndsAtUtc);
+                s.CreatedAtUtc, owner?.Confirmed ?? false, s.IsEnabled, s.TrialEndsAtUtc, s.EmailAddonUntilUtc);
         }).ToList();
     }
 
@@ -241,6 +241,24 @@ public sealed class AccountControlService(
         shop.TrialEndsAtUtc = from.AddDays(days);
         await db.SaveChangesAsync(ct);
         return ServiceResult<DateTime>.Ok(shop.TrialEndsAtUtc.Value);
+    }
+
+    /// <summary>
+    /// Adds days to a shop's paid more-emails add-on, counted from the later of today and the current end, like extending
+    /// access. Used after the client paid for it. Returns the new end date.
+    /// </summary>
+    public async Task<ServiceResult<DateTime>> ExtendEmailAddonAsync(Guid businessId, int days, CancellationToken ct = default)
+    {
+        if (!ExtendChoices.Contains(days)) return ServiceResult<DateTime>.Fail(FailureKind.Validation, Text.NotAllowed);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var shop = await db.Businesses.FirstOrDefaultAsync(b => b.Id == businessId, ct);
+        if (shop is null) return ServiceResult<DateTime>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var current = shop.EmailAddonUntilUtc is { } c ? DateTime.SpecifyKind(c, DateTimeKind.Utc) : now;
+        shop.EmailAddonUntilUtc = (current > now ? current : now).AddDays(days);
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<DateTime>.Ok(shop.EmailAddonUntilUtc.Value);
     }
 
     /// <summary>The platform owner confirms an owner's email by hand (for example when no email service is set up).</summary>

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace VeskaFlow.Web.Pages.Book;
 
 [EnableRateLimiting(RateLimitPolicies.Booking)]
-public class DetailsModel(ShopCatalogService catalog, BookingService booking) : FormPageModel
+public class DetailsModel(ShopCatalogService catalog, BookingService booking, CustomerMailer mailer, IConfiguration config, ILogger<DetailsModel> log) : FormPageModel
 {
     [BindProperty] public DetailsInput Input { get; set; } = new();
 
@@ -57,7 +57,21 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking) : 
             BookingActor.Customer((Input.Name ?? "Customer").Trim()), Input.ServiceNote), ct);
 
         if (result.IsSuccess)
+        {
+            // A new booking with an email address gets a confirmation email (within the daily limit). It never delays or breaks the booking.
+            if (!result.Value!.AlreadyExisted && !string.IsNullOrWhiteSpace(Input.Email))
+            {
+                var baseUrl = config["App:PublicBaseUrl"] is { Length: > 0 } configured ? configured.Trim().TrimEnd('/') : $"{Request.Scheme}://{Request.Host}";
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(4));
+                try { await mailer.SendConfirmationAsync(Shop.Id, result.Value.Booking.Id, baseUrl, timeout.Token); }
+                catch (Exception ex) when (ex is OperationCanceledException or HttpRequestException)
+                {
+                    log.LogWarning("The confirmation email took too long or failed: {Reason}", ex.GetType().Name);
+                }
+            }
             return RedirectToPage("/Booking/Manage", new { token = result.Value!.Booking.ManageToken, confirmed = 1 });
+        }
 
         switch (result.Failure)
         {

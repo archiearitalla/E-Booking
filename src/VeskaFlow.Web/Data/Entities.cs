@@ -18,6 +18,10 @@ public class Business
     public string BrandColor { get; set; } = "teal";
     public string Industry { get; set; } = "barbershop";
     public DateTime? TrialEndsAtUtc { get; set; }
+    /// <summary>Email the shop's customers a booking confirmation and a reminder (when the customer gave an email).</summary>
+    public bool CustomerEmails { get; set; } = true;
+    /// <summary>Until when the paid "more emails" add-on is active; null when it was never bought.</summary>
+    public DateTime? EmailAddonUntilUtc { get; set; }
     /// <summary>The days left (7, 3 or 1) the last expiry reminder email was sent for, and for which end date.</summary>
     public int? ExpiryNoticeDays { get; set; }
     public DateTime? ExpiryNoticeForEndUtc { get; set; }
@@ -217,4 +221,12 @@ public class PlatformSetting
     public string Key { get; set; } = "";
     public string Value { get; set; } = "";
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>How many emails were sent on one day for one shop (an all-zero business id is the system's own emails to owners). Migration 018.</summary>
+public class EmailDaily
+{
+    public DateOnly Day { get; set; }
+    public Guid BusinessId { get; set; }
+    public int Sent { get; set; }
 }

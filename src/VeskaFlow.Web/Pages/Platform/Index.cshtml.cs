@@ -9,7 +9,7 @@ namespace VeskaFlow.Web.Pages.Platform;
 /// The platform owner's list of shops: switch a shop on or off, confirm an owner's email by hand, or send a new confirmation
 /// link. Only a signed-in user whose email is listed in <c>Platform:AdminEmails</c> sees it; everyone else gets "not found".
 /// </summary>
-public class IndexModel(AccountControlService accounts, IConfiguration config, ILogger<IndexModel> logger) : PageModel
+public class IndexModel(AccountControlService accounts, IConfiguration config, ILogger<IndexModel> logger, EmailQuota quota) : PageModel
 {
     /// <summary>The shop the platform owner is signed in to: it can be switched on or off but never deleted from here.</summary>
     public Guid? OwnBusinessId => User.BusinessId();
@@ -20,6 +20,8 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     /// <summary>Where the nightly backups are kept (the GitHub Actions page of the repository).</summary>
     public string BackupUrl => config["Platform:BackupUrl"] is { Length: > 0 } u ? u : "https://github.com/archiearitalla/E-Booking/actions/workflows/backup.yml";
 
+    public int EmailsToday { get; private set; }
+    public int EmailLimit => quota.DailyLimit;
     public DateTime? BackupCopySavedAtUtc { get; private set; }
     public int? BackupDaysSince { get; private set; }
     public bool BackupOverdue => BackupDaysSince is null || BackupDaysSince >= AccountControlService.BackupWarnDays;
@@ -43,6 +45,7 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Shops = await accounts.ListShopsAsync(ct);
+        EmailsToday = await quota.TodayTotalAsync(ct);
         BackupCopySavedAtUtc = await accounts.GetBackupCopySavedAsync(ct);
         BackupDaysSince = AccountControlService.DaysSince(BackupCopySavedAtUtc, DateTime.UtcNow);
         return Page();
@@ -67,6 +70,16 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     {
         await accounts.MarkBackupCopySavedAsync(ct);
         Success = Text.PlatformBackupMarked;
+        return RedirectToPage();
+    }
+
+    /// <summary>Adds days to a shop's paid more-emails add-on after the client paid for it.</summary>
+    public async Task<IActionResult> OnPostEmailAddonAsync(Guid id, int days, CancellationToken ct)
+    {
+        var result = await accounts.ExtendEmailAddonAsync(id, days, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.PlatformEmailAddonExtended(result.Value.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture));
+        else Failure = result.Message;
         return RedirectToPage();
     }
 

@@ -43,7 +43,7 @@ requirement for a contract between a controller and a processor?
 |---|---|---|---|
 | Render | application hosting | everything in transit and in memory | **(confirm region)** |
 | Neon | PostgreSQL database | all stored data | Singapore (AWS ap-southeast-1) |
-| Brevo | transactional email to shop owners (sign-up confirmation, password reset, notice before access ends) | owner's name, email, message | **(confirm: EU)** |
+| Brevo | transactional email: to shop owners (sign-up confirmation, password reset, notice before access ends) and, when a shop has it on, to its customers who gave an email (booking confirmation, reminder) | recipient email, first name, message with booking details | **(confirm: EU)** |
 | Cloudflare | domain name; bot check (Turnstile) on sign-up and forgot-password when switched on | request data sent by the browser | global |
 | GitHub | nightly encrypted database backup, kept 14 days | the whole database, **encrypted** (AES-256) before it leaves the runner; only the operator holds the passphrase | US **(confirm)** |
 | UptimeRobot | checks that the site is up | only the site address (no personal data) | **(confirm)** |
@@ -95,3 +95,13 @@ providers keep data outside the Philippines?
 - Business registration (DTI or SEC), BIR registration, TIN, and how receipts or invoices are issued for subscription fees.
 - Local permits that apply to the operator.
 - How to treat payments received through GCash for tax purposes.
+
+## 9. Added after the first version of this brief
+
+- The system now emails a shop's **customers** (booking confirmation and a reminder before the appointment) when they gave an
+  email, the shop has the switch on, and the day's limit allows it. The email names the shop, the service, the staff member,
+  the date and time, and gives the customer's own link to see or cancel the booking. Question: is the customer's
+  address collected with a clear enough notice on the booking page, and is the Privacy Notice sentence enough?
+- A per-day email limit (the email service's free plan is about 300 a day) stops customer emails first; shop owners' own
+  emails keep a reserve. A shop can buy an add-on for more emails; payment is manual (GCash). The Terms say nothing yet about
+  this add-on **(add a line)**.

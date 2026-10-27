@@ -5,6 +5,10 @@
 }
 <h1>@Text.AdminNavReminders</h1>
 <p class="hint">@Text.RemindersHint</p>
+@if (Model.EmailRoomNow != VeskaFlow.Web.Services.EmailRoom.Ok)
+{
+    <div class="notice" role="status">@(Model.EmailRoomNow == VeskaFlow.Web.Services.EmailRoom.ShopLimit ? Text.EmailsPausedShop : Text.EmailsPausedPool)</div>
+}
 
 @if (Model.Rows.Count == 0)
 {

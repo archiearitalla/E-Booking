@@ -5,10 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>Customers due a reminder before their appointment, each with a ready message. Nothing is sent by the system.</summary>
-public class RemindersModel(ReminderService reminders, ShopSettingsService settings, IConfiguration config) : AdminPageModel
+public class RemindersModel(ReminderService reminders, ShopSettingsService settings, IConfiguration config, EmailQuota quota, IEmailSender email) : AdminPageModel
 {
     public IReadOnlyList<ReminderRow> Rows { get; private set; } = [];
     public string ShopName { get; private set; } = "";
+
+    /// <summary>Set when automatic emails are on for this shop but stopped for today because a daily limit was reached.</summary>
+    public EmailRoom EmailRoomNow { get; private set; } = EmailRoom.Ok;
     public string TimeZone { get; private set; } = "";
     private string _baseUrl = "";
 
@@ -20,6 +23,7 @@ public class RemindersModel(ReminderService reminders, ShopSettingsService setti
         TimeZone = shop.TimeZone;
         _baseUrl = config["App:PublicBaseUrl"] is { Length: > 0 } configured ? configured.Trim().TrimEnd('/') : $"{Request.Scheme}://{Request.Host}";
         Rows = await reminders.ListPendingAsync(BusinessId, ct, ScopeStaffId);
+        if (shop.CustomerEmails && email.IsConfigured) EmailRoomNow = await quota.CheckCustomerAsync(BusinessId, ct);
         return Page();
     }
 

@@ -22,14 +22,14 @@
     </ul>
 
     <h2>Why we use it</h2>
-    <p>Only to run the booking service: showing free times, taking and managing bookings, letting the shop see its day, and letting the shop's staff contact their own customers. The system does not send reminders or follow-up messages to a shop's customers by itself; staff send them from their own phone. The emails the system sends go only to shop owners: the confirmation of a new sign-up, a password reset link when they ask for it, and a notice a few days before their access ends.</p>
+    <p>Only to run the booking service: showing free times, taking and managing bookings, letting the shop see its day, and letting the shop's staff contact their own customers. A shop can switch on automatic emails: when a customer gives an email address while booking, the system emails them a confirmation and, before the appointment, a reminder, each with the booking details and the customer's own link to see or cancel it. These go out only within a daily limit, only to customers who gave an email, and the shop can switch them off. Follow-up messages are not sent by the system; staff send them from their own phone. The emails to shop owners are the confirmation of a new sign-up, a password reset link when they ask for it, and a notice a few days before their access ends.</p>
 
     <h2>Who sees it</h2>
     <p>The shop and its signed-in staff. We do not sell data, show advertising or use analytics. We use these service providers to run the system:</p>
     <ul>
         <li><strong>Render</strong>: hosting of the application.</li>
         <li><strong>Neon</strong>: the database (the region we use is Singapore).</li>
-        <li><strong>Brevo</strong>: sends the emails to shop owners listed above (it receives the owner's name and email address and the message).</li>
+        <li><strong>Brevo</strong>: sends the emails listed above (it receives the recipient's email address, the name used in the greeting and the message, which for a customer includes the booking details).</li>
         <li><strong>Cloudflare</strong>: the domain name and, when it is switched on, a "are you a person" check on sign-up and on the forgotten-password page (it receives what your browser sends with the check, such as the network address).</li>
         <li><strong>GitHub</strong>: holds our nightly backup of the database. The backup is encrypted before it is stored, and only we hold the key.</li>
     </ul>

@@ -38,14 +38,25 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.FollowUpService>();
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.BrevoEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.ResendEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.ICaptcha, VeskaFlow.Web.Services.TurnstileVerifier>(c => c.Timeout = TimeSpan.FromSeconds(10));
-builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
+// The email service that is set up: Brevo first (no domain needed), then Resend. With neither the platform owner confirms by hand.
+// Emails to shop owners go through CountedEmailSender (counted against the daily limit); customer emails use this "raw" one and
+// count themselves per shop (see CustomerMailer).
+builder.Services.AddKeyedScoped<VeskaFlow.Web.Services.IEmailSender>("raw", (sp, _) =>
 {
-    // Brevo first (no domain needed), then Resend. With neither the platform owner confirms by hand.
     var brevo = sp.GetRequiredService<VeskaFlow.Web.Services.BrevoEmailSender>();
     if (brevo.IsConfigured) return brevo;
     var resend = sp.GetRequiredService<VeskaFlow.Web.Services.ResendEmailSender>();
     return resend.IsConfigured ? resend : new VeskaFlow.Web.Services.NoEmailSender();
 });
+builder.Services.AddScoped<VeskaFlow.Web.Services.EmailQuota>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
+{
+    var raw = sp.GetRequiredKeyedService<VeskaFlow.Web.Services.IEmailSender>("raw");
+    return raw.IsConfigured ? new VeskaFlow.Web.Services.CountedEmailSender(raw, sp.GetRequiredService<VeskaFlow.Web.Services.EmailQuota>()) : raw;
+});
+builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerMailer>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.AutoReminderService>();
+builder.Services.AddHostedService<VeskaFlow.Web.Services.ReminderEmailWorker>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AccountControlService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerDataService>();

@@ -12,6 +12,9 @@ public sealed class BillingInfo(IConfiguration config)
     public string Note => Clean(config["Billing:Note"]);
     public string ContactUrl => Clean(config["Trial:ContactUrl"]);
 
+    /// <summary>The price of the more-emails add-on, for example "PHP 199 per month" (Billing:EmailAddonPrice).</summary>
+    public string EmailAddonPrice => Clean(config["Billing:EmailAddonPrice"]);
+
     /// <summary>True when there is anything to tell a client about paying.</summary>
     public bool HasDetails => Price.Length > 0 || PayTo.Length > 0 || Note.Length > 0;
 

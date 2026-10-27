@@ -8,6 +8,7 @@
     <meta name="robots" content="noindex" />
 }
 <h1>@Text.PlatformTitle</h1>
+<p class="muted">@Text.PlatformEmailsToday(Model.EmailsToday, Model.EmailLimit)</p>
 <p class="hint">@Text.PlatformHint</p>
 @if (!Model.EmailConfigured) { <div class="notice" role="status">@Text.PlatformNoEmail</div> }
 @if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
@@ -60,6 +61,7 @@ else
                 <dl class="facts">
                     <dt>@Text.PlatformOwner</dt><dd>@s.OwnerName &middot; @s.OwnerEmail</dd>
                     <dt>@Text.SettingsAddress</dt><dd><a href="/b/@s.Slug">/b/@s.Slug</a> &middot; @s.Industry</dd>
+                    <dt>@Text.PlatformEmailAddon</dt><dd>@(s.EmailAddonUntilUtc is { } au && au > DateTime.UtcNow ? Text.PlatformEmailAddonUntil(au.ToString("MMM d, yyyy", invariant)) : Text.PlatformEmailAddonNone)</dd>
                     <dt>@Text.PlatformSignedUp</dt><dd>@s.CreatedAtUtc.ToString("MMM d, yyyy", invariant)@(s.TrialEndsAtUtc is { } t ? " · " + string.Format(Text.PlatformTrialEnds, t.ToString("MMM d, yyyy", invariant)) : "")</dd>
                 </dl>
                 <div class="actions">
@@ -70,6 +72,17 @@ else
                     </form>
                     @if (s.TrialEndsAtUtc is not null)
                     {
+                    <form method="post" asp-page-handler="EmailAddon" class="inline-form">
+                        <input type="hidden" name="id" value="@s.BusinessId" />
+                        <label for="addon-@s.BusinessId" class="sr-only">@Text.PlatformEmailAddon @s.Name</label>
+                        <select id="addon-@s.BusinessId" name="days">
+                            @foreach (var d in AccountControlService.ExtendChoices)
+                            {
+                                <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option>
+                            }
+                        </select>
+                        <button type="submit" class="secondary" data-confirm="@Text.PlatformEmailAddonAsk">@Text.PlatformEmailAddon<span class="sr-only"> @s.Name</span></button>
+                    </form>
                         <form method="post" asp-page-handler="Extend" class="inline-form">
                             <input type="hidden" name="id" value="@s.BusinessId" />
                             <label for="days-@s.BusinessId" class="sr-only">@Text.PlatformExtendDays @s.Name</label>

@@ -240,6 +240,26 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public static string BookingEmailSubject(string shop) => $"Your booking at {shop} is confirmed";
+    public static string BookingEmailBody(string firstName, string shop, string service, string staff, string whenText, string manageUrl) =>
+        $"Hi {firstName},\n\nYour booking at {shop} is confirmed.\n\n{service} with {staff}\n{whenText}\n\nTo see it or cancel it, use this link:\n{manageUrl}\n\nIf you did not make this booking, open the link and cancel it.\n\n{CustomerEmailFooter(shop)}";
+    public static string CustomerEmailFooter(string shop) =>
+        $"This message was sent for {shop} through VeskaFlow. Please do not reply to it; contact the shop directly.";
+    public const string LabelCustomerEmails = "Email my customers a confirmation and a reminder";
+    public const string HintCustomerEmails = "When a customer gives an email address, they get an email when they book and another before the appointment. Customers without an email still get your manual messages. There is a daily limit on emails; when it is used up, the rest wait in Reminders for you to send by hand.";
+    public const string EmailAddonTitle = "More emails";
+    public static string EmailAddonActive(string until) => $"The more-emails add-on is active until {until}.";
+    public const string EmailAddonNone = "Without the add-on, a shop can email up to a limited number of customers a day. The add-on lifts that limit.";
+    public const string EmailAddonPriceLabel = "Add-on price";
+    public const string EmailAddonHow = "To add it, pay the same way as your subscription and send the proof, saying it is for the more-emails add-on.";
+    public const string EmailsPausedShop = "Automatic emails stopped for today: your shop reached its daily share. The customers below still need a message from you.";
+    public const string EmailsPausedPool = "Automatic emails stopped for today: the day's limit was reached. The customers below still need a message from you.";
+    public static string PlatformEmailsToday(int sent, int limit) => $"Emails today: {sent} of {limit}";
+    public const string PlatformEmailAddon = "Email add-on";
+    public const string PlatformEmailAddonAsk = "Add days to this shop's more-emails add-on? Use this when the client has paid for it.";
+    public static string PlatformEmailAddonUntil(string until) => $"active until {until}";
+    public const string PlatformEmailAddonNone = "not active";
+    public static string PlatformEmailAddonExtended(string until) => $"Add-on active until {until}.";
     public const string TeamStaffInvalid = "Choose one of your staff members.";
     public const string TeamLinkOnlyStaff = "Only a Staff login can be tied to one staff member. Managers and the owner see the whole shop.";
     public const string TeamWhichStaff = "Which staff member are they?";

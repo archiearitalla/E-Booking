@@ -34,6 +34,25 @@
     }
 </div>
 
+<div class="card">
+    <h2>@Text.EmailAddonTitle</h2>
+    @if (Model.EmailAddonUntilUtc is { } addonUntil && addonUntil > DateTime.UtcNow)
+    {
+        <p>@Text.EmailAddonActive(DisplayFormat.Date(addonUntil, Model.TimeZoneName))</p>
+    }
+    else
+    {
+        <p class="hint">@Text.EmailAddonNone</p>
+        @if (Model.Billing.EmailAddonPrice.Length > 0)
+        {
+            <dl class="facts"><dt>@Text.EmailAddonPriceLabel</dt><dd>@Model.Billing.EmailAddonPrice</dd>
+                @if (Model.Billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@Model.Billing.PayTo</dd> }</dl>
+            <p class="hint">@Text.EmailAddonHow</p>
+            @if (Model.Billing.ContactUrl.Length > 0) { <p><a class="button" href="@Model.Billing.ContactUrl" target="_blank" rel="noopener">@Text.BillingSendProof</a></p> }
+        }
+    }
+</div>
+
 <div class="card qr-print">
     <h2>@Text.QrTitle</h2>
     <p class="muted">@Text.QrHelp</p>
@@ -116,6 +135,14 @@
                    aria-invalid="@(Model.ErrorFor("reminderHours") is null ? "false" : "true")" aria-describedby="ReminderHours-hint ReminderHours-error" />
             <p class="hint" id="ReminderHours-hint">@Text.HintReminderHours</p>
             @if (Model.ErrorFor("reminderHours") is { } e9) { <p class="error" id="ReminderHours-error">@e9</p> }
+        </div>
+
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.CustomerEmails" value="true" checked="@Model.Input.CustomerEmails" />
+                <span><strong>@Text.LabelCustomerEmails</strong><span class="muted"> @Text.HintCustomerEmails</span></span>
+            </label>
+            <input type="hidden" name="Input.CustomerEmails" value="false" />
         </div>
 
         <fieldset class="field" aria-describedby="BrandColor-hint BrandColor-error">

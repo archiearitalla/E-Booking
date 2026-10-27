@@ -5,7 +5,7 @@ namespace VeskaFlow.Web.Pages.Admin;
 
 [AdminAccess(AdminLevel.Owner)]
 [RequestSizeLimit(1_048_576)] // a logo is at most 256 KB; nothing bigger is read
-public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos) : AdminPageModel
+public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();
 
@@ -15,6 +15,11 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
 
     /// <summary>Changes when the logo does; null when the shop has none.</summary>
     public long? LogoVersion { get; private set; }
+
+    /// <summary>Until when the paid more-emails add-on is active (null: not bought), and the shop time zone to show it in.</summary>
+    public DateTime? EmailAddonUntilUtc { get; private set; }
+    public BillingInfo Billing => billing;
+    public string TimeZoneName { get; private set; } = "Asia/Manila";
 
     /// <summary>Loads what the page shows besides the settings form: the opening hours and the logo.</summary>
     private async Task LoadHoursAsync(CancellationToken ct)
@@ -120,7 +125,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var result = await settings.SaveSettingsAsync(BusinessId,
-            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays, Input.ReminderHours), ct);
+            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays, Input.ReminderHours, Input.CustomerEmails), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -142,11 +147,13 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     {
         Slug = s.Slug;
         Plan = s.Plan;
+        EmailAddonUntilUtc = s.EmailAddonUntilUtc;
+        TimeZoneName = s.TimeZone;
         Input = new SettingsForm
         {
             Name = s.Name, TimeZone = s.TimeZone, SlotMinutes = s.SlotMinutes,
             LeadTimeMinutes = s.LeadTimeMinutes, HorizonDays = s.HorizonDays, CancelCutoffHours = s.CancelCutoffHours,
-            BrandColor = s.BrandColor, FollowUpNoticeDays = s.FollowUpNoticeDays, ReminderHours = s.ReminderHours,
+            BrandColor = s.BrandColor, FollowUpNoticeDays = s.FollowUpNoticeDays, ReminderHours = s.ReminderHours, CustomerEmails = s.CustomerEmails,
         };
     }
 
@@ -161,5 +168,6 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         public string? BrandColor { get; set; } = BrandColors.Default;
         public int? FollowUpNoticeDays { get; set; } = 3;
         public int? ReminderHours { get; set; } = 24;
+        public bool CustomerEmails { get; set; } = true;
     }
 }
