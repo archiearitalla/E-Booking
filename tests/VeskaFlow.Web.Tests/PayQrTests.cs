@@ -92,4 +92,45 @@ public class PayQrTests
         var notBoss = await shop.GetAsync("/Platform");
         Assert.Equal(HttpStatusCode.NotFound, notBoss.StatusCode);
     }
+
+    [Fact]
+    public async Task The_written_price_and_pay_to_give_way_to_the_QR_code_and_come_back_without_it()
+    {
+        Environment.SetEnvironmentVariable("Billing__Price", "PHP 777 per month");
+        Environment.SetEnvironmentVariable("Billing__PayTo", "GCash 0900 000 0000 (Test Name)");
+        try
+        {
+            var bossEmail = $"{Id("boss")}@example.com";
+            var (factory, _) = await HttpApp.StartAsync(platformAdminEmails: bossEmail);
+            using var _f = factory;
+            var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+            var images = new PlatformImageService(db, TimeProvider.System);
+            await images.RemoveAsync(PlatformImageService.GcashQr);
+
+            var client = HttpApp.NewClient(factory);
+            await HttpApp.PostFormAsync(client, "/Register", new()
+            {
+                ["Input.Accept"] = "true", ["Input.BusinessName"] = "Qr Shop", ["Input.Slug"] = Id("qr"), ["Input.OwnerName"] = "Owner",
+                ["Input.Email"] = bossEmail, ["Input.Password"] = "correct-horse-1", ["Input.Industry"] = "clinic",
+            });
+
+            var without = await client.GetStringAsync("/Admin/About");
+            Assert.Contains("PHP 777 per month", without);
+            Assert.Contains("GCash 0900 000 0000", without);
+
+            await images.SaveAsync(PlatformImageService.GcashQr, Png);
+            var with = await client.GetStringAsync("/Admin/About");
+            Assert.Contains("class=\"pay-qr\"", with);
+            Assert.DoesNotContain("PHP 777 per month", with);
+            Assert.DoesNotContain("GCash 0900 000 0000", with);
+
+            await images.RemoveAsync(PlatformImageService.GcashQr);
+            Assert.Contains("PHP 777 per month", await client.GetStringAsync("/Admin/About"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Billing__Price", null);
+            Environment.SetEnvironmentVariable("Billing__PayTo", null);
+        }
+    }
 }

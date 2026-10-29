@@ -461,7 +461,7 @@ When a customer gives an email at booking and the shop has the switch on (defaul
 
 ### 6.y16 GCash QR code
 
-The platform owner can upload the GCash QR code (a screenshot of My QR, PNG, JPEG or WebP, up to 512 KB, recognised by its first bytes) on the Platform page and remove it. Signed-in shop owners see it with the written payment details on About, in Settings (more emails) and on the trial-ended page; it is served only to signed-in people. The system does not generate a GCash QR itself, because only the GCash app produces a code its app accepts.
+The platform owner can upload the GCash QR code (a screenshot of My QR, PNG, JPEG or WebP, up to 512 KB, recognised by its first bytes) on the Platform page and remove it. Signed-in shop owners see it on About, in Settings (more emails) and on the trial-ended page; when a QR is uploaded it replaces the written Price and Pay to lines (they come back if the QR is removed); it is served only to signed-in people. The system does not generate a GCash QR itself, because only the GCash app produces a code its app accepts.
 
 ### 6.z Who may use the system
 

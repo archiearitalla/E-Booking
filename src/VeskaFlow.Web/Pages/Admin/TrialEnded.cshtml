@@ -8,13 +8,16 @@
 <div class="card">
     <h1>@Text.TrialEndedTitle</h1>
     <p>@Text.TrialEndedBody</p>
-    @if (billing.HasDetails)
+    @if (billing.HasDetails || Model.PayQrVersion is not null)
     {
         <h2>@Text.BillingTitle</h2>
+        @if (Model.PayQrVersion is null)
+        {
         <dl class="facts">
-            @if (billing.Price.Length > 0) { <dt>@Text.BillingPriceLabel</dt><dd>@billing.Price</dd> }
-            @if (billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@billing.PayTo</dd> }
+            @if (Model.PayQrVersion is null && billing.Price.Length > 0) { <dt>@Text.BillingPriceLabel</dt><dd>@billing.Price</dd> }
+            @if (Model.PayQrVersion is null && billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@billing.PayTo</dd> }
         </dl>
+        }
         @if (Model.PayQrVersion is { } qrVersion) { <img class="pay-qr" src="/pay-qr?v=@qrVersion" alt="@Text.PayQrAlt" width="256" height="256" /> }
         <p class="hint">@(billing.Note.Length > 0 ? billing.Note : Text.BillingProof)</p>
     }
