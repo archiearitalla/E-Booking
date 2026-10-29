@@ -80,6 +80,14 @@ public class PayQrTests
         Assert.Equal(HttpStatusCode.OK, shown.StatusCode);
         Assert.Equal("image/png", shown.Content.Headers.ContentType!.MediaType);
         Assert.Contains("class=\"pay-qr\"", await shop.GetStringAsync("/Admin/About"));
+        var download = await shop.GetAsync("/pay-qr?download=1");
+        Assert.Equal("attachment", download.Content.Headers.ContentDisposition!.DispositionType);
+        Assert.Equal("gcash-qr.png", download.Content.Headers.ContentDisposition.FileName ?? download.Content.Headers.ContentDisposition.FileNameStar);
+        var about = await shop.GetStringAsync("/Admin/About");
+        Assert.Contains("Upload QR", about); // how to use it on the same phone
+        Assert.Contains("data-gcash-save", about); // the QR itself is a link that saves it
+        Assert.Contains("data-gcash-open", about);
+        Assert.Contains("package=com.globe.gcash.android", await shop.GetStringAsync("/js/site.js"));
 
         var again = new HttpRequestMessage(HttpMethod.Get, "/pay-qr");
         again.Headers.TryAddWithoutValidation("If-None-Match", shown.Headers.ETag!.ToString());

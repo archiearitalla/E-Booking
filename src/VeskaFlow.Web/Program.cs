@@ -187,6 +187,11 @@ app.MapGet("/pay-qr", async (HttpContext http, VeskaFlow.Web.Services.PlatformIm
     http.Response.Headers.CacheControl = "private, no-cache";
     http.Response.Headers.ETag = etag;
     if (http.Request.Headers.IfNoneMatch == etag) return Results.StatusCode(StatusCodes.Status304NotModified);
+    if (http.Request.Query.ContainsKey("download"))
+    {
+        var extension = image.ContentType switch { "image/jpeg" => "jpg", "image/webp" => "webp", _ => "png" };
+        return Results.Bytes(image.Data, image.ContentType, $"gcash-qr.{extension}");
+    }
     return Results.Bytes(image.Data, image.ContentType);
 }).RequireAuthorization();
 

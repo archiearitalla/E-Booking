@@ -241,6 +241,9 @@ public static class Text
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
     public const string PayQrTitle = "GCash QR code";
+    public const string PayQrSaveImage = "Save QR to my phone";
+    public const string PayQrOpenGcash = "Open GCash";
+    public const string PayQrHowTo = "Tap the QR or Save QR to my phone. On Android, GCash then opens by itself. In GCash tap Pay QR, choose Upload QR and pick the saved picture. On a computer or another phone, just scan the QR with the GCash app.";
     public const string PayQrHint = "Shown to clients where they pay (About, and the page they see when access ends). In the GCash app open My QR, take a screenshot and upload it here. PNG, JPEG or WebP, up to 512 KB.";
     public const string PayQrAlt = "GCash QR code: scan it to pay";
     public const string PayQrSave = "Save QR code";

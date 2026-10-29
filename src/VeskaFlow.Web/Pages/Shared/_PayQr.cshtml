@@ -1,0 +1,11 @@
+@model long
+<div class="pay-qr-block">
+    <a href="/pay-qr?download=1" download data-gcash-save aria-label="@Text.PayQrSaveImage">
+        <img class="pay-qr" src="/pay-qr?v=@Model" alt="@Text.PayQrAlt" width="256" height="256" />
+    </a>
+    <p class="actions">
+        <a class="button" href="/pay-qr?download=1" download data-gcash-save>@Text.PayQrSaveImage</a>
+        <a class="button secondary" href="#" data-gcash-open hidden>@Text.PayQrOpenGcash</a>
+    </p>
+    <p class="hint">@Text.PayQrHowTo</p>
+</div>

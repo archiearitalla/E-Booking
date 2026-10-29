@@ -171,3 +171,21 @@ document.addEventListener('click', function (event) {
 if ('serviceWorker' in navigator && location.pathname.toLowerCase().startsWith('/admin')) {
   navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
 }
+
+// GCash QR on a phone: tapping the QR (or Save QR) saves the picture and, on Android, opens the GCash app a moment later so the
+// client can use Pay QR, Upload QR. An "Open GCash" button also shows on Android. Other devices only get the download.
+(function () {
+  var android = /Android/i.test(navigator.userAgent);
+  if (!android) return;
+  var gcash = 'intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.globe.gcash.android;' +
+    'S.browser_fallback_url=' + encodeURIComponent('https://play.google.com/store/apps/details?id=com.globe.gcash.android') + ';end';
+  document.querySelectorAll('[data-gcash-open]').forEach(function (el) {
+    el.hidden = false;
+    el.setAttribute('href', gcash);
+  });
+  document.querySelectorAll('[data-gcash-save]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      setTimeout(function () { window.location.href = gcash; }, 1500);
+    });
+  });
+})();

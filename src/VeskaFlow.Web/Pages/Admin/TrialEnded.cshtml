@@ -18,7 +18,7 @@
             @if (Model.PayQrVersion is null && billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@billing.PayTo</dd> }
         </dl>
         }
-        @if (Model.PayQrVersion is { } qrVersion) { <img class="pay-qr" src="/pay-qr?v=@qrVersion" alt="@Text.PayQrAlt" width="256" height="256" /> }
+        @if (Model.PayQrVersion is { } qrVersion) { <partial name="_PayQr" model="qrVersion" /> }
         <p class="hint">@(billing.Note.Length > 0 ? billing.Note : Text.BillingProof)</p>
     }
     @if (billing.ContactUrl.Length > 0)
