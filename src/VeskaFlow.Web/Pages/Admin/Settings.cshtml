@@ -47,6 +47,7 @@
         {
             <dl class="facts"><dt>@Text.EmailAddonPriceLabel</dt><dd>@Model.Billing.EmailAddonPrice</dd>
                 @if (Model.Billing.PayTo.Length > 0) { <dt>@Text.BillingPayToLabel</dt><dd>@Model.Billing.PayTo</dd> }</dl>
+            @if (Model.PayQrVersion is { } qrVersion) { <img class="pay-qr" src="/pay-qr?v=@qrVersion" alt="@Text.PayQrAlt" width="256" height="256" /> }
             <p class="hint">@Text.EmailAddonHow</p>
             @if (Model.Billing.ContactUrl.Length > 0) { <p><a class="button" href="@Model.Billing.ContactUrl" target="_blank" rel="noopener">@Text.BillingSendProof</a></p> }
         }

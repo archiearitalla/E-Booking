@@ -240,6 +240,16 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string PayQrTitle = "GCash QR code";
+    public const string PayQrHint = "Shown to clients where they pay (About, and the page they see when access ends). In the GCash app open My QR, take a screenshot and upload it here. PNG, JPEG or WebP, up to 512 KB.";
+    public const string PayQrAlt = "GCash QR code: scan it to pay";
+    public const string PayQrSave = "Save QR code";
+    public const string PayQrSaveAsk = "Use this picture as the GCash QR code clients see?";
+    public const string PayQrRemove = "Remove QR code";
+    public const string PayQrRemoveAsk = "Remove the GCash QR code? Clients will see only the written details.";
+    public const string PayQrSaved = "QR code saved.";
+    public const string PayQrRemoved = "QR code removed.";
+    public const string PayQrTooBig = "That picture is too big. Use one up to 512 KB.";
     public static string BookingEmailSubject(string shop) => $"Your booking at {shop} is confirmed";
     public static string BookingEmailBody(string firstName, string shop, string service, string staff, string whenText, string manageUrl) =>
         $"Hi {firstName},\n\nYour booking at {shop} is confirmed.\n\n{service} with {staff}\n{whenText}\n\nTo see it or cancel it, use this link:\n{manageUrl}\n\nIf you did not make this booking, open the link and cancel it.\n\n{CustomerEmailFooter(shop)}";

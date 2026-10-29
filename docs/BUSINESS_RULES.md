@@ -459,6 +459,10 @@ A STAFF login can be tied to one bookable staff member (for example a barber) on
 
 When a customer gives an email at booking and the shop has the switch on (default on), they get a confirmation email, and a reminder email once the appointment is inside the shop's reminder window (the booking must be at least 3 hours old, the appointment more than 30 minutes away); an emailed reminder takes the booking off the manual Reminders list. Customers without an email, and everything after a limit is reached, stay on the manual list. Every email sent is counted per UTC day: customer emails stop at the daily limit minus an owner reserve, shops without the paid add-on stop earlier (their own daily share and a free pool that leaves a reserve for add-on shops), and the system's own emails to owners are never blocked by customer emails. The paid add-on is switched on by the platform owner on the Platform page after payment (manual, GCash), for 30, 90 or 365 days. The email names the shop, the service, the staff member and the time, and carries the customer's own manage link; it says not to reply.
 
+### 6.y16 GCash QR code
+
+The platform owner can upload the GCash QR code (a screenshot of My QR, PNG, JPEG or WebP, up to 512 KB, recognised by its first bytes) on the Platform page and remove it. Signed-in shop owners see it with the written payment details on About, in Settings (more emails) and on the trial-ended page; it is served only to signed-in people. The system does not generate a GCash QR itself, because only the GCash app produces a code its app accepts.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

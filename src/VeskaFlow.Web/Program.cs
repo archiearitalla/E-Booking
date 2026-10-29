@@ -66,6 +66,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.ReportService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.TeamService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.LogoService>();
 builder.Services.AddSingleton<VeskaFlow.Web.Services.BillingInfo>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.PlatformImageService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ExpiryNoticeService>();
 builder.Services.AddHostedService<VeskaFlow.Web.Services.ExpiryNoticeWorker>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
@@ -177,6 +178,18 @@ app.MapRazorPages();
 app.MapMethods("/ping", ["GET", "HEAD"], () => Results.Text("ok")); // uptime monitors often use HEAD
 
 // The shop's logo for the booking page. The browser keeps it and asks again each time (ETag), so a new logo shows at once.
+// The GCash QR code clients scan to pay. Only for signed-in people (shop owners on About and on the trial-ended page).
+app.MapGet("/pay-qr", async (HttpContext http, VeskaFlow.Web.Services.PlatformImageService images, CancellationToken ct) =>
+{
+    var image = await images.GetAsync(VeskaFlow.Web.Services.PlatformImageService.GcashQr, ct);
+    if (image is null) return Results.NotFound();
+    var etag = $"\"{image.Version:x}\"";
+    http.Response.Headers.CacheControl = "private, no-cache";
+    http.Response.Headers.ETag = etag;
+    if (http.Request.Headers.IfNoneMatch == etag) return Results.StatusCode(StatusCodes.Status304NotModified);
+    return Results.Bytes(image.Data, image.ContentType);
+}).RequireAuthorization();
+
 app.MapGet("/logo/{slug}", async (string slug, HttpContext http, VeskaFlow.Web.Services.LogoService logos, CancellationToken ct) =>
 {
     var logo = await logos.GetBySlugAsync(slug, ct);

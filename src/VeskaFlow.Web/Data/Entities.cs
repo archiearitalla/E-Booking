@@ -230,3 +230,12 @@ public class EmailDaily
     public Guid BusinessId { get; set; }
     public int Sent { get; set; }
 }
+
+/// <summary>A picture the platform owner keeps for the whole system, such as the GCash QR code (migration 019).</summary>
+public class PlatformImage
+{
+    public string Key { get; set; } = "";
+    public string ContentType { get; set; } = "";
+    public byte[] Data { get; set; } = [];
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}

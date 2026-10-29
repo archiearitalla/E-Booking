@@ -156,3 +156,7 @@ When a customer gives an email while booking, the shop can email them a confirma
 - `Billing__EmailAddonPrice`: for example `PHP 199 per month`; shown in Settings so a shop knows what the add-on costs.
 
 When a shop pays for the add-on, open `/Platform` and use **Email add-on** on its card (30, 90, 365 days). The Platform page also shows how many emails went out today. When the limit is reached, the rest wait in each shop's Reminders page for the staff to send by hand.
+
+## GCash QR code
+
+Open `/Platform`, card **GCash QR code**, and upload a screenshot of **My QR** from the GCash app (PNG, JPEG or WebP, up to 512 KB). Signed-in shop owners then see it on **About** (How to renew), in Settings (More emails) and on the page they see when access ends, next to the written details. The picture is kept in the database and is only served to signed-in people.

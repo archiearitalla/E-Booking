@@ -9,7 +9,8 @@ namespace VeskaFlow.Web.Pages.Platform;
 /// The platform owner's list of shops: switch a shop on or off, confirm an owner's email by hand, or send a new confirmation
 /// link. Only a signed-in user whose email is listed in <c>Platform:AdminEmails</c> sees it; everyone else gets "not found".
 /// </summary>
-public class IndexModel(AccountControlService accounts, IConfiguration config, ILogger<IndexModel> logger, EmailQuota quota) : PageModel
+[RequestSizeLimit(1_048_576)] // the QR picture is at most 512 KB; nothing bigger is read
+public class IndexModel(AccountControlService accounts, IConfiguration config, ILogger<IndexModel> logger, EmailQuota quota, PlatformImageService images) : PageModel
 {
     /// <summary>The shop the platform owner is signed in to: it can be switched on or off but never deleted from here.</summary>
     public Guid? OwnBusinessId => User.BusinessId();
@@ -20,6 +21,7 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     /// <summary>Where the nightly backups are kept (the GitHub Actions page of the repository).</summary>
     public string BackupUrl => config["Platform:BackupUrl"] is { Length: > 0 } u ? u : "https://github.com/archiearitalla/E-Booking/actions/workflows/backup.yml";
 
+    public long? PayQrVersion { get; private set; }
     public int EmailsToday { get; private set; }
     public int EmailLimit => quota.DailyLimit;
     public DateTime? BackupCopySavedAtUtc { get; private set; }
@@ -45,6 +47,7 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Shops = await accounts.ListShopsAsync(ct);
+        PayQrVersion = await images.VersionAsync(PlatformImageService.GcashQr, ct);
         EmailsToday = await quota.TodayTotalAsync(ct);
         BackupCopySavedAtUtc = await accounts.GetBackupCopySavedAsync(ct);
         BackupDaysSince = AccountControlService.DaysSince(BackupCopySavedAtUtc, DateTime.UtcNow);
@@ -70,6 +73,35 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     {
         await accounts.MarkBackupCopySavedAsync(ct);
         Success = Text.PlatformBackupMarked;
+        return RedirectToPage();
+    }
+
+    /// <summary>Saves the picture of the GCash QR code (a screenshot of "My QR" in the GCash app).</summary>
+    public async Task<IActionResult> OnPostPayQrAsync(IFormFile? picture, CancellationToken ct)
+    {
+        byte[]? bytes = null;
+        if (picture is { Length: > PlatformImageService.MaxBytes })
+        {
+            Failure = Text.PayQrTooBig;
+            return RedirectToPage();
+        }
+        if (picture is { Length: > 0 })
+        {
+            await using var stream = picture.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            bytes = buffer.ToArray();
+        }
+        var result = await images.SaveAsync(PlatformImageService.GcashQr, bytes, ct);
+        if (result.IsSuccess) Success = Text.PayQrSaved;
+        else Failure = result.FieldErrors.GetValueOrDefault("image") ?? result.Message;
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRemovePayQrAsync(CancellationToken ct)
+    {
+        await images.RemoveAsync(PlatformImageService.GcashQr, ct);
+        Success = Text.PayQrRemoved;
         return RedirectToPage();
     }
 

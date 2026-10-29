@@ -13,6 +13,28 @@
 @if (!Model.EmailConfigured) { <div class="notice" role="status">@Text.PlatformNoEmail</div> }
 @if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
 @if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
+<div class="card">
+    <h2>@Text.PayQrTitle</h2>
+    <p class="hint">@Text.PayQrHint</p>
+    @if (Model.PayQrVersion is { } payQrVersion)
+    {
+        <img class="pay-qr" src="/pay-qr?v=@payQrVersion" alt="@Text.PayQrAlt" width="256" height="256" />
+    }
+    <form method="post" asp-page-handler="PayQr" enctype="multipart/form-data">
+        <div class="field">
+            <label for="pay-qr-file">@Text.LogoChoose</label>
+            <input type="file" id="pay-qr-file" name="picture" accept="image/png,image/jpeg,image/webp" required />
+        </div>
+        <button type="submit" class="secondary" data-confirm="@Text.PayQrSaveAsk">@Text.PayQrSave</button>
+    </form>
+    @if (Model.PayQrVersion is not null)
+    {
+        <form method="post" asp-page-handler="RemovePayQr" class="actions">
+            <button type="submit" class="danger" data-confirm="@Text.PayQrRemoveAsk">@Text.PayQrRemove</button>
+        </form>
+    }
+</div>
+
 @if (!string.IsNullOrEmpty(Model.LinkToCopy))
 {
     <div class="card">
