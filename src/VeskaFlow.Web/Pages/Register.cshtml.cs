@@ -68,6 +68,7 @@ public class RegisterModel(OnboardingService onboarding, AccountControlService a
 
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme, AuthService.CreatePrincipal(result.Value!));
+        TempData["Success"] = Text.SignedUpAddress(result.Value!.Slug); // the address may differ from the name when it was taken
         return Redirect("/Admin");
     }
 

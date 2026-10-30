@@ -20,6 +20,7 @@ public static class Text
     public const string AppName = "VeskaFlow";
     public const string BusinessNameInvalid = "Enter your shop name (1 to 80 characters).";
     public const string SlugInvalid = "The booking address needs at least 3 letters or numbers.";
+    public static string SignedUpAddress(string slug) => $"Welcome! Your online booking page is at /b/{slug}. Share that address, or the QR code in Settings, with your customers.";
     public const string SlugTaken = "That booking address is already taken. Please choose another.";
     public const string OwnerNameInvalid = "Enter your name (1 to 80 characters).";
     public const string EmailTaken = "An account with that email already exists. Try signing in.";
@@ -78,7 +79,7 @@ public static class Text
 
     public const string LabelShopName = "Shop name";
     public const string LabelSlug = "Booking address";
-    public const string HintSlug = "Optional. Type it any way you like: spaces become hyphens and capital letters become small ones (San Juan 123 becomes san-juan-123). At least 3 characters. Leave blank to use your shop name. Your page will be at /b/your-address.";
+    public const string HintSlug = "Optional. Leave it blank and your address is made from your shop name (San Juan Salon becomes san-juan-salon). If that address is already used, a short code is added at the end. Your page will be at /b/your-address.";
     public const string LabelOwnerName = "Your name";
     public const string LabelEmail = "Email";
     public const string LabelPassword = "Password";
