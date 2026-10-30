@@ -747,4 +747,30 @@ public static class Text
     public const string AdminTitle = "Dashboard";
     public const string AdminWelcome = "Welcome,";
     public const string AdminSoon = "Your bookings, services and staff will appear here.";
+
+    // AI receptionist (paid add-on): the chat on the booking page, the shop's Settings card and the Platform switch.
+    public const string AiChatTitle = "Chat with our assistant";
+    public const string AiChatIntro = "Ask about services, prices and free times, or book right here. You can also use the form above.";
+    public const string AiChatGreeting = "Hi! I can check free times and book you in. What service would you like?";
+    public const string AiChatPlaceholder = "Type your message";
+    public const string AiChatSend = "Send";
+    public const string AiChatYou = "You";
+    public const string AiChatAssistant = "Assistant";
+    public const string AiChatWorking = "Thinking...";
+    public const string AiChatMessageInvalid = "Write a message of 1 to 500 characters.";
+    public const string AiChatFull = "This chat is full. Please use the booking form on this page.";
+    public const string AiChatUnavailable = "The assistant is not available right now. Please use the booking form on this page.";
+    public const string AiChatCannotHelp = "Sorry, I could not help with that. Please use the booking form on this page.";
+    public const string AiChatNetwork = "Could not reach the assistant. Check your connection and try again.";
+    public const string AiAddonTitle = "AI receptionist";
+    public static string AiAddonActive(string until) => $"The AI receptionist is on until {until}. It answers customers in a chat on your booking page and books them in.";
+    public static string AiAddonUsage(int used, int limit) => $"{used} of {limit} conversations used this month.";
+    public const string AiAddonNone = "An assistant on your booking page that answers customers, checks free times and books them in, any hour of the day. It is a paid add-on.";
+    public const string AiAddonPriceLabel = "Add-on price";
+    public const string AiAddonHow = "To add it, pay the same way as your subscription and send the proof, saying it is for the AI receptionist add-on.";
+    public const string PlatformAiAddon = "AI add-on";
+    public const string PlatformAiAddonAsk = "Add days to this shop's AI receptionist? Use this when the client has paid for it.";
+    public static string PlatformAiAddonUntil(string until) => $"active until {until}";
+    public const string PlatformAiAddonNone = "not active";
+    public static string PlatformAiAddonExtended(string until) => $"AI receptionist active until {until}.";
 }

@@ -11,7 +11,7 @@ public static class HttpApp
     /// <summary>Configuration is read when the app starts, so settings are applied just before the host is created.</summary>
     public static async Task<(AppFactory Factory, HttpClient Client)> StartAsync(
         int authPerMinute = 1000, int bookingPerMinute = 1000, bool requireEmailConfirmation = false, bool requireApproval = false,
-        string? platformAdminEmails = null)
+        string? platformAdminEmails = null, int chatPerMinute = 1000)
     {
         Environment.SetEnvironmentVariable("Signup__RequireEmailConfirmation", requireEmailConfirmation.ToString());
         Environment.SetEnvironmentVariable("Signup__RequireApproval", requireApproval.ToString());
@@ -20,6 +20,7 @@ public static class HttpApp
         Environment.SetEnvironmentVariable("ConnectionStrings__Default", cs);
         Environment.SetEnvironmentVariable("RateLimits__AuthPerMinute", authPerMinute.ToString());
         Environment.SetEnvironmentVariable("RateLimits__BookingPerMinute", bookingPerMinute.ToString());
+        Environment.SetEnvironmentVariable("RateLimits__ChatPerMinute", chatPerMinute.ToString());
         Environment.SetEnvironmentVariable("Database__MigrateOnStartup", "false"); // the test database is already migrated
         var factory = new AppFactory();
         return (factory, NewClient(factory));

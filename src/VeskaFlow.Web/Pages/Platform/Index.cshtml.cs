@@ -115,6 +115,16 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
         return RedirectToPage();
     }
 
+    /// <summary>Adds days to a shop's paid AI receptionist add-on after the client paid for it.</summary>
+    public async Task<IActionResult> OnPostAiAddonAsync(Guid id, int days, CancellationToken ct)
+    {
+        var result = await accounts.ExtendAiAddonAsync(id, days, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.PlatformAiAddonExtended(result.Value.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture));
+        else Failure = result.Message;
+        return RedirectToPage();
+    }
+
     /// <summary>Adds days to a shop's access end date (after the client paid, or as a favour).</summary>
     public async Task<IActionResult> OnPostExtendAsync(Guid id, int days, CancellationToken ct)
     {

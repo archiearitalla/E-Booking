@@ -22,6 +22,8 @@ public class Business
     public bool CustomerEmails { get; set; } = true;
     /// <summary>Until when the paid "more emails" add-on is active; null when it was never bought.</summary>
     public DateTime? EmailAddonUntilUtc { get; set; }
+    /// <summary>Until when the paid AI receptionist add-on is switched on; null when it was never bought.</summary>
+    public DateTime? AiAddonUntilUtc { get; set; }
     /// <summary>The days left (7, 3 or 1) the last expiry reminder email was sent for, and for which end date.</summary>
     public int? ExpiryNoticeDays { get; set; }
     public DateTime? ExpiryNoticeForEndUtc { get; set; }
@@ -229,6 +231,27 @@ public class EmailDaily
     public DateOnly Day { get; set; }
     public Guid BusinessId { get; set; }
     public int Sent { get; set; }
+}
+
+/// <summary>What the AI receptionist used for one shop in one UTC month (migration 020). <c>Month</c> is the first day of the month.</summary>
+public class AiUsage
+{
+    public DateOnly Month { get; set; }
+    public Guid BusinessId { get; set; }
+    public int Conversations { get; set; }
+    public long InputTokens { get; set; }
+    public long OutputTokens { get; set; }
+}
+
+/// <summary>One customer conversation with the AI receptionist (migration 020). The transcript is JSON text of what was said, nothing else.</summary>
+public class AiChat
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public string Transcript { get; set; } = "[]";
+    public int Turns { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>A picture the platform owner keeps for the whole system, such as the GCash QR code (migration 019).</summary>

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace VeskaFlow.Web.Pages.Book;
 
-public class IndexModel(ShopCatalogService catalog, BookingService booking, LogoService logos) : PageModel
+public class IndexModel(ShopCatalogService catalog, BookingService booking, LogoService logos, AiAccess ai) : PageModel
 {
     [BindProperty(SupportsGet = true)] public Guid? ServiceId { get; set; }
     [BindProperty(SupportsGet = true)] public Guid? StaffId { get; set; }
@@ -15,6 +15,9 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking, Logo
     [BindProperty(SupportsGet = true)] public string? ServiceNote { get; set; }
 
     public PublicShop? Shop { get; private set; }
+
+    /// <summary>True when the shop has the paid AI receptionist switched on (the chat is then offered on the page).</summary>
+    public bool ChatEnabled { get; private set; }
 
     /// <summary>Changes when the shop changes its logo; null when it has none.</summary>
     public long? LogoVersion { get; private set; }
@@ -48,6 +51,7 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking, Logo
         if (Shop is null) return NotFound();
         LogoVersion = await logos.VersionAsync(Shop.Id, ct);
         if (!Shop.AcceptingBookings) return Page(); // trial ended: the page says so and offers no times
+        ChatEnabled = Shop.Services.Count > 0 && await ai.IsActiveAsync(Shop.Id, ct);
         ClosedDates = await catalog.ClosedDatesAsync(Shop, Math.Min(Shop.HorizonDays, 14), ct);
 
         var service = Shop.FindService(ServiceId);
