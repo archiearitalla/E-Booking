@@ -774,6 +774,7 @@ public static class Text
 
     // AI receptionist (paid add-on): the chat on the booking page, the shop's Settings card and the Platform switch.
     public const string AiChatTitle = "Chat with our assistant";
+    public const string AiChatShort = "Chat with us";
     public const string AiChatIntro = "Ask about services, prices and free times, or book right here. You can also use the form above.";
     public const string AiChatGreeting = "Hi! I can check free times and book you in. What service would you like?";
     public const string AiChatPlaceholder = "Type your message";

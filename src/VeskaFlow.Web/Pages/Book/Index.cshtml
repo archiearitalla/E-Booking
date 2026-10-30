@@ -17,8 +17,10 @@
     </div>
     @if (shop.AcceptingBookings && shop.Services.Count > 0)
     {
-        <a class="hero-btn" href="#book">@Text.BookNow</a>
-        @if (Model.ChatEnabled) { <a class="hero-btn" href="#chat">@Text.AiChatTitle</a> }
+        <div class="hero-actions">
+            <a class="hero-btn" href="#book">@Text.BookNow</a>
+            @if (Model.ChatEnabled) { <a class="hero-btn hero-btn-alt" href="#chat">@Text.AiChatShort</a> }
+        </div>
     }
 </section>
 

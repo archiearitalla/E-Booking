@@ -368,6 +368,10 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
   text-decoration: none;
 }
 .hero-btn:hover { color: #0f172a; background: #f1f5f9; }
+/* Book now and Chat sit side by side and wrap on a narrow phone; the chat button is outlined so Book now stays the main one. */
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.625rem; }
+.hero-btn-alt { color: var(--brand-ink); background: transparent; box-shadow: inset 0 0 0 2px currentColor; }
+.hero-btn-alt:hover { color: var(--brand-ink); background: rgba(255, 255, 255, 0.28); }
 
 .people { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; }
 .people .choice { margin-bottom: 0; align-items: center; }
