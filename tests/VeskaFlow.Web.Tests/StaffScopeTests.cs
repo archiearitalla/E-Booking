@@ -46,7 +46,7 @@ public class StaffScopeTests
 
         // One booking for each staff member, tomorrow in the shop's time.
         var bookings = new BookingService(db, TimeProvider.System);
-        var day = LocalTime.LocalDateOf(DateTime.UtcNow, "Asia/Manila").AddDays(1);
+        var day = Seed.NextOpenDay();
         async Task<BookingSummary> Book(Guid staff, string name, string phone)
         {
             var free = (await bookings.GetFreeStartsAsync(owner.BusinessId, serviceId, staff, day)).Value!;

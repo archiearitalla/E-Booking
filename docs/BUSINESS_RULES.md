@@ -368,8 +368,8 @@ Purpose: let a business try the system live for 30 days so it can see how it wor
 
 ### 18.1 Industry
 
-- A business has an `industry`: `barbershop`, `salon` or `clinic`, chosen at sign-up.
-- The industry only chooses the starter service (Haircut, Haircut and styling, Consultation). It never changes the booking rules in sections 5 to 8 or the invariants in section 4. Everything can be edited afterwards.
+- A business has an `industry` chosen at sign-up: `barbershop`, `salon`, `clinic`, `spa` (spa and massage), `nails` (nail and lash studio), `pet` (pet grooming and vet), `fitness` (gym, trainer or yoga), `tattoo` (tattoo and piercing), `auto` (car wash and auto care), `tutor` (tutoring and lessons) or `photo` (photo studio).
+- The industry only chooses the starter service (for example Haircut, Massage, Manicure, Grooming), the word for the person being booked (Barber, Stylist, Doctor, Therapist, Technician, Groomer or vet, Trainer, Artist, Teacher, Photographer) and the list of suggested services. It never changes the booking rules in sections 5 to 8 or the invariants in section 4. Everything can be edited afterwards.
 - Admin → Services has "Add suggested services": it adds the usual services for the industry that the shop does not have yet (matched by name, ignoring case; prices start at 0), links them to all current staff, and never changes or removes existing ones. Running it twice adds nothing the second time.
 
 ### 6.x Closure times (added with weekly closures)

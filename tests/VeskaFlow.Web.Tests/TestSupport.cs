@@ -57,6 +57,13 @@ public static class Seed
     /// <summary>Monday 08:00 in Manila. Shops are open 09:00-18:00 every day (Asia/Manila, UTC+8, no DST).</summary>
     public static readonly DateTimeOffset BaseNow = new(2030, 3, 4, 0, 0, 0, TimeSpan.Zero);
 
+    /// <summary>The next day (from tomorrow, Manila time) the starter opening hours (Monday to Saturday) are open: never a Sunday.</summary>
+    public static DateOnly NextOpenDay()
+    {
+        var day = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8)).AddDays(1);
+        return day.DayOfWeek == DayOfWeek.Sunday ? day.AddDays(1) : day;
+    }
+
     /// <summary>Local Manila wall-clock time on 2030-03-<paramref name="day"/> as a UTC instant.</summary>
     public static DateTime Manila(int day, int hour, int minute = 0) =>
         new DateTime(2030, 3, day, hour, minute, 0, DateTimeKind.Utc).AddHours(-8);

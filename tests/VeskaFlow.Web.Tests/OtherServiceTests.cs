@@ -113,7 +113,7 @@ public class OtherServiceTests
         Assert.DoesNotContain("class=\"slot\"", noNote);
 
         // With the words, the times appear and the link carries them to the confirmation page.
-        var day = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8).AddDays(1)).ToString("yyyy-MM-dd");
+        var day = Seed.NextOpenDay().ToString("yyyy-MM-dd");
         var withNote = WebUtility.HtmlDecode(await client.GetStringAsync($"/b/{slug}?serviceId={otherId}&serviceNote=Wound+dressing&date={day}"));
         Assert.Contains("class=\"slot\"", withNote);
         Assert.Contains("serviceNote=Wound%20dressing", withNote.Replace("+", "%20"));
