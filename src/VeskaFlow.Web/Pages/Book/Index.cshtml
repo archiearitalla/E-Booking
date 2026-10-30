@@ -26,9 +26,10 @@
 
 @if (Model.Promo is { } promoBanner)
 {
-    <section class="promo" aria-label="@Text.PromoLabel">
-        <img class="promo-img" src="/banner/@shop.Slug?v=@promoBanner.Version" alt="@promoBanner.Caption" />
-    </section>
+    var promoCard = new PromoCardModel(promoBanner.Theme, promoBanner.Headline, promoBanner.Details, promoBanner.Badge,
+        promoBanner.HasPicture ? $"/banner/{shop.Slug}?v={promoBanner.Version}" : null,
+        promoBanner.EndsOn is { } lastDay ? lastDay.ToString("MMMM d", invariant) : null);
+    <partial name="_PromoCard" model="promoCard" />
 }
 
 <div class="card" id="book">

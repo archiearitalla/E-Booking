@@ -1,0 +1,31 @@
+@model VeskaFlow.Web.Services.PromoCardModel
+@* The promo in the look of its mode. Used on the public booking page and in the Promo Creator's preview. In the creator (Live) every part
+   is always there, hidden when empty, so the page script can fill it as the owner types. The icon is decoration only. *@
+@{
+    var theme = VeskaFlow.Web.Services.PromoThemes.Normalize(Model.Theme);
+}
+<section class="promo promo-t-@theme" aria-label="@Text.PromoLabel">
+    <svg class="promo-deco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <partial name="_PromoIcon" model="theme" />
+    </svg>
+    @if (Model.ImageUrl is not null || Model.Live)
+    {
+        <img class="promo-img" src="@Model.ImageUrl" alt="" hidden="@(Model.ImageUrl is null)" />
+    }
+    <div class="promo-body">
+        <p class="promo-kicker">@VeskaFlow.Web.Services.PromoThemes.Kicker(theme)</p>
+        @if (!string.IsNullOrEmpty(Model.Badge) || Model.Live)
+        {
+            <p class="promo-badge" hidden="@string.IsNullOrEmpty(Model.Badge)">@Model.Badge</p>
+        }
+        <h2 class="promo-title">@Model.Headline</h2>
+        @if (!string.IsNullOrEmpty(Model.Details) || Model.Live)
+        {
+            <p class="promo-details" hidden="@string.IsNullOrEmpty(Model.Details)">@Model.Details</p>
+        }
+        @if (Model.Until is not null || Model.Live)
+        {
+            <p class="promo-until" hidden="@(Model.Until is null)">@(Model.Until is null ? "" : Text.PromoUntilChip(Model.Until))</p>
+        }
+    </div>
+</section>

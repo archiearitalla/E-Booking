@@ -11,6 +11,11 @@ public class PromoModel(PromoBannerService promo) : AdminPageModel
     public sealed class PromoInput
     {
         public string? Caption { get; set; }
+        public string? Details { get; set; }
+        public string? Badge { get; set; }
+        public string Theme { get; set; } = PromoThemes.Default;
+        /// <summary>Drop the saved picture and keep the words. A browser sends nothing for an unticked box, so not sent means keep.</summary>
+        public bool RemovePicture { get; set; }
         public DateOnly? EndsOn { get; set; }
         /// <summary>A browser sends nothing for an unticked box, so "not sent" must mean off: the default is false, and the form is filled from the saved banner.</summary>
         public bool Active { get; set; }
@@ -18,12 +23,12 @@ public class PromoModel(PromoBannerService promo) : AdminPageModel
 
     [BindProperty] public PromoInput Input { get; set; } = new();
 
-    public PromoBannerAdmin Banner { get; private set; } = new(false, "", true, null, 0, PromoState.None, default);
+    public PromoBannerAdmin Banner { get; private set; } = new(false, false, "", null, null, PromoThemes.Default, true, null, 0, PromoState.None, default);
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (!await LoadAsync(ct)) return NotFound();
-        Input = new PromoInput { Caption = Banner.Caption, EndsOn = Banner.EndsOn, Active = Banner.IsActive };
+        Input = new PromoInput { Caption = Banner.Caption, Details = Banner.Details, Badge = Banner.Badge, Theme = Banner.Theme, EndsOn = Banner.EndsOn, Active = Banner.IsActive };
         return Page();
     }
 
@@ -52,7 +57,7 @@ public class PromoModel(PromoBannerService promo) : AdminPageModel
             bytes = buffer.ToArray();
         }
 
-        var result = await promo.SaveAsync(BusinessId, bytes, Input.Caption, Input.Active, Input.EndsOn, ct);
+        var result = await promo.SaveAsync(BusinessId, bytes, Input.RemovePicture, Input.Caption, Input.Details, Input.Badge, Input.Theme, Input.Active, Input.EndsOn, ct);
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (result.IsSuccess)
         {

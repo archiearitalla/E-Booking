@@ -730,10 +730,32 @@ button.saved::before {
 
 .pay-qr { display: block; width: min(16rem, 100%); height: auto; background: #fff; padding: 0.5rem; border-radius: 0.75rem; margin: 0.75rem 0; }
 
-/* Promo banner on the booking page and its preview for the owner */
-.promo { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; background: var(--card); }
-.promo-img { display: block; width: 100%; height: auto; max-height: 20rem; object-fit: contain; }
-.promo-preview { display: block; max-width: 100%; max-height: 12rem; width: auto; height: auto; border-radius: var(--radius-sm); margin: 0.5rem 0 1rem; }
+/* Promo banner: a card in the look of its mode (Halloween, Christmas, ...). Each mode only sets these colours; "plain" uses the shop's own
+   accent like the hero card does. Text colours are chosen so every gradient stop keeps good contrast with its text. */
+.promo { position: relative; overflow: hidden; margin-bottom: 1rem; border-radius: var(--radius); color: var(--promo-ink, var(--brand-ink));
+  background: linear-gradient(135deg, var(--promo-from, var(--brand)), var(--promo-mid, var(--brand)) 55%, var(--promo-to, var(--brand))); }
+.promo > * { position: relative; }
+.promo > .promo-deco { position: absolute; right: -0.75rem; top: 50%; width: 9rem; height: 9rem; transform: translateY(-50%) rotate(-12deg);
+  color: var(--promo-accent, currentColor); opacity: 0.4; pointer-events: none; }
+.promo-img { display: block; width: 100%; height: auto; max-height: 16rem; object-fit: cover; }
+.promo-body { padding: 1rem 1.25rem 1.25rem; }
+.promo-kicker { margin: 0 0 0.25rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.9; }
+.promo-title { margin: 0; font-size: clamp(1.4rem, 5vw, 2rem); line-height: 1.15; color: inherit; overflow-wrap: anywhere; }
+.promo-badge { display: inline-block; margin: 0.25rem 0 0.5rem; padding: 0.2rem 0.85rem; border-radius: 999px; font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: 800;
+  letter-spacing: 0.02em; text-transform: uppercase; overflow-wrap: anywhere; color: var(--promo-from, var(--brand)); background: var(--promo-ink, var(--brand-ink)); }
+.promo-details { margin: 0.5rem 0 0; font-size: 1rem; line-height: 1.4; opacity: 0.95; overflow-wrap: anywhere; }
+.promo [hidden] { display: none; }
+.promo-until { display: inline-block; margin: 0.75rem 0 0; padding: 0.2rem 0.7rem; border-radius: 999px; font-size: 0.8125rem; font-weight: 700; box-shadow: inset 0 0 0 1.5px currentColor; }
+.promo-t-halloween { --promo-from: #1a0b2e; --promo-mid: #3b1456; --promo-to: #7c2d12; --promo-ink: #fff7ed; --promo-accent: #ff8a1f; }
+.promo-t-christmas { --promo-from: #7f1d1d; --promo-mid: #991b1b; --promo-to: #14532d; --promo-ink: #ffffff; --promo-accent: #fde68a; }
+.promo-t-new_year { --promo-from: #0f172a; --promo-mid: #312e81; --promo-to: #4c1d95; --promo-ink: #ffffff; --promo-accent: #fbbf24; }
+.promo-t-valentines { --promo-from: #9d174d; --promo-mid: #be123c; --promo-to: #e11d48; --promo-ink: #ffffff; --promo-accent: #fecdd3; }
+.promo-t-summer { --promo-from: #0ea5e9; --promo-mid: #22d3ee; --promo-to: #fde047; --promo-ink: #0c2a3a; --promo-accent: #ffffff; }
+.promo-t-back_to_school { --promo-from: #1e3a8a; --promo-mid: #1d4ed8; --promo-to: #2563eb; --promo-ink: #ffffff; --promo-accent: #facc15; }
+.promo-t-payday { --promo-from: #064e3b; --promo-mid: #065f46; --promo-to: #047857; --promo-ink: #ffffff; --promo-accent: #fbbf24; }
+.promo-t-rainy { --promo-from: #1e3a5f; --promo-mid: #334e68; --promo-to: #475569; --promo-ink: #f0f9ff; --promo-accent: #7dd3fc; }
+.promo-swatch { display: inline-block; flex: none; width: 1.5rem; height: 1.5rem; border-radius: 0.4rem;
+  background: linear-gradient(135deg, var(--promo-from, var(--brand)), var(--promo-to, var(--brand))); }
 
 /* AI receptionist chat on the booking page */
 .chat-log {
