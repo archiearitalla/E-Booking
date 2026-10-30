@@ -233,7 +233,7 @@ public class EmailDaily
     public int Sent { get; set; }
 }
 
-/// <summary>What the AI receptionist used for one shop in one UTC month (migration 020). <c>Month</c> is the first day of the month.</summary>
+/// <summary>What the AI receptionist used for one shop in one UTC month (migration 021). <c>Month</c> is the first day of the month.</summary>
 public class AiUsage
 {
     public DateOnly Month { get; set; }
@@ -243,7 +243,7 @@ public class AiUsage
     public long OutputTokens { get; set; }
 }
 
-/// <summary>One customer conversation with the AI receptionist (migration 020). The transcript is JSON text of what was said, nothing else.</summary>
+/// <summary>One customer conversation with the AI receptionist (migration 021). The transcript is JSON text of what was said, nothing else.</summary>
 public class AiChat
 {
     public Guid Id { get; set; } = Guid.NewGuid();
