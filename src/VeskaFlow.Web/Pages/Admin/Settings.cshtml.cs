@@ -5,7 +5,7 @@ namespace VeskaFlow.Web.Pages.Admin;
 
 [AdminAccess(AdminLevel.Owner)]
 [RequestSizeLimit(1_048_576)] // a logo is at most 256 KB; nothing bigger is read
-public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing, PlatformImageService images) : AdminPageModel
+public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing, PlatformImageService images, AiAccess ai) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();
 
@@ -18,6 +18,9 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
 
     /// <summary>Until when the paid more-emails add-on is active (null: not bought), and the shop time zone to show it in.</summary>
     public DateTime? EmailAddonUntilUtc { get; private set; }
+    /// <summary>The AI receptionist add-on: until when it is on (null: not bought) and this month's use.</summary>
+    public DateTime? AiAddonUntilUtc { get; private set; }
+    public AiUsageSummary AiUsage { get; private set; } = new(0, 0, 0, 0);
     public BillingInfo Billing => billing;
     public long? PayQrVersion { get; private set; }
     public string TimeZoneName { get; private set; } = "Asia/Manila";
@@ -28,6 +31,8 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         ShopRange = HoursForm.FillRange(await catalog.GetShopHoursAsync(BusinessId, ct));
         LogoVersion = await logos.VersionAsync(BusinessId, ct);
         PayQrVersion = await images.VersionAsync(PlatformImageService.GcashQr, ct);
+        AiAddonUntilUtc = await ai.AddonUntilAsync(BusinessId, ct);
+        AiUsage = await ai.UsageAsync(BusinessId, ct);
     }
 
     /// <summary>Saves the chosen picture as the shop's logo (PNG, JPEG or WebP, up to 256 KB).</summary>

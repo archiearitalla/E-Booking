@@ -54,6 +54,8 @@ Mark anything not compiled or not run as unverified, in the commit message and i
 Verified: Core (65 self-checks), the database schema (20 checks on PostgreSQL 16), the EF model against the schema (ModelCheck) and the Web test suite (222 tests on PostgreSQL 16.11). Checked in a local browser (desktop and phone size): Reports, Team, Settings logo upload to booking page, Customers. Not verified: the rest of the newer pages on a real phone, and email delivery through Resend (see the table in `docs/BUILD_PLAN.md`).
 Compiled and checked against PostgreSQL 16 (Step 0 done): `src/VeskaFlow.Web/Data/*`, `AppInfo.cs`; run `tests/VeskaFlow.Web.ModelCheck` (needs `ConnectionStrings__Default` pointing at a disposable database) to confirm the EF model matches the schema. `Services/BookingService.cs` (Step 2) is covered by `tests/VeskaFlow.Web.Tests` against real PostgreSQL.
 
+AI receptionist (paid add-on, rules 6.y17): written and tested on branch `claude/admiring-meitner-c0rrro` (21 new tests, all passing; the live Anthropic API was never called, so the real model behaviour, Tagalog quality and cost are unverified). It uses the `Anthropic` NuGet package in the Web project only. With `main` merged in, the whole Web suite passes (243 of 243 on PostgreSQL 16.15) and Core 68 of 68.
+
 ## Working from two places (VS Code and mobile)
 
 GitHub is the single source of truth.

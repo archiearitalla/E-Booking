@@ -84,6 +84,7 @@ else
                     <dt>@Text.PlatformOwner</dt><dd>@s.OwnerName &middot; @s.OwnerEmail</dd>
                     <dt>@Text.SettingsAddress</dt><dd><a href="/b/@s.Slug">/b/@s.Slug</a> &middot; @s.Industry</dd>
                     <dt>@Text.PlatformEmailAddon</dt><dd>@(s.EmailAddonUntilUtc is { } au && au > DateTime.UtcNow ? Text.PlatformEmailAddonUntil(au.ToString("MMM d, yyyy", invariant)) : Text.PlatformEmailAddonNone)</dd>
+                    <dt>@Text.PlatformAiAddon</dt><dd>@(s.AiAddonUntilUtc is { } ai && ai > DateTime.UtcNow ? Text.PlatformAiAddonUntil(ai.ToString("MMM d, yyyy", invariant)) : Text.PlatformAiAddonNone)</dd>
                     <dt>@Text.PlatformSignedUp</dt><dd>@s.CreatedAtUtc.ToString("MMM d, yyyy", invariant)@(s.TrialEndsAtUtc is { } t ? " · " + string.Format(Text.PlatformTrialEnds, t.ToString("MMM d, yyyy", invariant)) : "")</dd>
                 </dl>
                 <div class="actions">
@@ -91,6 +92,17 @@ else
                         <input type="hidden" name="id" value="@s.BusinessId" />
                         <input type="hidden" name="on" value="@((!s.Enabled).ToString().ToLowerInvariant())" />
                         <button type="submit" class="@(s.Enabled ? "danger" : "primary")" data-confirm="@(s.Enabled ? Text.PlatformConfirmOff : Text.PlatformConfirmOn)">@(s.Enabled ? Text.PlatformSwitchOff : Text.PlatformSwitchOn)<span class="sr-only"> @s.Name</span></button>
+                    </form>
+                    <form method="post" asp-page-handler="AiAddon" class="inline-form">
+                        <input type="hidden" name="id" value="@s.BusinessId" />
+                        <label for="ai-@s.BusinessId" class="sr-only">@Text.PlatformAiAddon @s.Name</label>
+                        <select id="ai-@s.BusinessId" name="days">
+                            @foreach (var d in AccountControlService.ExtendChoices)
+                            {
+                                <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option>
+                            }
+                        </select>
+                        <button type="submit" class="secondary" data-confirm="@Text.PlatformAiAddonAsk">@Text.PlatformAiAddon<span class="sr-only"> @s.Name</span></button>
                     </form>
                     @if (s.TrialEndsAtUtc is not null)
                     {

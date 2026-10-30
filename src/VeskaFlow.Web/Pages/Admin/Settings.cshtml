@@ -54,6 +54,25 @@
     }
 </div>
 
+<div class="card">
+    <h2>@Text.AiAddonTitle</h2>
+    @if (Model.AiAddonUntilUtc is { } aiUntil && aiUntil > DateTime.UtcNow)
+    {
+        <p>@Text.AiAddonActive(DisplayFormat.Date(aiUntil, Model.TimeZoneName))</p>
+        <p class="hint">@Text.AiAddonUsage(Model.AiUsage.Conversations, Model.AiUsage.Limit)</p>
+    }
+    else
+    {
+        <p class="hint">@Text.AiAddonNone</p>
+        @if (Model.Billing.AiAddonPrice.Length > 0)
+        {
+            <dl class="facts"><dt>@Text.AiAddonPriceLabel</dt><dd>@Model.Billing.AiAddonPrice</dd></dl>
+            <p class="hint">@Text.AiAddonHow</p>
+            @if (Model.Billing.ContactUrl.Length > 0) { <p><a class="button" href="@Model.Billing.ContactUrl" target="_blank" rel="noopener">@Text.BillingSendProof</a></p> }
+        }
+    }
+</div>
+
 <div class="card qr-print">
     <h2>@Text.QrTitle</h2>
     <p class="muted">@Text.QrHelp</p>

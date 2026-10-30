@@ -71,6 +71,9 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.ExpiryNoticeService>();
 builder.Services.AddHostedService<VeskaFlow.Web.Services.ExpiryNoticeWorker>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CatalogAdminService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
+builder.Services.AddSingleton<VeskaFlow.Web.Services.IAiModel, VeskaFlow.Web.Services.AnthropicAiModel>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.AiAccess>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.AiReceptionistService>();
 
 // Authentication: cookie for the web back office. Authorization is always enforced server-side.
 builder.Services
@@ -105,6 +108,7 @@ builder.Services.AddRazorPages(o =>
 // Rate limiting: per client IP. Policies are attached to endpoints with RequireRateLimiting("auth" | "booking").
 var authPerMinute = builder.Configuration.GetValue("RateLimits:AuthPerMinute", 10);
 var bookingPerMinute = builder.Configuration.GetValue("RateLimits:BookingPerMinute", 6);
+var chatPerMinute = builder.Configuration.GetValue("RateLimits:ChatPerMinute", 12);
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -112,6 +116,8 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy(RateLimitPolicies.Auth, ctx => ByClientIp(ctx, authPerMinute, postOnly: true));
     // Booking and cancel posts are limited too. Browsing times is not (revisit if availability queries get abused).
     o.AddPolicy(RateLimitPolicies.Booking, ctx => ByClientIp(ctx, bookingPerMinute, postOnly: true));
+    // Each chat message can cost money, so messages are limited per client IP as well as per shop and month.
+    o.AddPolicy(RateLimitPolicies.Chat, ctx => ByClientIp(ctx, chatPerMinute, postOnly: true));
 });
 
 // Behind a reverse proxy (Render, Cloud Run, Cloudflare) the real client IP is in X-Forwarded-For.
@@ -241,6 +247,7 @@ public static class RateLimitPolicies
 {
     public const string Auth = "auth";
     public const string Booking = "booking";
+    public const string Chat = "chat";
 }
 
 public partial class Program;
