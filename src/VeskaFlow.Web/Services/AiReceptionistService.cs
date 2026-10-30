@@ -95,6 +95,7 @@ public sealed class AiReceptionistService(
         var system = SystemPrompt(shop);
         long inputTokens = 0, outputTokens = 0;
         string? reply = null;
+        var manageLinks = new List<string>();   // added to the reply by this class; the model never sees the secret in them
         var failed = false;
         try
         {
@@ -117,7 +118,7 @@ public sealed class AiReceptionistService(
                 var results = new List<AiBlock>();
                 foreach (var use in uses)
                 {
-                    var (content, isError) = await RunToolAsync(shop, chat, use, baseUrl, ct);
+                    var (content, isError) = await RunToolAsync(shop, chat, use, baseUrl, manageLinks, ct);
                     results.Add(AiBlock.ToolResult(use.Id, content, isError));
                 }
                 conversation.Add(new AiMessage("user", results));
@@ -134,6 +135,11 @@ public sealed class AiReceptionistService(
         // A failed or empty answer is not kept as part of the conversation: the customer can simply try again.
         if (failed || string.IsNullOrWhiteSpace(reply))
             return ServiceResult<AiChatReply>.Ok(new AiChatReply(chat.Id, failed ? Text.AiChatUnavailable : Text.AiChatCannotHelp));
+
+        // The customer's own link comes from here, word for word, not from the model: it is a secret that opens the booking,
+        // so it is not sent to the AI service, and a model cannot misquote it.
+        foreach (var link in manageLinks.Distinct())
+            reply += $"\n\n{Text.AiChatManageLink} {link}";
 
         lines.Add(new Line("u", text));
         lines.Add(new Line("a", reply));
@@ -161,7 +167,7 @@ public sealed class AiReceptionistService(
         sb.AppendLine("- Never guess free times, prices or durations. Use check_slots for times and the service list below for prices.");
         sb.AppendLine("- Offer at most a handful of times, spread across the day, unless the customer asks for all of them.");
         sb.AppendLine("- Before booking you need: the service, a specific free time, the customer's name and their mobile number. Ask for what is missing, one thing at a time.");
-        sb.AppendLine("- When you have all of it, call create_booking, then tell the customer the service, the day and time, who will serve them, and give the manage link as plain text so they can cancel there.");
+        sb.AppendLine("- When you have all of it, call create_booking, then tell the customer the service, the day and time and who will serve them. The customer's link to see or cancel the booking is added to your reply automatically: never write a link yourself.");
         sb.AppendLine("- If a tool says a time was just taken, apologise and offer other times from check_slots.");
         sb.AppendLine("- You cannot cancel or move a booking. Point the customer to the manage link they were given, or tell them to contact the shop.");
         sb.AppendLine("- If you cannot help, tell the customer they can use the booking form on this page.");
@@ -179,7 +185,7 @@ public sealed class AiReceptionistService(
 
     // ---------------------------------------------------------------- tools
 
-    private async Task<(string Content, bool IsError)> RunToolAsync(PublicShop shop, AiChat chat, AiBlock use, string baseUrl, CancellationToken ct)
+    private async Task<(string Content, bool IsError)> RunToolAsync(PublicShop shop, AiChat chat, AiBlock use, string baseUrl, List<string> manageLinks, CancellationToken ct)
     {
         JsonElement args;
         try { args = JsonDocument.Parse(use.Json).RootElement.Clone(); }
@@ -189,7 +195,7 @@ public sealed class AiReceptionistService(
         return use.Name switch
         {
             "check_slots" => await CheckSlotsAsync(shop, args, ct),
-            "create_booking" => await CreateBookingAsync(shop, chat, args, baseUrl, ct),
+            "create_booking" => await CreateBookingAsync(shop, chat, args, baseUrl, manageLinks, ct),
             _ => ("There is no such tool.", true),
         };
     }
@@ -229,7 +235,7 @@ public sealed class AiReceptionistService(
         }), false);
     }
 
-    private async Task<(string, bool)> CreateBookingAsync(PublicShop shop, AiChat chat, JsonElement args, string baseUrl, CancellationToken ct)
+    private async Task<(string, bool)> CreateBookingAsync(PublicShop shop, AiChat chat, JsonElement args, string baseUrl, List<string> manageLinks, CancellationToken ct)
     {
         if (ReadTarget(shop, args, out var service, out var date) is { } problem) return (problem, true);
         if (!TimeOnly.TryParseExact(Str(args, "time"), "HH:mm", Invariant, DateTimeStyles.None, out var clock))
@@ -255,6 +261,7 @@ public sealed class AiReceptionistService(
         }
 
         var made = result.Value!.Booking;
+        manageLinks.Add($"{baseUrl.TrimEnd('/')}/booking/{made.ManageToken}");
         return (JsonSerializer.Serialize(new
         {
             status = "booked",
@@ -262,7 +269,7 @@ public sealed class AiReceptionistService(
             served_by = made.StaffName,
             when = LocalTime.ToLocal(made.StartsAtUtc, shop.TimeZone).ToString("dddd, MMMM d 'at' h:mm tt", Invariant),
             price = DisplayFormat.Price(made.Price),
-            manage_link = $"{baseUrl.TrimEnd('/')}/booking/{made.ManageToken}",
+            manage_link = "A link to see or cancel this booking is added to your reply automatically. Do not write one.",
         }), false);
     }
 }

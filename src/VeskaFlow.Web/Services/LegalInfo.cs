@@ -6,7 +6,7 @@ namespace VeskaFlow.Web.Services;
 /// </summary>
 public static class LegalInfo
 {
-    public const string Version = "2026-10-28";
+    public const string Version = "2026-10-30";
 
     /// <summary>Who runs the service, for the legal pages. Set <c>Legal:OperatorName</c>; the default is the studio name.</summary>
     public static string OperatorName(IConfiguration config) => config["Legal:OperatorName"] is { Length: > 0 } n ? n : "Veskacode";

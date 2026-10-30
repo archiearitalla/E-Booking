@@ -32,6 +32,12 @@ public class LegalAndPrivacyTests
         Assert.Contains("Render", privacy);
         Assert.Contains("Neon", privacy);
         Assert.Contains("Brevo", privacy);
+        // The optional AI assistant: what it receives, who provides it and how long chats are kept.
+        Assert.Contains("AI assistant", privacy);
+        Assert.Contains("Anthropic", privacy);
+        Assert.Contains("30 days", privacy);
+        Assert.Contains("does not receive the customer's cancellation link", privacy);
+        Assert.Contains("and other businesses that take appointments", privacy);
         Assert.Contains("GitHub", privacy); // the encrypted backups
         Assert.Contains("password reset", privacy); // the emails we send are not only the sign-up confirmation
         Assert.Contains($"Version {LegalInfo.Version}", privacy);
@@ -40,6 +46,8 @@ public class LegalAndPrivacyTests
         Assert.Contains("data processing", terms);
         Assert.Contains("laws of the Philippines", terms);
         Assert.Contains("/Privacy", terms);
+        Assert.Contains("AI assistant (optional add-on)", terms);
+        Assert.Contains("cannot cancel or move a booking", terms);
 
         var home = await client.GetStringAsync("/");
         Assert.Contains("href=\"/Terms\"", home);

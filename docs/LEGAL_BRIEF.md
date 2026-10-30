@@ -105,3 +105,22 @@ providers keep data outside the Philippines?
 - A per-day email limit (the email service's free plan is about 300 a day) stops customer emails first; shop owners' own
   emails keep a reserve. A shop can buy an add-on for more emails; payment is manual (GCash). The Terms say nothing yet about
   this add-on **(add a line)**.
+
+## 10. Added with the optional AI assistant (version 2026-10-30)
+
+- A shop can pay for an **AI assistant**: a chat on its booking page. A customer's messages (which can include their name,
+  mobile number and what they want) are sent to an AI provider, **Anthropic**, to write the replies, together with the
+  shop's name, services, prices and free times and the result of a booking (service, staff member, time). The customer's
+  cancellation link and other customers' details are not sent. Chats are kept as plain text for 30 days, then deleted.
+  The Privacy Notice and Terms were updated (see "AI assistant" in both). **(confirm)** what Anthropic keeps and for how
+  long, whether it may use the messages for anything else, and where it processes them; these are not stated in our texts
+  because the operator has not verified them.
+- Questions: is Anthropic correctly described as a service provider of the operator (a sub-processor of the shop's data)?
+  Is a notice in the chat ("an automated assistant and can make mistakes ... messages are processed by an AI service and
+  kept for 30 days", with a link to the Privacy Notice) enough where a customer types personal details? Do cross-border
+  transfer notices or agreements apply to the AI provider?
+- A chat has no link to a customer record. The shop's export and delete tools find a customer's chats by the mobile number
+  typed in them; a chat where the number was never typed cannot be found. Is that acceptable for access and erasure requests?
+- The Terms now say the add-on is paid separately and add a section on the assistant (replies may be wrong, not a
+  professional, no medical advice, the shop stays responsible for its customers' data, monthly limit, may pause).
+

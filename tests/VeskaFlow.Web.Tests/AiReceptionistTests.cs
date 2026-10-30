@@ -177,17 +177,23 @@ public class AiReceptionistTests
         shop = s;
 
         var reply = await SendAsync(c, slug, "Mark 09171234567, 10am please");
-        Assert.Equal("Booked!", reply.Value!.Text);
 
         await using var db = c.Db.CreateDbContext();
         var booking = await db.Bookings.SingleAsync(b => b.BusinessId == s.BusinessId);
+        // The customer's own link is added by the server, once, word for word, and never sent to the AI service.
+        var link = $"https://flow.example.com/booking/{booking.ManageToken}";
+        Assert.Equal($"Booked!\n\n{Text.AiChatManageLink} {link}", reply.Value!.Text);
+        Assert.DoesNotContain(booking.ManageToken, string.Join(" ", model.Systems));
+        Assert.DoesNotContain(booking.ManageToken, JsonSerializer.Serialize(model.Conversations.Select(m => m.SelectMany(x => x.Blocks).Select(b => b.Text + b.Json))));
+        await using var again = c.Db.CreateDbContext();
+        Assert.Contains(link, (await again.AiChats.SingleAsync(x => x.BusinessId == s.BusinessId)).Transcript.Replace("\\u002F", "/")); // the kept chat has it, as the customer saw it
         Assert.Equal(Seed.Manila(5, 10), DateTime.SpecifyKind(booking.StartsAtUtc, DateTimeKind.Utc));
         Assert.Equal(BookingStatus.Confirmed, booking.Status);
 
         var results = model.Conversations[^1][^1].Blocks.Where(b => b.Kind == AiBlockKind.ToolResult).ToList();
         Assert.Equal(2, results.Count);                       // each tool use got its result, in one message
         Assert.All(results, r => Assert.False(r.IsError));
-        Assert.Contains($"https://flow.example.com/booking/{booking.ManageToken}", results[0].Text);
+        Assert.DoesNotContain("/booking/", results[0].Text);
         Assert.Contains("Tuesday, March 5 at 10:00 AM", results[0].Text);
 
         var audit = await db.AuditLogs.SingleAsync(a => a.BookingId == booking.Id);
@@ -394,6 +400,72 @@ public class AiReceptionistTests
         Assert.True(await check.AiChats.AnyAsync(x => x.Id == oldOther));   // another shop's conversations are not this shop's to remove
     }
 
+    // ---------------------------------------------------------------- privacy: a customer's chats
+
+    private static string Chat(string customerSays) =>
+        "[{\"R\":\"u\",\"T\":\"" + customerSays + "\"},{\"R\":\"a\",\"T\":\"Noted.\"}]";
+
+    [Fact]
+    public async Task A_customers_chats_are_found_by_the_number_typed_in_them_and_exported_and_deleted_with_the_customer()
+    {
+        var c = await SetupAsync(new FakeAiModel((_, _) => FakeAiModel.Reply("hi")));
+        var shop = await Seed.CreateShopAsync();
+        var otherShop = await Seed.CreateShopAsync();
+        var bookings = new BookingService(c.Db, c.Clock);
+        Assert.True((await bookings.CreateAsync(Seed.Request(shop, Seed.Manila(5, 10), phone: "09171234567"))).IsSuccess);
+        Assert.True((await bookings.CreateAsync(Seed.Request(otherShop, Seed.Manila(5, 10), phone: "09171234567"))).IsSuccess);
+        var now = c.Clock.GetUtcNow().UtcDateTime;
+        Guid international = Guid.NewGuid(), dashed = Guid.NewGuid(), stranger = Guid.NewGuid(), otherShopsChat = Guid.NewGuid();
+        await using (var db = c.Db.CreateDbContext())
+        {
+            db.AiChats.AddRange(
+                new AiChat { Id = international, BusinessId = shop.BusinessId, CreatedAtUtc = now, UpdatedAtUtc = now, Transcript = Chat("Mark, +63 917 123 4567") },
+                new AiChat { Id = dashed, BusinessId = shop.BusinessId, CreatedAtUtc = now.AddMinutes(1), UpdatedAtUtc = now, Transcript = Chat("number is 0917-123-4567") },
+                new AiChat { Id = stranger, BusinessId = shop.BusinessId, CreatedAtUtc = now, UpdatedAtUtc = now, Transcript = Chat("09189998888") },
+                new AiChat { Id = otherShopsChat, BusinessId = otherShop.BusinessId, CreatedAtUtc = now, UpdatedAtUtc = now, Transcript = Chat("09171234567") });
+            await db.SaveChangesAsync();
+        }
+        var data = new CustomerDataService(c.Db);
+        Guid customerId;
+        await using (var db = c.Db.CreateDbContext())
+            customerId = await db.Customers.Where(x => x.BusinessId == shop.BusinessId).Select(x => x.Id).SingleAsync();
+
+        using var export = JsonDocument.Parse((await data.ExportJsonAsync(shop.BusinessId, customerId))!);
+        var chats = export.RootElement.GetProperty("assistantChats").EnumerateArray().ToList();
+        Assert.Equal(2, chats.Count);                                                   // both formats found, in the order started
+        Assert.Contains("+63 917 123 4567", chats[0].GetProperty("messages")[0].GetProperty("T").GetString());
+        Assert.DoesNotContain("09189998888", export.RootElement.GetRawText());          // someone else's chat is not in it
+
+        Assert.True((await data.DeleteAsync(shop.BusinessId, customerId, "Juan Dela Cruz")).IsSuccess);
+        await using var check = c.Db.CreateDbContext();
+        Assert.False(await check.AiChats.AnyAsync(x => x.Id == international || x.Id == dashed));
+        Assert.True(await check.AiChats.AnyAsync(x => x.Id == stranger));               // a different number stays
+        Assert.True(await check.AiChats.AnyAsync(x => x.Id == otherShopsChat));         // another shop's chats are not this shop's to erase
+    }
+
+    [Fact]
+    public async Task A_walk_in_without_a_number_matches_no_chat_and_a_wrong_name_deletes_nothing()
+    {
+        var c = await SetupAsync(new FakeAiModel((_, _) => FakeAiModel.Reply("hi")));
+        var shop = await Seed.CreateShopAsync();
+        var now = c.Clock.GetUtcNow().UtcDateTime;
+        var customer = new Customer { BusinessId = shop.BusinessId, Name = "Walk In", Phone = "walkin-1234567890123" };
+        var chat = new AiChat { BusinessId = shop.BusinessId, CreatedAtUtc = now, UpdatedAtUtc = now, Transcript = Chat("1234567890123") };
+        await using (var db = c.Db.CreateDbContext())
+        {
+            db.AddRange(customer, chat);
+            await db.SaveChangesAsync();
+        }
+        var data = new CustomerDataService(c.Db);
+
+        using var export = JsonDocument.Parse((await data.ExportJsonAsync(shop.BusinessId, customer.Id))!);
+        Assert.Empty(export.RootElement.GetProperty("assistantChats").EnumerateArray());
+        Assert.Equal(FailureKind.Validation, (await data.DeleteAsync(shop.BusinessId, customer.Id, "wrong name")).Failure);
+        Assert.True((await data.DeleteAsync(shop.BusinessId, customer.Id, "Walk In")).IsSuccess);
+        await using var check = c.Db.CreateDbContext();
+        Assert.True(await check.AiChats.AnyAsync(x => x.Id == chat.Id));                // nothing safe to match, so nothing is guessed
+    }
+
     // ---------------------------------------------------------------- the web layer
 
     private static async Task<(AppFactory Root, HttpClient Client, FakeAiModel Model, Shop Shop, string Slug)> WebAsync(bool addon, int chatPerMinute = 1000)
@@ -431,6 +503,8 @@ public class AiReceptionistTests
         var withChat = await on.GetStringAsync($"/b/{slugOn}");
         Assert.Contains("id=\"chat\"", withChat);
         Assert.Contains("/js/chat.js", withChat);
+        Assert.Contains(Text.AiChatNotice, WebUtility.HtmlDecode(withChat));            // customers are told it is automated, with a link
+        Assert.Contains("href=\"/Privacy\"", withChat);
         var without = await off.GetStringAsync($"/b/{slugOff}");
         Assert.DoesNotContain("id=\"chat\"", without);
         Assert.DoesNotContain("chat.js", without);

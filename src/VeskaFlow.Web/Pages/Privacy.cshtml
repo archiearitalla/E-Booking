@@ -11,18 +11,21 @@
     <p class="muted">Version @LegalInfo.Version</p>
 
     <h2>Who we are</h2>
-    <p>@operatorName runs VeskaFlow, an online booking system for barbershops, salons and clinics. Each shop that uses it decides why and how it collects the details of its own customers. Under the Data Privacy Act of 2012 (Republic Act 10173) the shop is the <strong>personal information controller</strong> for its customers' data, and @operatorName acts as its <strong>personal information processor</strong>. For the details of shop owners and staff who sign up (name and email), @operatorName is the controller. For privacy questions and requests, contact us at @contact.</p>
+    <p>@operatorName runs VeskaFlow, an online booking system for barbershops, salons, clinics and other businesses that take appointments. Each shop that uses it decides why and how it collects the details of its own customers. Under the Data Privacy Act of 2012 (Republic Act 10173) the shop is the <strong>personal information controller</strong> for its customers' data, and @operatorName acts as its <strong>personal information processor</strong>. For the details of shop owners and staff who sign up (name and email), @operatorName is the controller. For privacy questions and requests, contact us at @contact.</p>
 
     <h2>What we keep</h2>
     <ul>
         <li><strong>Shop owners and staff:</strong> name, email address, a password (kept only as a salted hash, never as text), the shop's name, address, hours and settings, a logo if the owner uploads one, and when they agreed to the Terms.</li>
         <li><strong>A shop's customers:</strong> name, mobile number, an email address if given, and their bookings (service, staff member, date and time, status).</li>
+        <li><strong>Chat messages (only for shops that switch on the AI assistant):</strong> what a customer types in the chat on the shop's booking page, which can include their name, mobile number and what they want, and the assistant's replies. They are kept as plain text for 30 days and then deleted. Nothing else is kept from a chat; a booking made in the chat is an ordinary booking.</li>
         <li><strong>Notes written by the shop:</strong> a clinic can record a visit note (a medical record) and a follow-up. This can include health information, which the law treats as sensitive. It is visible only to staff who are signed in to that shop. It is never shown to the customer on the booking page and never put into a message by the system.</li>
         <li><strong>Technical records:</strong> a change log of bookings (who did what and when), and the standard technical logs our hosting keeps (such as the time of a request and the network address it came from) for a limited time, used to run and protect the service.</li>
     </ul>
 
     <h2>Why we use it</h2>
     <p>Only to run the booking service: showing free times, taking and managing bookings, letting the shop see its day, and letting the shop's staff contact their own customers. A shop can switch on automatic emails: when a customer gives an email address while booking, the system emails them a confirmation and, before the appointment, a reminder, each with the booking details and the customer's own link to see or cancel it. These go out only within a daily limit, only to customers who gave an email, and the shop can switch them off. Follow-up messages are not sent by the system; staff send them from their own phone. The emails to shop owners are the confirmation of a new sign-up, a password reset link when they ask for it, and a notice a few days before their access ends.</p>
+
+    <p><strong>AI assistant.</strong> A shop can switch on an optional assistant: a chat on its booking page that answers questions and can book an appointment when the customer asks. Its replies are written automatically by an AI service, so they can be wrong. The booking form on the same page always works as well, and a booking made in the chat can be checked and cancelled with the customer's own link. To write a reply, the AI service receives the messages typed in that chat, the shop's name, services, prices and free times, and the result of a booking (the service, the staff member and the time). It does not receive the customer's cancellation link, other customers' details or the shop's records. Each shop can have only a limited number of chats a month.</p>
 
     <h2>Who sees it</h2>
     <p>The shop and its signed-in staff. We do not sell data, show advertising or use analytics. We use these service providers to run the system:</p>
@@ -31,6 +34,7 @@
         <li><strong>Neon</strong>: the database (the region we use is Singapore).</li>
         <li><strong>Brevo</strong>: sends the emails listed above (it receives the recipient's email address, the name used in the greeting and the message, which for a customer includes the booking details).</li>
         <li><strong>Cloudflare</strong>: the domain name and, when it is switched on, a "are you a person" check on sign-up and on the forgotten-password page (it receives what your browser sends with the check, such as the network address).</li>
+        <li><strong>Anthropic</strong>: the AI service behind the optional chat assistant. It receives only what is described under "Why we use it", and only for shops that switch the assistant on. Its own terms and privacy policy apply to what it receives.</li>
         <li><strong>GitHub</strong>: holds our nightly backup of the database. The backup is encrypted before it is stored, and only we hold the key.</li>
     </ul>
     <p>Some of these providers keep data outside the Philippines. We choose providers that protect data, and we remain responsible for it as the shop's processor.</p>
@@ -39,7 +43,7 @@
     <p>Only the ones the site needs to work: a sign-in cookie for shop staff, a security token that protects forms, and a short-lived cookie that carries a message to the next page. No tracking or advertising cookies.</p>
 
     <h2>How long we keep it</h2>
-    <p>For as long as the shop uses the service, and after its access ends we keep the shop's data for at least 90 days so it can come back; we tell the owner by email before deleting a shop that stayed inactive. A shop can export or permanently delete any one customer's data at any time from the app. When a shop is deleted, everything in it is deleted with it. Encrypted backup copies age out after 14 days, and the copies we save from time to time for safekeeping are kept for up to 12 months; deleted data can stay in those copies until they are removed.</p>
+    <p>For as long as the shop uses the service, and after its access ends we keep the shop's data for at least 90 days so it can come back; we tell the owner by email before deleting a shop that stayed inactive. Chat messages with the assistant are deleted 30 days after the chat started. A shop can export or permanently delete any one customer's data at any time from the app; this includes chats in which the customer typed their mobile number. When a shop is deleted, everything in it is deleted with it. Encrypted backup copies age out after 14 days, and the copies we save from time to time for safekeeping are kept for up to 12 months; deleted data can stay in those copies until they are removed.</p>
 
     <h2>How we protect it</h2>
     <p>The site uses HTTPS. Passwords are hashed. Every shop's data is kept apart: staff can only reach their own shop. Sign-in and booking pages limit repeated attempts. Changes to bookings are recorded in an audit log. Backups are encrypted. No system is perfectly secure, so we cannot promise that nothing will ever go wrong. If we learn of a breach that affects a shop's data we will tell that shop without undue delay so it can meet its own duties, including telling the National Privacy Commission and the people affected where the law requires.</p>

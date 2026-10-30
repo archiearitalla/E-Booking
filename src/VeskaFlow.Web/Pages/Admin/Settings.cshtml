@@ -17,7 +17,7 @@
     <p class="hint">@Text.LogoHint</p>
     @if (Model.LogoVersion is { } logoVersion)
     {
-        <img class="logo-preview" src="/logo/@Model.Slug?v=@logoVersion" alt="@Text.LogoAlt" width="96" height="96" />
+        <img class="logo-preview" src="/logo/@Model.Slug?v=@logoVersion" alt="@Text.LogoAlt" height="96" />
     }
     <form method="post" asp-page-handler="Logo" enctype="multipart/form-data">
         <div class="field">
