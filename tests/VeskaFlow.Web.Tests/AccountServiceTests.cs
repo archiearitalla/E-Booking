@@ -16,8 +16,11 @@ public class AccountServiceTests
         return (new OnboardingService(factory), new AuthService(factory), factory);
     }
 
-    private static RegisterRequest NewRequest(string? slug = null, string? email = null, string password = "correct-horse-1") =>
-        new("Ben's Barbershop", slug ?? Unique("shop"), "Ben Santos", email ?? $"{Unique("ben")}@example.com", password);
+    private static RegisterRequest NewRequest(string? slug = null, string? email = null, string password = "correct-horse-1", string shopName = "Ben's Barbershop", string? ownerName = null) =>
+        new(shopName, slug ?? Unique("shop"), ownerName ?? "Ben Santos", email ?? $"{Unique("ben")}@example.com", password);
+
+    /// <summary>The short code added to an address that is already used: four letters or numbers, none that look alike.</summary>
+    private const string Code = "[a-hj-km-np-z2-9]{4}";
 
     [Fact]
     public async Task Register_creates_business_owner_staff_service_and_hours_in_one_go()
@@ -64,23 +67,75 @@ public class AccountServiceTests
     }
 
     [Fact]
-    public async Task A_taken_slug_or_email_is_a_friendly_field_error_not_an_exception()
+    public async Task Only_the_email_must_be_unique_the_shop_name_and_the_owner_name_may_be_shared()
     {
         var (onboarding, _, _) = await CreateAsync();
         var first = NewRequest();
         Assert.True((await onboarding.RegisterAsync(first)).IsSuccess);
 
-        var sameSlug = await onboarding.RegisterAsync(NewRequest(slug: first.Slug));
-        Assert.Equal(FailureKind.Validation, sameSlug.Failure);
-        Assert.Equal(Text.SlugTaken, sameSlug.FieldErrors["slug"]);
+        // The same shop name and the same owner name, a different email: fine.
+        var twin = await onboarding.RegisterAsync(NewRequest(slug: first.Slug, shopName: first.BusinessName!, ownerName: first.OwnerName));
+        Assert.True(twin.IsSuccess, twin.Message);
 
+        // The same email, in any case, is a friendly field error and not an exception.
         var sameEmailOtherCase = await onboarding.RegisterAsync(NewRequest(email: first.Email!.ToUpperInvariant()));
         Assert.Equal(FailureKind.Validation, sameEmailOtherCase.Failure);
         Assert.Equal(Text.EmailTaken, sameEmailOtherCase.FieldErrors["email"]);
+        Assert.DoesNotContain("slug", sameEmailOtherCase.FieldErrors.Keys);
     }
 
     [Fact]
-    public async Task The_booking_address_is_accepted_however_it_is_typed_and_only_a_minimum_length_is_required()
+    public async Task The_booking_address_comes_from_the_shop_name_and_gets_a_short_code_when_it_is_taken()
+    {
+        var (onboarding, _, _) = await CreateAsync();
+        var tag = Guid.NewGuid().ToString("N")[..6];
+        string Name() => $"Kuya Jun Salon {tag}";
+
+        // Blank address: made from the shop name.
+        var first = await onboarding.RegisterAsync(NewRequest(slug: "  ", shopName: Name()));
+        Assert.True(first.IsSuccess, first.Message);
+        Assert.Equal($"kuya-jun-salon-{tag}", first.Value!.Slug);
+
+        // The same shop name again: the same address with a short code at the end, then another code for the next one.
+        var second = await onboarding.RegisterAsync(NewRequest(slug: "", shopName: Name()));
+        var third = await onboarding.RegisterAsync(NewRequest(slug: null, shopName: Name()) with { Slug = null });
+        Assert.True(second.IsSuccess, "second: " + second.Message);
+        Assert.True(third.IsSuccess, "third: " + third.Message);
+        Assert.Matches($"^kuya-jun-salon-{tag}-{Code}$", second.Value!.Slug);
+        Assert.Matches($"^kuya-jun-salon-{tag}-{Code}$", third.Value!.Slug);
+        Assert.NotEqual(second.Value.Slug, third.Value.Slug);
+
+        // An address that was typed and is taken gets the code too: no error.
+        var typed = await onboarding.RegisterAsync(NewRequest(slug: $"Kuya Jun Salon {tag}", shopName: "Another name"));
+        Assert.True(typed.IsSuccess, typed.Message);
+        Assert.Matches($"^kuya-jun-salon-{tag}-{Code}$", typed.Value!.Slug);
+
+        // A name too short to be an address, and one with no letters at all, still get a valid address.
+        var tiny = await onboarding.RegisterAsync(NewRequest(slug: "", shopName: "Ab"));
+        Assert.Matches($"^ab-{Code}$", tiny.Value!.Slug);
+        var symbols = await onboarding.RegisterAsync(NewRequest(slug: "", shopName: "!!! ???"));
+        Assert.Matches($"^shop-{Code}$", symbols.Value!.Slug);
+
+        // A very long name is cut, and the code still fits inside the 40 characters.
+        var longName = new string('x', 70) + tag; // 76 characters: the longest a shop name may be is 80
+        var longFirst = await onboarding.RegisterAsync(NewRequest(slug: "", shopName: longName));
+        var longSecond = await onboarding.RegisterAsync(NewRequest(slug: "", shopName: longName));
+        Assert.True(longFirst.IsSuccess, "first: " + longFirst.Message + " " + string.Join(",", longFirst.FieldErrors.Values));
+        Assert.True(longSecond.IsSuccess, "second: " + longSecond.Message + " " + string.Join(",", longSecond.FieldErrors.Values));
+        Assert.True(longFirst.Value!.Slug.Length <= 40);
+        Assert.True(longSecond.Value!.Slug.Length <= 40);
+        Assert.Matches("^x+-[a-hj-km-np-z2-9]{4,6}$", longSecond.Value.Slug);
+        Assert.NotEqual(longFirst.Value.Slug, longSecond.Value.Slug);
+
+        // Many shops with the very same long name: the code grows when needed and the address never passes 40 characters.
+        var many = await Task.WhenAll(Enumerable.Range(0, 12).Select(i => Task.Run(() => onboarding.RegisterAsync(NewRequest(slug: "", shopName: longName)))));
+        Assert.All(many, r => { Assert.True(r.IsSuccess, r.Message); Assert.True(r.Value!.Slug.Length <= 40, r.Value.Slug); });
+        Assert.Equal(12, many.Select(r => r.Value!.Slug).Distinct().Count());
+        Assert.All(new[] { first, second, third, typed, tiny, symbols, longFirst, longSecond }, r => Assert.True(VeskaFlow.Core.Domain.Slug.IsValid(r.Value!.Slug), r.Value!.Slug));
+    }
+
+    [Fact]
+    public async Task The_booking_address_is_accepted_however_it_is_typed_and_is_never_refused()
     {
         var (onboarding, _, _) = await CreateAsync();
         var tag = Guid.NewGuid().ToString("N")[..6];
@@ -94,15 +149,18 @@ public class AccountServiceTests
         Assert.True(symbols.IsSuccess, symbols.Message);
         Assert.Equal($"marias-salon-spa-{tag}", symbols.Value!.Slug);
 
-        // Taken is judged on the cleaned address, so "SAN JUAN x" and "san-juan-x" are the same address.
+        // Taken is judged on the cleaned address, so "SAN JUAN x" and "san-juan-x" are the same address: the second gets a code.
         var same = await onboarding.RegisterAsync(NewRequest(slug: $"SAN JUAN {tag}"));
-        Assert.Equal(Text.SlugTaken, same.FieldErrors["slug"]);
+        Assert.True(same.IsSuccess, same.Message);
+        Assert.Matches($"^san-juan-{tag}-{Code}$", same.Value!.Slug);
 
-        // Too short to be an address: refused with the minimum-length message. Blank uses the shop name.
+        // Too short to be an address: the shop name is used instead, never an error. Blank uses the shop name too.
         var tooShort = await onboarding.RegisterAsync(NewRequest(slug: "a !"));
-        Assert.Equal(Text.SlugInvalid, tooShort.FieldErrors["slug"]);
+        Assert.True(tooShort.IsSuccess, tooShort.Message);
+        Assert.StartsWith("bens-barbershop", tooShort.Value!.Slug);
         var blank = await onboarding.RegisterAsync(NewRequest(slug: "   "));
-        Assert.True(blank.IsSuccess || blank.FieldErrors["slug"] == Text.SlugTaken);
+        Assert.True(blank.IsSuccess, blank.Message);
+        Assert.StartsWith("bens-barbershop", blank.Value!.Slug);
 
         // Long input is cut to 40 characters rather than refused.
         var longOne = await onboarding.RegisterAsync(NewRequest(slug: new string('x', 80) + tag));
@@ -110,17 +168,59 @@ public class AccountServiceTests
         Assert.True(longOne.Value!.Slug.Length <= 40);
     }
 
+    [Theory]
+    [InlineData("san-juan-salon", "k7x2", "san-juan-salon-k7x2")]
+    [InlineData("", "k7x2", "shop-k7x2")]
+    [InlineData("ab", "k7x2", "ab-k7x2")]
+    public void An_address_with_a_code_is_the_address_a_hyphen_and_the_code(string wanted, string code, string expected) =>
+        Assert.Equal(expected, OnboardingService.WithCode(wanted, code));
+
     [Fact]
-    public async Task Parallel_registrations_for_one_slug_produce_one_success_and_friendly_errors()
+    public void An_address_with_a_code_always_fits_in_40_characters_never_ends_a_cut_in_a_hyphen_and_is_a_valid_address()
     {
-        var (onboarding, _, _) = await CreateAsync();
+        foreach (var code in new[] { "k7x2", "k7x2m", "k7x2mp" })
+        {
+            foreach (var wanted in new[] { new string('x', 40), new string('x', 39) + "-", "abc-" + new string('y', 33) + "-zzz", "a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r-s-t" })
+            {
+                var result = OnboardingService.WithCode(VeskaFlow.Core.Domain.Slug.From(wanted), code);
+                Assert.True(result.Length <= 40, $"{result} ({result.Length})");
+                Assert.EndsWith("-" + code, result);
+                Assert.DoesNotContain("--", result);
+                Assert.True(VeskaFlow.Core.Domain.Slug.IsValid(result), result);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Parallel_registrations_for_one_address_all_succeed_with_different_addresses()
+    {
+        var (onboarding, _, factory) = await CreateAsync();
         var slug = Unique("race");
 
         var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
             Task.Run(() => onboarding.RegisterAsync(NewRequest(slug: slug)))));
 
+        Assert.All(results, r => Assert.True(r.IsSuccess, r.Message));                                                       // nobody is refused
+        Assert.Equal(8, results.Select(r => r.Value!.Slug).Distinct().Count());                                              // and no two share an address
+        Assert.Contains(slug, results.Select(r => r.Value!.Slug));                                                           // one of them has the plain address
+        Assert.All(results.Where(r => r.Value!.Slug != slug), r => Assert.Matches($"^{slug}-{Code}$", r.Value!.Slug));
+        await using var db = factory.CreateDbContext();
+        Assert.Equal(8, await db.Businesses.CountAsync(b => b.Slug == slug || b.Slug.StartsWith(slug + "-")));
+    }
+
+    [Fact]
+    public async Task Parallel_registrations_for_one_email_produce_one_success_and_friendly_errors()
+    {
+        var (onboarding, _, factory) = await CreateAsync();
+        var email = $"{Unique("same")}@example.com";
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(i =>
+            Task.Run(() => onboarding.RegisterAsync(NewRequest(email: email, shopName: "Shared Name")))));
+
         Assert.Equal(1, results.Count(r => r.IsSuccess));
-        Assert.All(results.Where(r => !r.IsSuccess), r => Assert.Contains("slug", r.FieldErrors.Keys));
+        Assert.All(results.Where(r => !r.IsSuccess), r => Assert.Equal(Text.EmailTaken, r.FieldErrors["email"]));
+        await using var db = factory.CreateDbContext();
+        Assert.Equal(1, await db.AdminUsers.CountAsync(u => u.Email == email));
     }
 
     [Fact]
@@ -130,8 +230,9 @@ public class AccountServiceTests
         var result = await onboarding.RegisterAsync(new RegisterRequest("", "A!", "", "nope", "short"));
 
         Assert.Equal(FailureKind.Validation, result.Failure);
-        foreach (var field in new[] { "businessName", "slug", "ownerName", "email", "password" })
+        foreach (var field in new[] { "businessName", "ownerName", "email", "password" })
             Assert.Contains(field, result.FieldErrors.Keys);
+        Assert.DoesNotContain("slug", result.FieldErrors.Keys);                                                              // the address is never the problem
         // Other tests create shops in parallel, so check only for rows this request could have created.
         await using var db = factory.CreateDbContext();
         Assert.False(await db.Businesses.AnyAsync(b => b.Slug == "a" || b.Name == ""));

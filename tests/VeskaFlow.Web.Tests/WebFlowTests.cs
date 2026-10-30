@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using static VeskaFlow.Web.Tests.HttpApp;
 
@@ -71,7 +72,7 @@ public class WebFlowTests
     }
 
     [Fact]
-    public async Task Registering_a_taken_slug_or_email_shows_a_friendly_error_not_a_500()
+    public async Task Registering_with_a_taken_email_shows_a_friendly_error_and_a_taken_address_just_gets_a_short_code()
     {
         var (factory, client) = await StartAsync();
         using var _ = factory;
@@ -79,13 +80,30 @@ public class WebFlowTests
         var slug = Unique("shop");
         await PostFormAsync(client, "/Register", RegisterFields(email, slug));
 
+        // The same email: a friendly error, not a 500. The address typed is not the problem.
         using var second = NewClient(factory); // a fresh browser
         var response = await PostFormAsync(second, "/Register", RegisterFields(email, slug));
-
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains(Text.SlugTaken, html);
         Assert.Contains(Text.EmailTaken, html);
+        Assert.DoesNotContain(Text.SlugTaken, html);
+
+        // The same shop name and owner name and address, a different email: it works, with a short code on the address.
+        using var third = NewClient(factory);
+        var other = await PostFormAsync(third, "/Register", RegisterFields($"{Unique("b")}@example.com", slug));
+        Assert.Equal(HttpStatusCode.Redirect, other.StatusCode);
+        Assert.Equal("/Admin", other.Headers.Location!.OriginalString);
+        await using var db = new TestDbFactory(await TestDb.ConnectionStringAsync()).CreateDbContext();
+        var slugs = await db.Businesses.Where(b => b.Slug == slug || b.Slug.StartsWith(slug + "-")).Select(b => b.Slug).ToListAsync();
+        Assert.Equal(2, slugs.Count);
+        Assert.Contains(slug, slugs);
+        Assert.Matches($"^{slug}-[a-hj-km-np-z2-9]{{4}}$", slugs.Single(x => x != slug));
+
+        // The owner is told the address they got right after signing up, and sees it in Settings.
+        var welcome = WebUtility.HtmlDecode(await third.GetStringAsync("/Admin"));
+        Assert.Matches($"Your online booking page is at /b/{slug}-[a-hj-km-np-z2-9]{{4}}\\.", welcome);
+        var settings = WebUtility.HtmlDecode(await third.GetStringAsync("/Admin/Settings"));
+        Assert.Matches($"/b/{slug}-[a-hj-km-np-z2-9]{{4}}", settings);
     }
 
     [Fact]
