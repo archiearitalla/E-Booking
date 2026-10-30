@@ -2,6 +2,7 @@ using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using VeskaFlow.Core.Domain;
+using VeskaFlow.Core.Pricing;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
@@ -204,6 +205,13 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                     return new InsertAttempt(InsertOutcome.CustomerLimit, null, string.Format(Text.TooManyActiveBookings, caps.MaxActivePerCustomer));
             }
 
+            // A running promo takes its percentage off a service that is part of it, at the moment the booking is made: what the
+            // customer saw is what they pay, whatever the day of the appointment, and a later change of the promo never touches it.
+            var promo = await db.BusinessBanners.AsNoTracking().Where(b => b.BusinessId == business.Id)
+                .Select(b => new { b.IsActive, b.EndsOn, b.DiscountPercent }).FirstOrDefaultAsync(ct);
+            var percent = PromoPricing.PercentFor(service.IsOther, service.PromoEligible, service.Price,
+                promo is null ? null : PromoPricing.ActivePercent(promo.IsActive, promo.EndsOn, promo.DiscountPercent, LocalTime.LocalDateOf(now, business.TimeZone)));
+
             var booking = new Booking
             {
                 BusinessId = business.Id,
@@ -215,7 +223,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 OccupiedUntilUtc = end.AddMinutes(service.BufferMinutes),
                 LocationTimeZone = business.TimeZone,
                 Status = BookingStatus.Confirmed, // MVP: pay on site, instant confirmation
-                PriceSnapshot = service.Price,
+                PriceSnapshot = percent is { } off ? PromoPricing.Net(service.Price, off) : service.Price,
+                RegularPriceSnapshot = percent is null ? null : service.Price,
+                DiscountPercentSnapshot = percent,
                 ServiceNameSnapshot = service.IsOther ? $"{service.Name}: {(request.ServiceNote ?? "").Trim()}" : service.Name,
                 ManageToken = NewManageToken(),
                 IdempotencyKey = key,
@@ -440,7 +450,8 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             {
                 Summary = new BookingSummary(
                     b.Id, b.BusinessId, b.StaffId, b.Staff.Name, b.ServiceId, b.ServiceNameSnapshot,
-                    b.StartsAtUtc, b.EndsAtUtc, b.Status, b.ManageToken, b.PriceSnapshot, EF.Property<uint>(b, "xmin")),
+                    b.StartsAtUtc, b.EndsAtUtc, b.Status, b.ManageToken, b.PriceSnapshot, EF.Property<uint>(b, "xmin"),
+                    b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount),
                 BusinessName = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.Name).First(),
                 CutoffHours = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.CancelCutoffHours).First(),
                 CustomerName = b.Customer.Name,
@@ -471,7 +482,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         bookings.Select(b => new BookingSummary(
             b.Id, b.BusinessId, b.StaffId, b.Staff.Name, b.ServiceId, b.ServiceNameSnapshot,
             b.StartsAtUtc, b.EndsAtUtc, b.Status, b.ManageToken, b.PriceSnapshot,
-            EF.Property<uint>(b, "xmin")));
+            EF.Property<uint>(b, "xmin"), b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount));
 
     private static Task<Business?> LoadBusinessAsync(AppDbContext db, Guid businessId, CancellationToken ct) =>
         db.Businesses.AsNoTracking().FirstOrDefaultAsync(b => b.Id == businessId, ct);

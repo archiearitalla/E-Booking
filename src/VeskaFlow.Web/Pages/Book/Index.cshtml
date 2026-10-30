@@ -55,7 +55,7 @@
                     <option value="" disabled selected="@(Model.ServiceId is null)">@Text.BookServicePlaceholder</option>
                     @foreach (var service in shop.Services)
                     {
-                        <option value="@service.Id" selected="@(Model.ServiceId == service.Id)" data-other="@(service.IsOther ? "true" : "false")">@service.Name@(service.IsOther ? "" : " · " + DisplayFormat.Price(service.Price))</option>
+                        <option value="@service.Id" selected="@(Model.ServiceId == service.Id)" data-other="@(service.IsOther ? "true" : "false")">@service.Name@(service.IsOther ? "" : " · " + (shop.PriceOf(service) is { HasPromo: true } deal ? Text.PromoOptionPrice(DisplayFormat.Price(deal.Net), DisplayFormat.Price(deal.Regular)) : DisplayFormat.Price(service.Price)))</option>
                     }
                 </select>
             </div>

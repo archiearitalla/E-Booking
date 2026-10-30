@@ -1,3 +1,4 @@
+using VeskaFlow.Core.Pricing;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
@@ -7,11 +8,13 @@ namespace VeskaFlow.Web.Services;
 public enum PromoState { None, Showing, Paused, Ended }
 
 /// <summary>What the booking page needs to show the banner. <c>Version</c> changes whenever the banner does.</summary>
-public sealed record PromoBannerView(string Headline, string? Details, string? Badge, string Theme, bool HasPicture, DateOnly? EndsOn, long Version);
+/// <summary><c>Badge</c> is what the card shows: the owner's own, else "N% OFF" when the promo has a discount. <c>DiscountPercent</c> is the discount in force today (null when none).
+public sealed record PromoBannerView(string Headline, string? Details, string? Badge, string Theme, bool HasPicture, DateOnly? EndsOn, long Version, int? DiscountPercent = null);
 
 /// <summary>What the owner's page needs: the state, the settings and "today" in the shop's time zone.</summary>
 public sealed record PromoBannerAdmin(
-    bool Exists, bool HasPicture, string Caption, string? Details, string? Badge, string Theme, bool IsActive, DateOnly? EndsOn, long Version, PromoState State, DateOnly Today);
+    bool Exists, bool HasPicture, string Caption, string? Details, string? Badge, string Theme, bool IsActive, DateOnly? EndsOn, long Version, PromoState State, DateOnly Today,
+    int? DiscountPercent = null);
 
 public sealed record PromoImage(string ContentType, byte[] Data, DateTime UpdatedAtUtc)
 {
@@ -43,12 +46,24 @@ public sealed class PromoBannerService(IDbContextFactory<AppDbContext> dbFactory
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var row = await db.BusinessBanners.AsNoTracking().Where(b => b.BusinessId == businessId)
-            .Select(b => new { b.Caption, b.Details, b.Badge, b.Theme, HasPicture = b.Data != null, b.IsActive, b.EndsOn, b.UpdatedAtUtc }).FirstOrDefaultAsync(ct);
+            .Select(b => new { b.Caption, b.Details, b.Badge, b.Theme, HasPicture = b.Data != null, b.IsActive, b.EndsOn, b.DiscountPercent, b.UpdatedAtUtc }).FirstOrDefaultAsync(ct);
         if (row is null) return null;
         var today = LocalTime.LocalDateOf(Now, timeZone);
-        return StateOf(row.IsActive, row.EndsOn, today) == PromoState.Showing
-            ? new PromoBannerView(row.Caption, row.Details, row.Badge, PromoThemes.Normalize(row.Theme), row.HasPicture, row.EndsOn, row.UpdatedAtUtc.Ticks)
-            : null;
+        if (StateOf(row.IsActive, row.EndsOn, today) != PromoState.Showing) return null;
+        var percent = PromoPricing.ActivePercent(row.IsActive, row.EndsOn, row.DiscountPercent, today);
+        return new PromoBannerView(row.Caption, row.Details, row.Badge ?? (percent is { } p ? Text.PromoAutoBadge(p) : null), PromoThemes.Normalize(row.Theme),
+            row.HasPicture, row.EndsOn, row.UpdatedAtUtc.Ticks, percent);
+    }
+
+    /// <summary>The discount in force for this shop today, or null (no promo, switched off, ended, or a banner without a discount).</summary>
+    public async Task<int?> GetActivePercentAsync(Guid businessId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var zone = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
+        if (zone is null) return null;
+        var row = await db.BusinessBanners.AsNoTracking().Where(b => b.BusinessId == businessId)
+            .Select(b => new { b.IsActive, b.EndsOn, b.DiscountPercent }).FirstOrDefaultAsync(ct);
+        return row is null ? null : PromoPricing.ActivePercent(row.IsActive, row.EndsOn, row.DiscountPercent, LocalTime.LocalDateOf(Now, zone));
     }
 
     /// <summary>The picture of the shop with this booking address, only while the banner is showing and has one. Public.</summary>
@@ -81,21 +96,22 @@ public sealed class PromoBannerService(IDbContextFactory<AppDbContext> dbFactory
         if (zone is null) return null;
         var today = LocalTime.LocalDateOf(Now, zone);
         var row = await db.BusinessBanners.AsNoTracking().Where(b => b.BusinessId == businessId)
-            .Select(b => new { b.Caption, b.Details, b.Badge, b.Theme, HasPicture = b.Data != null, b.IsActive, b.EndsOn, b.UpdatedAtUtc }).FirstOrDefaultAsync(ct);
+            .Select(b => new { b.Caption, b.Details, b.Badge, b.Theme, HasPicture = b.Data != null, b.IsActive, b.EndsOn, b.DiscountPercent, b.UpdatedAtUtc }).FirstOrDefaultAsync(ct);
         return row is null
             ? new PromoBannerAdmin(false, false, "", null, null, PromoThemes.Default, true, null, 0, PromoState.None, today)
             : new PromoBannerAdmin(true, row.HasPicture, row.Caption, row.Details, row.Badge, PromoThemes.Normalize(row.Theme), row.IsActive, row.EndsOn,
-                row.UpdatedAtUtc.Ticks, StateOf(row.IsActive, row.EndsOn, today), today);
+                row.UpdatedAtUtc.Ticks, StateOf(row.IsActive, row.EndsOn, today), today, row.DiscountPercent);
     }
 
     /// <summary>
     /// Saves the banner. A picture is optional: <paramref name="picture"/> null keeps the one already saved (so the words, the mode
     /// or the last day can change without uploading again) and <paramref name="removePicture"/> drops it and keeps the words.
-    /// Errors are keyed "caption", "details", "badge", "theme", "picture" and "endsOn".
+    /// <paramref name="discountPercent"/> (1 to 90, optional) is taken off the services that are part of the promo, for bookings made while it runs.
+    /// Errors are keyed "caption", "details", "badge", "theme", "picture", "endsOn" and "discount".
     /// </summary>
     public async Task<ServiceResult<bool>> SaveAsync(
         Guid businessId, byte[]? picture, bool removePicture, string? caption, string? details, string? badge, string? theme, bool isActive, DateOnly? endsOn,
-        CancellationToken ct = default)
+        int? discountPercent = null, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var zone = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstOrDefaultAsync(ct);
@@ -111,6 +127,8 @@ public sealed class PromoBannerService(IDbContextFactory<AppDbContext> dbFactory
         if (more is { Length: > MaxDetails }) errors["details"] = Text.PromoDetailsInvalid;
         var label = string.IsNullOrWhiteSpace(badge) ? null : badge.Trim();
         if (label is { Length: > MaxBadge }) errors["badge"] = Text.PromoBadgeInvalid;
+
+        if (discountPercent is { } d && !PromoPricing.IsValidPercent(d)) errors["discount"] = Text.PromoDiscountInvalid;
 
         var chosen = string.IsNullOrWhiteSpace(theme) ? PromoThemes.Default : theme.Trim();
         if (!PromoThemes.IsValid(chosen)) errors["theme"] = Text.PromoThemeInvalid;
@@ -140,6 +158,7 @@ public sealed class PromoBannerService(IDbContextFactory<AppDbContext> dbFactory
         existing.Caption = words;
         existing.Details = more;
         existing.Badge = label;
+        existing.DiscountPercent = discountPercent;
         existing.Theme = chosen;
         existing.IsActive = isActive;
         existing.EndsOn = endsOn;

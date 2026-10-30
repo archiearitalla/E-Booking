@@ -1,10 +1,17 @@
-﻿using VeskaFlow.Core.Scheduling;
+﻿using VeskaFlow.Core.Pricing;
+using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Web.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false);
+public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false, bool PromoEligible = true);
+
+/// <summary>A service's price on the booking page: the regular price, and, while a promo discount applies to it, the price after the discount.</summary>
+public sealed record ServicePrice(decimal Regular, decimal Net, int? Percent)
+{
+    public bool HasPromo => Percent is not null;
+}
 
 public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> ServiceIds);
 
@@ -12,8 +19,14 @@ public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> Servi
 public sealed record PublicShop(
     Guid Id, string Slug, string Name, string TimeZone, int HorizonDays,
     DateOnly Today, IReadOnlyList<PublicService> Services, IReadOnlyList<PublicStaff> Staff, string BrandColor = BrandColors.Default,
-    bool AcceptingBookings = true, string Industry = Industries.Default)
+    bool AcceptingBookings = true, string Industry = Industries.Default, int? PromoPercent = null)
 {
+    /// <summary>What a customer pays for this service if booked now: the regular price, or the promo price while a discount runs and the service is part of it.</summary>
+    public ServicePrice PriceOf(PublicService service) =>
+        PromoPricing.PercentFor(service.IsOther, service.PromoEligible, service.Price, PromoPercent) is { } off
+            ? new ServicePrice(service.Price, PromoPricing.Net(service.Price, off), off)
+            : new ServicePrice(service.Price, service.Price, null);
+
     public PublicService? FindService(Guid? id) => Services.FirstOrDefault(s => s.Id == id);
     public PublicStaff? FindStaff(Guid? id) => Staff.FirstOrDefault(s => s.Id == id);
 }
@@ -72,7 +85,7 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
         var services = await db.Services.AsNoTracking()
             .Where(s => s.BusinessId == business.Id && s.IsActive)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther))
+            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther, s.PromoEligible))
             .ToListAsync(ct);
 
         var staffRows = await db.StaffMembers.AsNoTracking()
@@ -82,11 +95,14 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
             .ToListAsync(ct);
 
         var today = LocalTime.LocalDateOf(time.GetUtcNow().UtcDateTime, business.TimeZone);
+        var promo = await db.BusinessBanners.AsNoTracking().Where(b => b.BusinessId == business.Id)
+            .Select(b => new { b.IsActive, b.EndsOn, b.DiscountPercent }).FirstOrDefaultAsync(ct);
+        var promoPercent = promo is null ? null : PromoPricing.ActivePercent(promo.IsActive, promo.EndsOn, promo.DiscountPercent, today);
         return new PublicShop(
             business.Id, business.Slug, business.Name, business.TimeZone, business.HorizonDays, today,
             services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
             business.IsEnabled && (business.TrialEndsAtUtc is not { } ends
                 || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc)),
-            business.Industry);
+            business.Industry, promoPercent);
     }
 }

@@ -14,7 +14,11 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         IsNew = id is null;
-        if (id is null) return Page();
+        if (id is null)
+        {
+            Input = new ServiceForm { IsActive = true, PromoEligible = true }; // a new service starts active and part of any promo
+            return Page();
+        }
 
         var row = await catalog.GetServiceAsync(BusinessId, id.Value, ct);
         if (row is null) return NotFound(); // unknown id and another business's id look the same
@@ -22,7 +26,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         {
             Name = row.Name, DurationMinutes = row.DurationMinutes, BufferMinutes = row.BufferMinutes,
             Price = row.Price.ToString("0.00", CultureInfo.InvariantCulture), IsActive = row.IsActive, SortOrder = row.SortOrder,
-            FollowUpDays = row.FollowUpDays,
+            FollowUpDays = row.FollowUpDays, PromoEligible = row.PromoEligible,
         };
         return Page();
     }
@@ -37,7 +41,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         }
 
         var result = await catalog.SaveServiceAsync(BusinessId,
-            new ServiceInput(id, Input.Name, Input.DurationMinutes, Input.BufferMinutes, price, Input.IsActive, Input.SortOrder, Input.FollowUpDays), ct);
+            new ServiceInput(id, Input.Name, Input.DurationMinutes, Input.BufferMinutes, price, Input.IsActive, Input.SortOrder, Input.FollowUpDays, Input.PromoEligible), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -57,7 +61,9 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         public int DurationMinutes { get; set; } = 30;
         public int BufferMinutes { get; set; }
         public string? Price { get; set; } = "0.00";
-        public bool IsActive { get; set; } = true;
+        /// <summary>A browser sends nothing for an unticked box, so "not sent" must mean off: the defaults are false and the page fills the boxes from the saved service (or ticks them for a new one).</summary>
+        public bool IsActive { get; set; }
+        public bool PromoEligible { get; set; }
         public int SortOrder { get; set; }
         public int? FollowUpDays { get; set; }
     }

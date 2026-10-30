@@ -37,6 +37,28 @@ public class AfterVisitModel(
         return Booking!.Status == BookingStatus.Completed ? Page() : Redirect("/Admin");
     }
 
+    /// <summary>Saves the payment total of this visit. Blank clears it (the quoted price counts again).</summary>
+    public async Task<IActionResult> OnPostPaymentAsync(Guid id, string? paidAmount, CancellationToken ct)
+    {
+        decimal? amount = null;
+        var typed = (paidAmount ?? "").Replace(",", "").Replace("\u20B1", "").Trim();
+        if (typed.Length > 0)
+        {
+            if (!decimal.TryParse(typed, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            {
+                Failure = Text.AfterVisitPaymentInvalid;
+                return RedirectToPage(new { id });
+            }
+            amount = parsed;
+        }
+
+        var result = await records.SetPaidAmountAsync(BusinessId, id, amount, ct, ScopeStaffId);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.AfterVisitPaymentSaved;
+        else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;
+        return RedirectToPage(new { id });
+    }
+
     /// <summary>Saves the optional medical record of this visit.</summary>
     public async Task<IActionResult> OnPostNotesAsync(Guid id, string? visitNotes, CancellationToken ct)
     {

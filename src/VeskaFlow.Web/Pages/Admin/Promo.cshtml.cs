@@ -6,13 +6,15 @@ namespace VeskaFlow.Web.Pages.Admin;
 /// <summary>The owner's promo banner for the public booking page (BUSINESS_RULES 6.y18). Owner only; the shop is the signed-in one.</summary>
 [AdminAccess(AdminLevel.Owner)]
 [RequestSizeLimit(1_048_576)] // a banner is at most 512 KB; nothing bigger is read
-public class PromoModel(PromoBannerService promo) : AdminPageModel
+public class PromoModel(PromoBannerService promo, CatalogAdminService catalog) : AdminPageModel
 {
     public sealed class PromoInput
     {
         public string? Caption { get; set; }
         public string? Details { get; set; }
         public string? Badge { get; set; }
+        /// <summary>The discount in percent (1 to 90), or empty for a banner only.</summary>
+        public int? Discount { get; set; }
         public string Theme { get; set; } = PromoThemes.Default;
         /// <summary>Drop the saved picture and keep the words. A browser sends nothing for an unticked box, so not sent means keep.</summary>
         public bool RemovePicture { get; set; }
@@ -23,12 +25,17 @@ public class PromoModel(PromoBannerService promo) : AdminPageModel
 
     [BindProperty] public PromoInput Input { get; set; } = new();
 
+    /// <summary>One service with its regular price and whether it is part of the promo, for the price list on the page.</summary>
+    public sealed record PriceRow(string Name, decimal Regular, bool Eligible);
+
+    public IReadOnlyList<PriceRow> Prices { get; private set; } = [];
+
     public PromoBannerAdmin Banner { get; private set; } = new(false, false, "", null, null, PromoThemes.Default, true, null, 0, PromoState.None, default);
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (!await LoadAsync(ct)) return NotFound();
-        Input = new PromoInput { Caption = Banner.Caption, Details = Banner.Details, Badge = Banner.Badge, Theme = Banner.Theme, EndsOn = Banner.EndsOn, Active = Banner.IsActive };
+        Input = new PromoInput { Caption = Banner.Caption, Details = Banner.Details, Badge = Banner.Badge, Discount = Banner.DiscountPercent, Theme = Banner.Theme, EndsOn = Banner.EndsOn, Active = Banner.IsActive };
         return Page();
     }
 
@@ -57,7 +64,16 @@ public class PromoModel(PromoBannerService promo) : AdminPageModel
             bytes = buffer.ToArray();
         }
 
-        var result = await promo.SaveAsync(BusinessId, bytes, Input.RemovePicture, Input.Caption, Input.Details, Input.Badge, Input.Theme, Input.Active, Input.EndsOn, ct);
+        // Text that is not a whole number cannot be bound, which would quietly mean "no discount"; say so instead.
+        if (ModelState.TryGetValue("Input.Discount", out var typed) && typed.Errors.Count > 0)
+        {
+            await LoadAsync(ct);
+            Input.Discount = null;
+            Failure = Text.PromoDiscountInvalid;
+            return Page();
+        }
+
+        var result = await promo.SaveAsync(BusinessId, bytes, Input.RemovePicture, Input.Caption, Input.Details, Input.Badge, Input.Theme, Input.Active, Input.EndsOn, Input.Discount, ct);
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (result.IsSuccess)
         {
@@ -81,6 +97,8 @@ public class PromoModel(PromoBannerService promo) : AdminPageModel
         var banner = await promo.GetForAdminAsync(BusinessId, ct);
         if (banner is null) return false;
         Banner = banner;
+        Prices = (await catalog.ListServicesAsync(BusinessId, ct)).Where(s => s.IsActive && !s.IsOther && s.Price > 0)
+            .Select(s => new PriceRow(s.Name, s.Price, s.PromoEligible)).ToList();
         return true;
     }
 }

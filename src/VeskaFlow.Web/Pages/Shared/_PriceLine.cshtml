@@ -1,0 +1,10 @@
+@model VeskaFlow.Web.Services.PriceLineModel
+@* A price: the regular price struck through, the price to pay and the discount, when a promo applied; otherwise just the price. *@
+@if (Model.HasPromo)
+{
+    <span class="price-line"><s class="price-was"><span class="sr-only">@Text.PromoRegularPrice </span>@DisplayFormat.Price(Model.Regular!.Value)</s> <strong class="price-now">@DisplayFormat.Price(Model.Net)</strong> <span class="badge">@Text.PromoPercentOff(Model.Percent!.Value)</span></span>
+}
+else
+{
+    <span class="price-line">@DisplayFormat.Price(Model.Net)</span>
+}

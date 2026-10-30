@@ -9,7 +9,7 @@ namespace VeskaFlow.Web.Pages.Admin;
 /// Staff record a customer who is at the counter now (BUSINESS_RULES 8.2). The booking skips the lead time but still
 /// respects working hours, closures and overlaps, and the database constraint stays the final guard.
 /// </summary>
-public class WalkInModel(BookingService booking, CatalogAdminService catalog, ShopSettingsService settings, TimeProvider time) : AdminPageModel
+public class WalkInModel(BookingService booking, CatalogAdminService catalog, ShopSettingsService settings, TimeProvider time, PromoBannerService promo) : AdminPageModel
 {
     [BindProperty(SupportsGet = true)] public Guid? ServiceId { get; set; }
     [BindProperty(SupportsGet = true)] public Guid? StaffId { get; set; }
@@ -22,6 +22,15 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
     public IReadOnlyList<StaffRow> Staff { get; private set; } = [];
     public IReadOnlyList<DateTime> Times { get; private set; } = [];
     public string TimeZone { get; private set; } = "Asia/Manila";
+
+    /// <summary>The promo discount running today, taken off a walk-in booked now like any other booking made while it runs.</summary>
+    public int? PromoPercent { get; private set; }
+
+    /// <summary>What this service costs a walk-in booked now.</summary>
+    public PriceLineModel PriceOf(ServiceRow service) =>
+        VeskaFlow.Core.Pricing.PromoPricing.PercentFor(service.IsOther, service.PromoEligible, service.Price, PromoPercent) is { } off
+            ? new PriceLineModel(VeskaFlow.Core.Pricing.PromoPricing.Net(service.Price, off), service.Price, off)
+            : new PriceLineModel(service.Price);
     public bool Searched { get; private set; }
 
     /// <summary>True when the chosen service is the "Other" one.</summary>
@@ -82,6 +91,7 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
         Services = (await catalog.ListServicesAsync(BusinessId, ct)).Where(s => s.IsActive).ToList();
         Staff = (await catalog.ListStaffAsync(BusinessId, ct)).Where(s => s.IsActive).ToList();
         TimeZone = (await settings.GetSettingsAsync(BusinessId, ct))?.TimeZone ?? "Asia/Manila";
+        PromoPercent = await promo.GetActivePercentAsync(BusinessId, ct);
     }
 
     private async Task LoadTimesAsync(CancellationToken ct)

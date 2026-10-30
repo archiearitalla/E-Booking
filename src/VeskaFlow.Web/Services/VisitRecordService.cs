@@ -43,6 +43,36 @@ public sealed class VisitRecordService(IDbContextFactory<AppDbContext> dbFactory
         return ServiceResult<bool>.Ok(true);
     }
 
+    public const decimal MaxPaidAmount = 10_000_000m;
+
+    /// <summary>
+    /// Saves the payment total of a completed visit: what the customer actually paid, which may differ from the quoted price (something
+    /// added, another discount, a tip). Null clears it, so the quoted price counts again. Completed visits only; scoped to the business
+    /// (and, for a limited staff login, to that person's own bookings).
+    /// </summary>
+    public async Task<ServiceResult<bool>> SetPaidAmountAsync(Guid businessId, Guid bookingId, decimal? amount, CancellationToken ct = default, Guid? onlyStaffId = null)
+    {
+        if (amount is { } a && (a < 0 || a > MaxPaidAmount))
+            return ServiceResult<bool>.Invalid(new Dictionary<string, string> { ["paidAmount"] = Text.AfterVisitPaymentInvalid });
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId && (onlyStaffId == null || b.StaffId == onlyStaffId), ct);
+        if (booking is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (booking.Status != BookingStatus.Completed)
+            return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.AfterVisitPaymentOnlyCompleted);
+
+        booking.PaidAmount = amount is { } value ? Math.Round(value, 2, MidpointRounding.AwayFromZero) : null;
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServiceResult<bool>.Fail(FailureKind.Stale, Text.BookingChanged);
+        }
+        return ServiceResult<bool>.Ok(true);
+    }
+
     /// <summary>A customer's completed visits, newest first, with their notes. Null for an unknown id or another business's customer.</summary>
     public async Task<CustomerHistory?> GetHistoryAsync(Guid businessId, Guid customerId, CancellationToken ct = default, Guid? onlyStaffId = null)
     {

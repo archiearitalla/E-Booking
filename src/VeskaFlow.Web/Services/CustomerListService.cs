@@ -35,7 +35,7 @@ public sealed class CustomerListService(IDbContextFactory<AppDbContext> dbFactor
                 CustomerId = g.Key,
                 Visits = g.Count(b => b.Status == BookingStatus.Completed),
                 NoShows = g.Count(b => b.Status == BookingStatus.NoShow),
-                Spent = g.Where(b => b.Status == BookingStatus.Completed).Sum(b => (decimal?)b.PriceSnapshot) ?? 0m,
+                Spent = g.Where(b => b.Status == BookingStatus.Completed).Sum(b => (decimal?)(b.PaidAmount ?? b.PriceSnapshot)) ?? 0m,
                 Last = g.Where(b => b.Status == BookingStatus.Completed).Max(b => (DateTime?)b.StartsAtUtc),
             }).ToListAsync(ct)).ToDictionary(s => s.CustomerId);
 

@@ -22,6 +22,27 @@
     return isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
   }
 
+  // The discount typed, if it is a whole number from 1 to 90; otherwise none.
+  function discount() {
+    var text = field('Input.Discount') ? field('Input.Discount').value.trim() : '';
+    if (!/^\d{1,2}$/.test(text)) return 0;
+    var value = Number(text);
+    return value >= 1 && value <= 90 ? value : 0;
+  }
+
+  // The price list: the regular price with the discount taken off, in centavos so rounding matches the server (half a centavo rounds up).
+  function peso(cents) {
+    return '\u20B1' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function prices(percent) {
+    Array.prototype.forEach.call(document.querySelectorAll('#promo-prices tbody tr'), function (row) {
+      var cell = row.querySelector('.promo-net');
+      if (row.getAttribute('data-eligible') !== 'true') return; // left out of the promo: its cell keeps saying so
+      var regular = Math.round(Number(row.getAttribute('data-regular')) * 100);
+      cell.textContent = peso(percent ? Math.floor((regular * (100 - percent) + 50) / 100) : regular);
+    });
+  }
+
   function update() {
     var chosen = form.querySelector('input[name="Input.Theme"]:checked');
     if (chosen) {
@@ -33,7 +54,10 @@
     var headline = field('Input.Caption').value.trim();
     part('.promo-title').textContent = headline || holder.getAttribute('data-placeholder');
     show(part('.promo-details'), field('Input.Details').value.trim());
-    show(part('.promo-badge'), field('Input.Badge').value.trim());
+    var percent = discount();
+    var badge = field('Input.Badge').value.trim();
+    show(part('.promo-badge'), badge || (percent ? holder.getAttribute('data-autobadge').replace('{percent}', String(percent)) : ''));
+    prices(percent);
     var day = field('Input.EndsOn').value ? dayText(field('Input.EndsOn').value) : '';
     show(part('.promo-until'), day ? holder.getAttribute('data-until').replace('{date}', day) : '');
     var removing = field('Input.RemovePicture') && field('Input.RemovePicture').checked;

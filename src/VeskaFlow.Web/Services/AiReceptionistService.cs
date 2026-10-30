@@ -175,11 +175,14 @@ public sealed class AiReceptionistService(
         sb.AppendLine();
         var today = shop.Today;
         sb.AppendLine($"Today is {today.ToString("dddd, MMMM d, yyyy", Invariant)} in the shop's time zone ({shop.TimeZone}). Bookings open up to {shop.HorizonDays} days ahead.");
+        sb.AppendLine("Prices already include any promo discount; when a service shows a regular price, tell the customer both the promo price and the regular price.");
         sb.AppendLine("Services:");
         foreach (var s in shop.Services)
             sb.AppendLine(s.IsOther
                 ? $"- id={s.Id} | {s.Name} | for anything not listed: ask what the customer needs and pass it as service_note | {s.DurationMinutes} min"
-                : $"- id={s.Id} | {s.Name} | {DisplayFormat.Price(s.Price)} | {s.DurationMinutes} min");
+                : shop.PriceOf(s) is { HasPromo: true } deal
+                    ? $"- id={s.Id} | {s.Name} | {DisplayFormat.Price(deal.Net)} now (regular {DisplayFormat.Price(deal.Regular)}, {deal.Percent}% off) | {s.DurationMinutes} min"
+                    : $"- id={s.Id} | {s.Name} | {DisplayFormat.Price(s.Price)} | {s.DurationMinutes} min");
         return sb.ToString();
     }
 
@@ -269,6 +272,8 @@ public sealed class AiReceptionistService(
             served_by = made.StaffName,
             when = LocalTime.ToLocal(made.StartsAtUtc, shop.TimeZone).ToString("dddd, MMMM d 'at' h:mm tt", Invariant),
             price = DisplayFormat.Price(made.Price),
+            regular_price = made.RegularPrice is { } regular ? DisplayFormat.Price(regular) : null,
+            discount_percent = made.DiscountPercent,
             manage_link = "A link to see or cancel this booking is added to your reply automatically. Do not write one.",
         }), false);
     }

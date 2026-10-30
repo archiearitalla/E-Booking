@@ -33,7 +33,11 @@
         <dt>@Text.ManageWith</dt><dd>@b.StaffName</dd>
         <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(b.StartsAtUtc, d.TimeZone), @DisplayFormat.Time(b.StartsAtUtc, d.TimeZone)</dd>
         <dt>@Text.ManageWho</dt><dd>@d.CustomerName</dd>
-        <dt>@Text.ManagePrice</dt><dd>@DisplayFormat.Price(b.Price) &middot; @Text.BookPayOnSite</dd>
+        <dt>@Text.ManagePrice</dt><dd><partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" />@if (b.Status != VeskaFlow.Core.Domain.BookingStatus.Completed) { <text> &middot; @Text.BookPayOnSite</text> }</dd>
+        @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Completed)
+        {
+            <dt>@Text.ManageTotalPaid</dt><dd><strong>@DisplayFormat.Price(b.PaidAmount ?? b.Price)</strong></dd>
+        }
         <dt>@Text.ManageStatus</dt><dd><span class="badge">@b.Status.Label()</span></dd>
     </dl>
 

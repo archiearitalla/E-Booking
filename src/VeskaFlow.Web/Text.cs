@@ -827,6 +827,36 @@ public static class Text
     public const string PromoPreviewHint = "This is how it looks. It changes as you type; save to put it on your booking page.";
     public const string PromoDetailsInvalid = "Use up to 140 characters for the details.";
     public const string PromoBadgeInvalid = "Use up to 16 characters for the badge.";
+    public const string LabelPromoEligible = "Part of the promo";
+    public const string HintPromoEligible = "While a promo with a discount runs, this service gets the discount. Untick it to keep this service at its regular price.";
+    public const string ServiceNotInPromo = "Not part of the promo";
+    public const string ManageTotalPaid = "Total paid";
+    public const string ReportsDiscounts = "Promo discounts given";
+
+    // Payment total, entered when a visit is done (the page that opens after Done).
+    public const string AfterVisitPaymentTitle = "Payment total";
+    public const string AfterVisitPaymentHint = "What the customer paid for this visit. It starts at the price they were quoted; change it if they added something, got a different discount or left a tip.";
+    public const string AfterVisitPaymentLabel = "Total paid (PHP)";
+    public const string AfterVisitPaymentSave = "Save payment";
+    public const string AfterVisitPaymentSaved = "The payment total is saved.";
+    public const string AfterVisitPaymentInvalid = "Enter an amount from 0 to 10,000,000, for example 150 or 150.50.";
+    public const string AfterVisitPaymentOnlyCompleted = "A payment total can be entered only for a completed visit.";
+    public const string AfterVisitPaymentQuoted = "Quoted price";
+    public static string AfterVisitPaidShort(string amount) => $"Paid {amount}";
+    public const string PromoDiscountLabel = "Discount (optional)";
+    public const string PromoDiscountHint = "A percentage (1 to 90) taken off the price of every service that is part of the promo, for bookings made while it runs. Leave empty for a banner only. If you leave the big badge empty, it says the discount for you.";
+    public const string PromoDiscountInvalid = "Use a whole number from 1 to 90 for the discount.";
+    public const string PromoAutoBadgeFormat = "{percent}% OFF";
+    public static string PromoAutoBadge(int percent) => PromoAutoBadgeFormat.Replace("{percent}", percent.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    public const string PromoPricesTitle = "Prices with this promo";
+    public const string PromoPricesHint = "Services that are part of the promo show their regular price and the price after the discount. To leave a service out, edit it in Services.";
+    public const string PromoPriceRegular = "Regular";
+    public const string PromoPriceNow = "With the promo";
+    public const string PromoPriceNotIncluded = "Not part of the promo";
+    public const string PromoPriceNoService = "You have no services with a price yet.";
+    public const string PromoRegularPrice = "Regular price";
+    public static string PromoPercentOff(int percent) => $"{percent}% off";
+    public static string PromoOptionPrice(string net, string regular) => $"{net} (was {regular})";
     public const string PromoThemeLegend = "Mode";
     public const string PromoThemeHint = "The colours and decoration follow the mode you pick.";
     public const string PromoThemePlain = "Plain";

@@ -1,12 +1,15 @@
 @page
 @model VeskaFlow.Web.Pages.Admin.PromoModel
+@using VeskaFlow.Core.Pricing
 @{
     ViewData["Title"] = Text.PromoTitle;
     var banner = Model.Banner;
     var invariant = System.Globalization.CultureInfo.InvariantCulture;
     string Day(DateOnly d) => d.ToString("MMMM d", invariant);
     var previewTheme = PromoThemes.Normalize(Model.Input.Theme);
-    var preview = new PromoCardModel(previewTheme, Model.Input.Caption ?? "", Model.Input.Details, Model.Input.Badge,
+    var shownDiscount = Model.Input.Discount is { } dis && PromoPricing.IsValidPercent(dis) ? dis : (int?)null;
+    var preview = new PromoCardModel(previewTheme, Model.Input.Caption ?? "", Model.Input.Details,
+        string.IsNullOrWhiteSpace(Model.Input.Badge) && shownDiscount is { } autoPercent ? Text.PromoAutoBadge(autoPercent) : Model.Input.Badge,
         banner.HasPicture ? $"/Admin/Promo?handler=Image&v={banner.Version}" : null,
         Model.Input.EndsOn is { } previewLast ? Day(previewLast) : null, Live: true);
 }
@@ -31,7 +34,7 @@
 <div class="card card-wide">
     <h2>@Text.PromoPreviewTitle</h2>
     <p class="hint">@Text.PromoPreviewHint</p>
-    <div id="promo-preview" data-placeholder="@Text.PromoPreviewPlaceholder" data-until="@Text.PromoUntilChip("{date}")">
+    <div id="promo-preview" data-placeholder="@Text.PromoPreviewPlaceholder" data-until="@Text.PromoUntilChip("{date}")" data-autobadge="@Text.PromoAutoBadgeFormat">
         <partial name="_PromoCard" model="preview" />
     </div>
     @* The decoration of every mode, so the preview can switch between them without asking the server. *@
@@ -41,6 +44,33 @@
             <svg data-promo-icon="@key"><partial name="_PromoIcon" model="key" /></svg>
         }
     </div>
+</div>
+
+<div class="card card-wide">
+    <h2>@Text.PromoPricesTitle</h2>
+    <p class="hint">@Text.PromoPricesHint</p>
+    @if (Model.Prices.Count == 0)
+    {
+        <p class="muted">@Text.PromoPriceNoService</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table id="promo-prices">
+                <thead><tr><th scope="col">@Text.BookService</th><th scope="col">@Text.PromoPriceRegular</th><th scope="col">@Text.PromoPriceNow</th></tr></thead>
+                <tbody>
+                    @foreach (var row in Model.Prices)
+                    {
+                        <tr data-regular="@row.Regular.ToString("0.00", invariant)" data-eligible="@(row.Eligible ? "true" : "false")">
+                            <td>@row.Name</td>
+                            <td>@DisplayFormat.Price(row.Regular)</td>
+                            <td class="promo-net">@(!row.Eligible ? Text.PromoPriceNotIncluded : shownDiscount is { } off ? DisplayFormat.Price(PromoPricing.Net(row.Regular, off)) : DisplayFormat.Price(row.Regular))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 <div class="card card-wide">
@@ -63,6 +93,11 @@
             <label for="promo-caption">@Text.PromoCaptionLabel</label>
             <input type="text" id="promo-caption" name="Input.Caption" value="@Model.Input.Caption" maxlength="100" required aria-describedby="promo-caption-hint" />
             <p class="hint" id="promo-caption-hint">@Text.PromoCaptionHint</p>
+        </div>
+        <div class="field">
+            <label for="promo-discount">@Text.PromoDiscountLabel</label>
+            <input type="number" id="promo-discount" name="Input.Discount" value="@Model.Input.Discount" min="1" max="90" step="1" inputmode="numeric" aria-describedby="promo-discount-hint" />
+            <p class="hint" id="promo-discount-hint">@Text.PromoDiscountHint</p>
         </div>
         <div class="field">
             <label for="promo-badge">@Text.PromoBadgeLabel</label>
