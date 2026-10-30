@@ -206,7 +206,7 @@ public class CustomerEmailTests
             await using var ctx = db.CreateDbContext();
             var serviceId = await ctx.Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
             var bookings = new BookingService(db, TimeProvider.System);
-            var day = VeskaFlow.Core.Scheduling.LocalTime.LocalDateOf(DateTime.UtcNow, "Asia/Manila").AddDays(1);
+            var day = Seed.NextOpenDay();
             var starts = (await bookings.GetFreeStartsAsync(owner.BusinessId, serviceId, null, day)).Value!;
 
             async Task<HttpResponseMessage> Book(DateTime start, string email, string phone)
