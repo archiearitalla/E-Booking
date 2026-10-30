@@ -221,10 +221,17 @@ public class BusinessLogo
 public class BusinessBanner
 {
     public Guid BusinessId { get; set; }
-    public string ContentType { get; set; } = "";
-    public byte[] Data { get; set; } = [];
-    /// <summary>What the promo says, in a few words. Shown as the picture's alt text.</summary>
+    /// <summary>Null (with <c>Data</c>) for a words-only banner (migration 023).</summary>
+    public string? ContentType { get; set; }
+    public byte[]? Data { get; set; }
+    /// <summary>The headline: what the promo says, in a few words.</summary>
     public string Caption { get; set; } = "";
+    /// <summary>An optional second line under the headline.</summary>
+    public string? Details { get; set; }
+    /// <summary>An optional short, big label such as "20% OFF".</summary>
+    public string? Badge { get; set; }
+    /// <summary>The look: one of <c>PromoThemes.All</c>.</summary>
+    public string Theme { get; set; } = "plain";
     public bool IsActive { get; set; } = true;
     /// <summary>The last day (the shop's local date) the banner shows; null means until the owner turns it off.</summary>
     public DateOnly? EndsOn { get; set; }
