@@ -476,6 +476,17 @@ A chat on the shop's public booking page where a customer asks about services, p
 - **Secrets and settings.** The key is `Anthropic:ApiKey` or the `ANTHROPIC_API_KEY` environment variable, never in git. `Anthropic:BaseUrl` is only for a gateway or a test. The price shown to clients is `Billing:AiAddonPrice`.
 - **Not built:** Messenger and Viber channels (Meta App Review and Viber costs first), SMS, cancelling or moving a booking by chat, a per-shop limit, a usage and cost view for the platform owner, choosing a staff member in the chat.
 
+### 6.y18 Promo banner
+
+The owner can put one promo banner at the top of the shop's public booking page (below the shop's name card, above the booking form), on the owner-only page `/Admin/Promo` ("Promo banner" in the menu). It is a picture the owner uploads plus a short line saying what the promo says (1 to 100 characters, required: it is the picture's alt text for people who cannot see it), a switch ("Show it on my booking page") and an optional **last day**.
+
+- **Picture.** PNG, JPEG or WebP, up to 512 KB, recognised by its first bytes (never by the name or the type the browser claims; SVG is refused), kept in the database (`business_banner`, migration 022). One banner per shop; saving without a new picture keeps the old one, so the words, the switch or the last day can change without uploading again. A first banner needs a picture.
+- **Last day.** A date in the shop's own time zone, today up to one year ahead. The banner shows through the whole of that day and is hidden from local midnight after it, by itself; the owner sees "Not showing: it ended on ..." and brings it back by choosing a new last day. Empty means until the owner turns it off.
+- **Switch.** Off hides it without deleting it. A browser sends nothing for an unticked box, so "not sent" means off.
+- **Serving.** The picture is served at `/banner/{slug}` (public, revalidated with an ETag each time) only while it is showing, so a paused or ended promo is "not found" at its address too. The owner's own preview (`/Admin/Promo?handler=Image`) is scoped to the signed-in shop and works while it is paused or ended. Nothing is shown when the shop is not taking bookings (trial ended or switched off).
+- **No link.** The banner is a picture only; it has no link to anywhere, so it cannot send customers to another site.
+- **Not built:** several banners, a link or "book this promo" button, scheduling a start day, more than one picture, a Manager role editing it (owner only for now). The Terms do not yet say that the owner is responsible for what a banner says or for having the right to the picture; add that, with the next legal review.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

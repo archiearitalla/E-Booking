@@ -677,7 +677,7 @@ button.danger { color: #2b0a07; }
   .container:has(.book-shell) { max-width: 68rem; padding: 2rem; }
 
   .book-shell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
-  .book-shell > .hero-card, .book-shell > p { grid-column: 1 / -1; margin: 0; }
+  .book-shell > .hero-card, .book-shell > .promo, .book-shell > p { grid-column: 1 / -1; margin: 0; }
   .book-shell > .card { margin-top: 0; }
   .book-shell > #times { position: sticky; top: 5rem; }
   .book-steps { display: block; }
@@ -729,6 +729,11 @@ button.saved::before {
 .plain-list { list-style: none; padding: 0; margin: 0.5rem 0 0; display: grid; gap: 0.6rem; }
 
 .pay-qr { display: block; width: min(16rem, 100%); height: auto; background: #fff; padding: 0.5rem; border-radius: 0.75rem; margin: 0.75rem 0; }
+
+/* Promo banner on the booking page and its preview for the owner */
+.promo { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; background: var(--card); }
+.promo-img { display: block; width: 100%; height: auto; max-height: 20rem; object-fit: contain; }
+.promo-preview { display: block; max-width: 100%; max-height: 12rem; width: auto; height: auto; border-radius: var(--radius-sm); margin: 0.5rem 0 1rem; }
 
 /* AI receptionist chat on the booking page */
 .chat-log {

@@ -65,6 +65,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ReportService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.TeamService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.LogoService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.PromoBannerService>();
 builder.Services.AddSingleton<VeskaFlow.Web.Services.BillingInfo>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.PlatformImageService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ExpiryNoticeService>();
@@ -210,6 +211,19 @@ app.MapGet("/logo/{slug}", async (string slug, HttpContext http, VeskaFlow.Web.S
     http.Response.Headers.ETag = etag;
     if (http.Request.Headers.IfNoneMatch == etag) return Results.StatusCode(StatusCodes.Status304NotModified);
     return Results.Bytes(logo.Data, logo.ContentType);
+});
+
+// The promo banner picture for the booking page. Public, and served only while the banner is showing: a paused or ended promo is
+// "not found", even for a browser that still holds an old copy (it revalidates each time).
+app.MapGet("/banner/{slug}", async (string slug, HttpContext http, VeskaFlow.Web.Services.PromoBannerService banners, CancellationToken ct) =>
+{
+    var image = await banners.GetImageBySlugAsync(slug, ct);
+    if (image is null) return Results.NotFound();
+    var etag = $"\"{image.Version:x}\"";
+    http.Response.Headers.CacheControl = "no-cache";
+    http.Response.Headers.ETag = etag;
+    if (http.Request.Headers.IfNoneMatch == etag) return Results.StatusCode(StatusCodes.Status304NotModified);
+    return Results.Bytes(image.Data, image.ContentType);
 });
 
 app.MapMethods("/healthz", ["GET", "HEAD"], async (IDbContextFactory<AppDbContext> factory, CancellationToken ct) =>

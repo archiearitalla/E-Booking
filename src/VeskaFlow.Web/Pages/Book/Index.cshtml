@@ -24,6 +24,13 @@
     }
 </section>
 
+@if (Model.Promo is { } promoBanner)
+{
+    <section class="promo" aria-label="@Text.PromoLabel">
+        <img class="promo-img" src="/banner/@shop.Slug?v=@promoBanner.Version" alt="@promoBanner.Caption" />
+    </section>
+}
+
 <div class="card" id="book">
     @if (Model.Taken)
     {
