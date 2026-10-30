@@ -390,7 +390,7 @@ public static class Text
             + "</div>";
     }
     public const string LogoTitle = "Logo";
-    public const string LogoHint = "Shown at the top of your online booking page. A square picture works best: PNG, JPEG or WebP, up to 256 KB.";
+    public const string LogoHint = "Shown at the top of your online booking page. A square or a wide picture (like a banner) works: PNG, JPEG or WebP, up to 256 KB.";
     public const string LogoAlt = "Your current logo";
     public const string LogoChoose = "Choose a picture";
     public const string LogoUpload = "Save logo";
@@ -775,6 +775,9 @@ public static class Text
     // AI receptionist (paid add-on): the chat on the booking page, the shop's Settings card and the Platform switch.
     public const string AiChatTitle = "Chat with our assistant";
     public const string AiChatShort = "Chat with us";
+    public const string AiChatNotice = "This is an automated assistant and can make mistakes. Your messages are processed by an AI service and kept for 30 days.";
+    public const string AiChatNoticeLink = "Privacy Notice";
+    public const string AiChatManageLink = "To see or cancel your booking, use this link:";
     public const string AiChatIntro = "Ask about services, prices and free times, or book right here. You can also use the form above.";
     public const string AiChatGreeting = "Hi! I can check free times and book you in. What service would you like?";
     public const string AiChatPlaceholder = "Type your message";
