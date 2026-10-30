@@ -40,7 +40,7 @@ public sealed class CustomerDataService(IDbContextFactory<AppDbContext> dbFactor
             .Select(b => new
             {
                 b.Id, Service = b.ServiceNameSnapshot, Staff = b.Staff.Name, StartsAtUtc = b.StartsAtUtc, EndsAtUtc = b.EndsAtUtc,
-                Status = b.Status.ToString(), Price = b.PriceSnapshot, b.VisitNotes, b.FollowUpOn, b.FollowUpNote, b.FollowUpService,
+                Status = b.Status.ToString(), Price = b.PriceSnapshot, RegularPrice = b.RegularPriceSnapshot, DiscountPercent = b.DiscountPercentSnapshot, b.PaidAmount, b.VisitNotes, b.FollowUpOn, b.FollowUpNote, b.FollowUpService,
                 b.CancelledBy, b.CancelReason, b.CreatedAtUtc,
             }).ToListAsync(ct);
         var ids = bookings.Select(b => b.Id).ToList();

@@ -70,7 +70,10 @@ public sealed record BookingSummary(
     BookingStatus Status,
     string ManageToken,
     decimal Price,
-    uint Version);
+    uint Version,
+    decimal? RegularPrice = null,
+    int? DiscountPercent = null,
+    decimal? PaidAmount = null);
 
 public sealed record CreateOutcome(BookingSummary Booking, bool AlreadyExisted);
 

@@ -1,4 +1,5 @@
 using VeskaFlow.Core.Domain;
+using VeskaFlow.Core.Pricing;
 using VeskaFlow.Core.Scheduling;
 using VeskaFlow.Core.Security;
 
@@ -28,6 +29,28 @@ AvailabilityRequest Req(
         now ?? nowFar, lead, horizon);
 
 DateTime ManilaUtc(int h, int m = 0) => LocalTime.ToUtc(day.ToDateTime(new TimeOnly(h, m)), LocalTime.Zone(Manila));
+
+Console.WriteLine("Promo pricing");
+{
+    Check("20% off 150.00 is 120.00", PromoPricing.Net(150m, 20) == 120.00m, PromoPricing.Net(150m, 20).ToString());
+    Check("15% off 99.99 rounds to the centavo: 84.99", PromoPricing.Net(99.99m, 15) == 84.99m, PromoPricing.Net(99.99m, 15).ToString());
+    Check("half a centavo rounds up: 50% off 10.05 is 5.03", PromoPricing.Net(10.05m, 50) == 5.03m, PromoPricing.Net(10.05m, 50).ToString());
+    Check("90% off 100 is 10.00", PromoPricing.Net(100m, 90) == 10.00m);
+    Check("a free service stays free", PromoPricing.Net(0m, 20) == 0m);
+    Check("a percentage outside 1-90 changes nothing", PromoPricing.Net(150m, 0) == 150m && PromoPricing.Net(150m, 91) == 150m && PromoPricing.Net(150m, -5) == 150m);
+    Check("percent validity", PromoPricing.IsValidPercent(1) && PromoPricing.IsValidPercent(90) && !PromoPricing.IsValidPercent(0) && !PromoPricing.IsValidPercent(91));
+    var today = new DateOnly(2030, 3, 5);
+    Check("running promo gives its percent", PromoPricing.ActivePercent(true, null, 20, today) == 20);
+    Check("switched off gives nothing", PromoPricing.ActivePercent(false, null, 20, today) is null);
+    Check("no percent gives nothing", PromoPricing.ActivePercent(true, null, null, today) is null);
+    Check("last day is inclusive", PromoPricing.ActivePercent(true, today, 20, today) == 20);
+    Check("the day after the last day gives nothing", PromoPricing.ActivePercent(true, today.AddDays(-1), 20, today) is null);
+    Check("a bad stored percent gives nothing", PromoPricing.ActivePercent(true, null, 95, today) is null);
+    Check("a service in the promo gets the percent", PromoPricing.PercentFor(false, true, 150m, 20) == 20);
+    Check("a service left out, the Other service and a free service get none", PromoPricing.PercentFor(false, false, 150m, 20) is null && PromoPricing.PercentFor(true, true, 150m, 20) is null && PromoPricing.PercentFor(false, true, 0m, 20) is null);
+    Check("no running promo means no percent for anyone", PromoPricing.PercentFor(false, true, 150m, null) is null);
+    Check("net is never above regular and never negative", Enumerable.Range(1, 90).All(p => PromoPricing.Net(333.33m, p) is var n && n > 0 && n < 333.33m));
+}
 
 Console.WriteLine("Availability");
 {

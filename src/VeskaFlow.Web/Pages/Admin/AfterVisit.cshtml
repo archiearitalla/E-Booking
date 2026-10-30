@@ -16,6 +16,22 @@
 </div>
 
 <div class="card">
+    <form method="post" asp-page-handler="Payment" asp-route-id="@b.Id">
+        <h2>@Text.AfterVisitPaymentTitle</h2>
+        <p class="hint">@Text.AfterVisitPaymentHint</p>
+        <dl class="facts">
+            <dt>@Text.AfterVisitPaymentQuoted</dt><dd><partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" /></dd>
+        </dl>
+        <div class="field">
+            <label for="paidAmount">@Text.AfterVisitPaymentLabel</label>
+            <input type="text" id="paidAmount" name="paidAmount" inputmode="decimal" maxlength="14"
+                   value="@b.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
+        </div>
+        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveRecord">@Text.AfterVisitPaymentSave</button>
+    </form>
+</div>
+
+<div class="card">
     <form method="post" asp-page-handler="Notes" asp-route-id="@b.Id">
         <h2>@Text.VisitNotesTitle</h2>
         <p class="hint">@Text.VisitNotesHint</p>

@@ -9,11 +9,12 @@ public sealed record ReportLine(string Label, int Completed, decimal Revenue);
 
 public sealed record Report(
     DateOnly From, DateOnly To, int Total, int Completed, int NoShows, int Cancelled, int Upcoming, decimal Revenue,
-    IReadOnlyList<ReportLine> ByService, IReadOnlyList<ReportLine> ByStaff);
+    IReadOnlyList<ReportLine> ByService, IReadOnlyList<ReportLine> ByStaff, decimal Discounts = 0m);
 
 /// <summary>
-/// Simple numbers for a date range in the shop's time zone: bookings by outcome, revenue (completed bookings only, at the
-/// price they were booked at) and the same split by service and by staff member. Scoped by the caller's business id.
+/// Simple numbers for a date range in the shop's time zone: bookings by outcome, revenue (completed bookings only: the payment total
+/// staff entered, otherwise the price the customer was quoted after any promo), the discounts given by promos, and the same split by
+/// service and by staff member. Scoped by the caller's business id.
 /// </summary>
 public sealed class ReportService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
@@ -45,17 +46,18 @@ public sealed class ReportService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
         var rows = await db.Bookings.AsNoTracking()
             .Where(b => b.BusinessId == businessId && b.StartsAtUtc >= startUtc && b.StartsAtUtc < endUtc)
-            .Select(b => new { b.Status, b.ServiceNameSnapshot, Staff = b.Staff.Name, b.PriceSnapshot })
+            .Select(b => new { b.Status, b.ServiceNameSnapshot, Staff = b.Staff.Name, Amount = b.PaidAmount ?? b.PriceSnapshot, b.PriceSnapshot, b.RegularPriceSnapshot })
             .ToListAsync(ct);
 
         var done = rows.Where(r => r.Status == BookingStatus.Completed).ToList();
         return new Report(from, to, rows.Count, done.Count,
             rows.Count(r => r.Status == BookingStatus.NoShow), rows.Count(r => r.Status == BookingStatus.Cancelled),
-            rows.Count(r => r.Status == BookingStatus.Confirmed), done.Sum(r => r.PriceSnapshot),
-            done.GroupBy(r => r.ServiceNameSnapshot).Select(g => new ReportLine(g.Key, g.Count(), g.Sum(r => r.PriceSnapshot)))
+            rows.Count(r => r.Status == BookingStatus.Confirmed), done.Sum(r => r.Amount),
+            done.GroupBy(r => r.ServiceNameSnapshot).Select(g => new ReportLine(g.Key, g.Count(), g.Sum(r => r.Amount)))
                 .OrderByDescending(l => l.Revenue).ThenBy(l => l.Label).ToList(),
-            done.GroupBy(r => r.Staff).Select(g => new ReportLine(g.Key, g.Count(), g.Sum(r => r.PriceSnapshot)))
-                .OrderByDescending(l => l.Revenue).ThenBy(l => l.Label).ToList());
+            done.GroupBy(r => r.Staff).Select(g => new ReportLine(g.Key, g.Count(), g.Sum(r => r.Amount)))
+                .OrderByDescending(l => l.Revenue).ThenBy(l => l.Label).ToList(),
+            done.Sum(r => r.RegularPriceSnapshot is { } regular ? regular - r.PriceSnapshot : 0m));
     }
 
     public static (DateOnly From, DateOnly To) Range(Period period, DateOnly today) => period switch

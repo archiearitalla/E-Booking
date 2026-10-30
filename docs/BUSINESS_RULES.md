@@ -246,7 +246,7 @@ The public booking page needs no account, so anyone can use it. One person must 
 
 ## 10. Pricing and payments
 
-- MVP: pay on site. Prices are shown in pesos (₱); the currency is not configurable yet.
+- MVP: pay on site. Prices are shown in pesos (₱); the currency is not configurable yet. A booking keeps the price it was quoted (after any promo discount, 6.y18); the payment total entered when the visit is done records what was actually paid (6.y19).
 - Online payment ⬜ (PayMongo or Xendit): required deposit moves a booking through `PENDING`; the slot is held for a TTL; payment failure or timeout cancels the hold. Payment and booking endpoints must be idempotent. Captured money must never exist without a held slot (I6).
 
 ## 11. Audit
@@ -489,9 +489,22 @@ The owner makes a promo that shows as a banner at the top of the shop's public b
 - **Last day.** A date in the shop's own time zone, today up to one year ahead. The banner shows through the whole of that day and is hidden from local midnight after it, by itself; the card shows "Until <date>". The owner sees "Not showing: it ended on ..." and brings it back by choosing a new last day. Empty means until the owner turns it off.
 - **Switch.** Off hides it without deleting it. A browser sends nothing for an unticked box, so "not sent" means off.
 - **Serving.** A picture is served at `/banner/{slug}` (public, revalidated with an ETag each time) only while the banner is showing, so a paused or ended promo is "not found" at its address too. The owner's own preview (`/Admin/Promo?handler=Image`) is scoped to the signed-in shop and works while it is paused or ended. Nothing is shown when the shop is not taking bookings (trial ended or switched off).
+- **Discount (optional).** A whole percentage from 1 to 90 (checked by the form and by the database). While the promo shows (switched on and not past its last day), it is taken off every service that is **part of the promo**, for bookings made then. Each service has a "Part of the promo" box on its edit page, on by default (so a promo covers the menu until the owner leaves a service out). The "Other" service and a free service never get a discount. The net price is rounded to the centavo (half a centavo rounds up); the same rule is in `VeskaFlow.Core.PromoPricing`, checked by the self-checks, and the page script uses the same whole-centavo arithmetic for the live price list. If the owner leaves the big badge empty, the card says "N% OFF" itself.
+- **When the price is fixed.** At the moment the booking is made: what the customer saw is what they pay, whatever the day of the appointment, and a promo that changes or ends afterwards never touches a booking that exists. The booking keeps `price_snapshot` (what the customer pays, so every existing report and screen keeps working), `regular_price_snapshot` and `discount_percent_snapshot` (only when a promo applied). A staff walk-in made while the promo runs gets it too. A reschedule keeps the price.
+- **Where it shows.** The regular price struck through, the price to pay and the discount ("20% off"): in the service list of the booking page ("₱120.00 (was ₱150.00)"), on the confirm page, on the customer's manage page, in the owner's day view and walk-in page, in the Promo Creator's price list (live as the discount is typed), and in what the AI assistant is told and tells the customer. The booking page never shows a discount that will not be given.
 - **No link.** The banner has no link to anywhere, so it cannot send customers to another site.
 - **Owner only.** Like the logo and the settings.
-- **Not built:** several promos at once, a link or "book this promo" button, scheduling a start day, a Manager role editing it, uploading to a library. The Terms do not yet say that the owner is responsible for what a promo says or for having the right to the picture; add that, with the next legal review.
+- **Not built:** several promos at once, a fixed peso discount, a link or "book this promo" button, scheduling a start day, a different discount per service, a Manager role editing it, uploading to a library. The Terms do not yet say that the owner is responsible for what a promo says or for having the right to the picture; add that, with the next legal review.
+
+### 6.y19 Payment total
+
+When staff mark a visit **Done**, the page that opens (`/Admin/AfterVisit/{id}`) starts with **Payment total**: what the customer actually paid. It starts at the price the customer was quoted (after any promo) and staff change it when the customer added something, got another discount or left a tip. Saved in `booking.paid_amount` (0 to 10,000,000, rounded to the centavo); empty clears it, and the quoted price counts again. A peso sign and thousands commas are accepted when typing.
+
+- Only a **completed** visit can have a payment total. The booking must be in the signed-in business, and a Staff login tied to one person can only set their own bookings' (another business's id and another person's booking are "not found").
+- **Money rule:** every figure about money uses the payment total when there is one, otherwise the quoted price: the day view's revenue, the Reports revenue (and its split by service and by staff member) and a customer's total spent. Reports also show **Promo discounts given** (regular price minus quoted price on bookings that had a promo, completed ones only).
+- **The customer sees it.** Once the visit is done, the customer's manage page shows **Total paid**.
+- A customer's export carries the quoted price, the regular price, the discount and the payment total.
+- **Not built:** a payment method (cash, GCash), and adding the services done on top of the booked one (an itemized receipt): until then staff put the right total in. Both are planned.
 
 ### 6.z Who may use the system
 

@@ -22,6 +22,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         if (id is null)
         {
             AllServices = await catalog.ListServicesAsync(BusinessId, ct);
+            Input.IsActive = true; // a new person starts active; the box is filled from here, not from a default (see StaffForm)
             Input.ServiceIds = AllServices.Where(s => s.IsActive).Select(s => s.Id).ToList(); // new staff: offer every active service
             HourFields = HoursForm.Fill([]);
             return Page();
@@ -111,7 +112,8 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
     {
         public string? Name { get; set; }
         public int SortOrder { get; set; }
-        public bool IsActive { get; set; } = true;
+        /// <summary>A browser sends nothing for an unticked box, so "not sent" must mean off: the default is false and the page fills the box from the saved person (or ticks it for a new one).</summary>
+        public bool IsActive { get; set; }
         public List<Guid> ServiceIds { get; set; } = [];
     }
 }

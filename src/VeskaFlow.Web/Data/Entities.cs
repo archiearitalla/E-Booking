@@ -86,6 +86,8 @@ public class Service
     public int? FollowUpDays { get; set; }
     /// <summary>The "Other" service: for a visit whose service is not in the list. The booking keeps the text that was typed.</summary>
     public bool IsOther { get; set; }
+    /// <summary>Part of the promo discount while one runs (migration 024). On by default; the owner can leave a service out.</summary>
+    public bool PromoEligible { get; set; } = true;
 }
 
 public class StaffService
@@ -168,7 +170,13 @@ public class Booking
     public string LocationTimeZone { get; set; } = "";
     public BookingStatus Status { get; set; }
     public DateTime? HoldExpiresAtUtc { get; set; }
+    /// <summary>What the customer pays: the service's price, or its price after the promo discount (then <c>RegularPriceSnapshot</c> is set too).</summary>
     public decimal PriceSnapshot { get; set; }
+    /// <summary>The service's regular price when a promo discount applied to this booking (migration 024); null otherwise.</summary>
+    public decimal? RegularPriceSnapshot { get; set; }
+    public int? DiscountPercentSnapshot { get; set; }
+    /// <summary>The payment total staff entered when the visit was done; null means the net price was paid.</summary>
+    public decimal? PaidAmount { get; set; }
     public string ServiceNameSnapshot { get; set; } = "";
     public string ManageToken { get; set; } = "";
     public string? IdempotencyKey { get; set; }
@@ -235,6 +243,8 @@ public class BusinessBanner
     public bool IsActive { get; set; } = true;
     /// <summary>The last day (the shop's local date) the banner shows; null means until the owner turns it off.</summary>
     public DateOnly? EndsOn { get; set; }
+    /// <summary>The promo's discount in percent (1 to 90), taken off the services that are part of the promo; null means no discount.</summary>
+    public int? DiscountPercent { get; set; }
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 

@@ -14,7 +14,7 @@
         <dt>@Text.ManageService</dt><dd>@Model.ServiceTitle (@DisplayFormat.Duration(Model.Service!.DurationMinutes))</dd>
         <dt>@Text.ManageWith</dt><dd>@(Model.Staff?.Name ?? Text.BookStaffAny)</dd>
         <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(Model.StartUtc, shop.TimeZone), @DisplayFormat.Time(Model.StartUtc, shop.TimeZone)</dd>
-        <dt>@Text.ManagePrice</dt><dd>@(Model.Service.IsOther ? Text.OtherServicePrice : DisplayFormat.Price(Model.Service.Price)) &middot; @Text.BookPayOnSite</dd>
+        <dt>@Text.ManagePrice</dt><dd>@if (Model.Service.IsOther) { @Text.OtherServicePrice } else { var price = shop.PriceOf(Model.Service); <partial name="_PriceLine" model="new PriceLineModel(price.Net, price.HasPromo ? price.Regular : null, price.Percent)" /> } &middot; @Text.BookPayOnSite</dd>
     </dl>
     <p><a href="@Model.ChangeTimeUrl">@Text.BookChangeTime</a></p>
 </div>

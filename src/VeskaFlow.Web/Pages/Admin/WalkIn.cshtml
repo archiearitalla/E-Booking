@@ -16,7 +16,7 @@
                     <input type="radio" name="serviceId" value="@service.Id" checked="@(Model.ServiceId == service.Id)" data-other="@(service.IsOther ? "true" : "false")" required />
                     <span>
                         <strong>@service.Name</strong>
-                        <span class="muted">@DisplayFormat.Duration(service.DurationMinutes)@(service.IsOther ? "" : " · " + DisplayFormat.Price(service.Price))</span>
+                        <span class="muted">@DisplayFormat.Duration(service.DurationMinutes)@if (!service.IsOther) { <text> &middot; </text><partial name="_PriceLine" model="Model.PriceOf(service)" /> }</span>
                     </span>
                 </label>
             }

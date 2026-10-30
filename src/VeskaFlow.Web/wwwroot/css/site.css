@@ -795,3 +795,7 @@ button.saved::before {
 .lc-c-black { --lc-bg: #111827; --lc-fg: #f5c451; }
 .lc-c-gold { --lc-bg: #f5c451; --lc-fg: #111827; }
 @media (min-width: 48rem) { .logo-creator-grid { grid-template-columns: 12rem minmax(0, 1fr); align-items: start; } .logo-creator-preview { position: sticky; top: 5rem; } }
+
+/* Prices with a promo: the regular price struck through, the price to pay, and the discount. */
+.price-was { opacity: 0.7; font-weight: 400; }
+.price-now { font-weight: 800; }

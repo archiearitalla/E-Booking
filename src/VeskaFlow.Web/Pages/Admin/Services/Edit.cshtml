@@ -53,6 +53,13 @@
             </label>
         </div>
 
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.PromoEligible" value="true" checked="@Model.Input.PromoEligible" />
+                <span>@Text.LabelPromoEligible <span class="muted">@Text.HintPromoEligible</span></span>
+            </label>
+        </div>
+
         <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveService">@Text.ActionSave</button>
         <a href="/Admin/Services">@Text.ActionBack</a>
     </form>
