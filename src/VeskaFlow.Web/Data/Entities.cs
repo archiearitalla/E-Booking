@@ -217,6 +217,20 @@ public class BusinessLogo
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>A shop's promo banner for its booking page (migration 022): one picture, what it says, a switch and an optional last day.</summary>
+public class BusinessBanner
+{
+    public Guid BusinessId { get; set; }
+    public string ContentType { get; set; } = "";
+    public byte[] Data { get; set; } = [];
+    /// <summary>What the promo says, in a few words. Shown as the picture's alt text.</summary>
+    public string Caption { get; set; } = "";
+    public bool IsActive { get; set; } = true;
+    /// <summary>The last day (the shop's local date) the banner shows; null means until the owner turns it off.</summary>
+    public DateOnly? EndsOn { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
 /// <summary>A note the platform owner keeps about the whole system, for example when a backup copy was last saved (migration 015).</summary>
 public class PlatformSetting
 {

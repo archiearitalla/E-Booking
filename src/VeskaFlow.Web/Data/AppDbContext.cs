@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WorkingHour> WorkingHours => Set<WorkingHour>();
     public DbSet<BusinessHour> BusinessHours => Set<BusinessHour>();
     public DbSet<BusinessLogo> BusinessLogos => Set<BusinessLogo>();
+    public DbSet<BusinessBanner> BusinessBanners => Set<BusinessBanner>();
     public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
     public DbSet<EmailDaily> EmailDailies => Set<EmailDaily>();
     public DbSet<AiUsage> AiUsages => Set<AiUsage>();
@@ -46,6 +47,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<Blackout>().HasOne<Staff>().WithMany().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<BusinessHour>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<BusinessLogo>().HasKey(x => x.BusinessId);
+        m.Entity<BusinessBanner>().HasKey(x => x.BusinessId);
+        m.Entity<BusinessBanner>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<PlatformSetting>().HasKey(x => x.Key);
         m.Entity<EmailDaily>().HasKey(x => new { x.Day, x.BusinessId });
         m.Entity<AiUsage>().HasKey(x => new { x.Month, x.BusinessId });

@@ -1,0 +1,62 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.PromoModel
+@{
+    ViewData["Title"] = Text.PromoTitle;
+    var banner = Model.Banner;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+    string Day(DateOnly d) => d.ToString("MMMM d, yyyy", invariant);
+}
+<h1>@Text.PromoTitle</h1>
+
+<div class="card">
+    <p class="hint">@Text.PromoIntro</p>
+    <p role="status">
+        <strong>
+            @switch (banner.State)
+            {
+                case PromoState.Showing: @Text.PromoStatusShowing break;
+                case PromoState.Paused: @Text.PromoStatusPaused break;
+                case PromoState.Ended: @Text.PromoStatusEnded(Day(banner.EndsOn!.Value)) break;
+                default: @Text.PromoStatusNone break;
+            }
+        </strong>
+        @if (banner.State == PromoState.Showing && banner.EndsOn is { } until) { <span class="muted">@Text.PromoStatusUntil(Day(until))</span> }
+    </p>
+    @if (banner.HasPicture)
+    {
+        <img class="promo-preview" src="/Admin/Promo?handler=Image&v=@banner.Version" alt="@Text.PromoPreviewAlt" />
+    }
+
+    <form method="post" enctype="multipart/form-data">
+        <div class="field">
+            <label for="promo-picture">@Text.PromoPictureLabel</label>
+            <input type="file" id="promo-picture" name="picture" accept="image/png,image/jpeg,image/webp" required="@(!banner.HasPicture)" aria-describedby="promo-picture-hint" />
+            <p class="hint" id="promo-picture-hint">@Text.PromoPictureHint</p>
+        </div>
+        <div class="field">
+            <label for="promo-caption">@Text.PromoCaptionLabel</label>
+            <input type="text" id="promo-caption" name="Input.Caption" value="@Model.Input.Caption" maxlength="100" required aria-describedby="promo-caption-hint" />
+            <p class="hint" id="promo-caption-hint">@Text.PromoCaptionHint</p>
+        </div>
+        <div class="field">
+            <label for="promo-ends">@Text.PromoEndsLabel</label>
+            <input type="date" id="promo-ends" name="Input.EndsOn" value="@(Model.Input.EndsOn?.ToString("yyyy-MM-dd", invariant))"
+                   min="@banner.Today.ToString("yyyy-MM-dd", invariant)" max="@banner.Today.AddDays(PromoBannerService.MaxDaysAhead).ToString("yyyy-MM-dd", invariant)" aria-describedby="promo-ends-hint" />
+            <p class="hint" id="promo-ends-hint">@Text.PromoEndsHint</p>
+        </div>
+        <label class="choice">
+            <input type="checkbox" name="Input.Active" value="true" checked="@Model.Input.Active" />
+            <span>@Text.PromoActiveLabel</span>
+        </label>
+        <div class="actions">
+            <button type="submit" class="primary">@Text.PromoSave</button>
+        </div>
+    </form>
+
+    @if (banner.HasPicture)
+    {
+        <form method="post" asp-page-handler="Remove" class="actions">
+            <button type="submit" class="danger" data-confirm="@Text.PromoRemoveAsk">@Text.PromoRemove</button>
+        </form>
+    }
+</div>

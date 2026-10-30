@@ -775,6 +775,36 @@ public static class Text
     // AI receptionist (paid add-on): the chat on the booking page, the shop's Settings card and the Platform switch.
     public const string AiChatTitle = "Chat with our assistant";
     public const string AiChatShort = "Chat with us";
+
+    // Promo banner on the booking page (owner page /Admin/Promo).
+    public const string AdminNavPromo = "Promo banner";
+    public const string PromoTitle = "Promo banner";
+    public const string PromoLabel = "Promotion";
+    public const string PromoIntro = "Have a promo? Put a banner at the top of your online booking page so customers see it first. You can pause it, or set the last day and it disappears by itself.";
+    public const string PromoPictureLabel = "Banner picture";
+    public const string PromoPictureHint = "A wide picture works best, for example 1200 x 400. PNG, JPEG or WebP, up to 512 KB.";
+    public const string PromoCaptionLabel = "What the promo says";
+    public const string PromoCaptionHint = "A short line for people who cannot see the picture, for example: 20% off all haircuts until December 24.";
+    public const string PromoEndsLabel = "Show until (optional)";
+    public const string PromoEndsHint = "The last day the banner shows, in your shop's time. Leave empty to show it until you turn it off.";
+    public const string PromoActiveLabel = "Show it on my booking page";
+    public const string PromoSave = "Save promo";
+    public const string PromoSaved = "Your promo banner is saved.";
+    public const string PromoRemove = "Remove promo";
+    public const string PromoRemoveAsk = "Remove the promo banner and its picture?";
+    public const string PromoRemoved = "The promo banner was removed.";
+    public const string PromoPreviewAlt = "Your current promo banner";
+    public const string PromoStatusNone = "No promo yet.";
+    public const string PromoStatusShowing = "Showing on your booking page now.";
+    public const string PromoStatusPaused = "Not showing: switched off.";
+    public static string PromoStatusEnded(string last) => $"Not showing: it ended on {last}. Choose a new last day to show it again.";
+    public static string PromoStatusUntil(string last) => $"It shows until the end of {last}.";
+    public const string PromoCaptionInvalid = "Write 1 to 100 characters about the promo.";
+    public const string PromoMissingPicture = "Choose a picture for the banner.";
+    public const string PromoTooBig = "That picture is too big. Use one up to 512 KB.";
+    public const string PromoWrongType = "Use a PNG, JPEG or WebP picture.";
+    public const string PromoEndsPast = "The last day cannot be in the past.";
+    public const string PromoEndsFar = "Choose a last day within the next year.";
     public const string AiChatNotice = "This is an automated assistant and can make mistakes. Your messages are processed by an AI service and kept for 30 days.";
     public const string AiChatNoticeLink = "Privacy Notice";
     public const string AiChatManageLink = "To see or cancel your booking, use this link:";
