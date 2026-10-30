@@ -12,14 +12,14 @@
     </dl>
 </div>
 
-<div class="card">
+<div class="card card-wide">
     <h2>@Text.LogoTitle</h2>
     <p class="hint">@Text.LogoHint</p>
     @if (Model.LogoVersion is { } logoVersion)
     {
         <img class="logo-preview" src="/logo/@Model.Slug?v=@logoVersion" alt="@Text.LogoAlt" height="96" />
     }
-    <form method="post" asp-page-handler="Logo" enctype="multipart/form-data">
+    <form method="post" asp-page-handler="Logo" enctype="multipart/form-data" id="logo-form">
         <div class="field">
             <label for="logo-file">@Text.LogoChoose</label>
             <input type="file" id="logo-file" name="logo" accept="image/png,image/jpeg,image/webp" required />
@@ -32,6 +32,79 @@
             <button type="submit" class="danger" data-confirm="@Text.LogoRemoveAsk">@Text.LogoRemove</button>
         </form>
     }
+
+    @* The Logo Creator: hidden until its script runs (without JavaScript the picture upload above is the way). It draws the logo in the
+       browser and sends it through the form above, so the server checks it like any other logo. *@
+    @{
+        var creatorColor = LogoStyles.Colors.Any(c => c.Key == Model.Input.BrandColor) ? Model.Input.BrandColor : "teal";
+    }
+    <section id="logo-creator" class="logo-creator" hidden aria-labelledby="logo-creator-title"
+             data-default-text="@LogoStyles.Initials(Model.Input.Name)" data-busy="@Text.LogoCreatorBusy" data-failed="@Text.LogoCreatorFailed">
+        <h3 id="logo-creator-title">@Text.LogoCreatorTitle</h3>
+        <p class="hint">@Text.LogoCreatorIntro</p>
+        <div class="logo-creator-grid">
+            <div class="logo-creator-preview">
+                <img id="logo-creator-preview" alt="@Text.LogoCreatorPreview" width="192" height="192" />
+            </div>
+            <div class="logo-creator-fields">
+                <div class="field">
+                    <label for="logo-creator-text">@Text.LogoCreatorText</label>
+                    <input type="text" id="logo-creator-text" maxlength="@LogoStyles.MaxText" aria-describedby="logo-creator-text-hint" autocomplete="off" />
+                    <p class="hint" id="logo-creator-text-hint">@Text.LogoCreatorTextHint</p>
+                </div>
+                <fieldset class="field">
+                    <legend>@Text.LogoCreatorShape</legend>
+                    <div class="lc-options">
+                        @foreach (var (key, label) in LogoStyles.Shapes)
+                        {
+                            <label class="choice"><input type="radio" name="lc-shape" value="@key" checked="@(key == "circle")" /><span>@label</span></label>
+                        }
+                    </div>
+                </fieldset>
+                <fieldset class="field">
+                    <legend>@Text.LogoCreatorColors</legend>
+                    <div class="lc-options">
+                        @foreach (var (key, label, bg, fg) in LogoStyles.Colors)
+                        {
+                            <label class="choice">
+                                <input type="radio" name="lc-color" value="@key" data-bg="@bg" data-fg="@fg" checked="@(key == creatorColor)" />
+                                <span class="logo-swatch lc-c-@key" aria-hidden="true">A</span>
+                                <span>@label</span>
+                            </label>
+                        }
+                    </div>
+                </fieldset>
+                <fieldset class="field">
+                    <legend>@Text.LogoCreatorIcon</legend>
+                    <div class="lc-options">
+                        @foreach (var (key, label, shapes) in LogoStyles.Icons)
+                        {
+                            <label class="choice">
+                                <input type="radio" name="lc-icon" value="@key" checked="@(key == "scissors")" />
+                                @if (shapes.Length > 0)
+                                {
+                                    <svg class="lc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">@Html.Raw(shapes)</svg>
+                                }
+                                <span>@label</span>
+                            </label>
+                        }
+                    </div>
+                </fieldset>
+                <fieldset class="field">
+                    <legend>@Text.LogoCreatorFont</legend>
+                    <div class="lc-options">
+                        @foreach (var (key, label) in LogoStyles.Fonts)
+                        {
+                            <label class="choice"><input type="radio" name="lc-font" value="@key" checked="@(key == "sans")" /><span>@label</span></label>
+                        }
+                    </div>
+                </fieldset>
+                <p id="logo-creator-message" class="alert" role="alert" hidden></p>
+                <button type="button" id="logo-creator-use" class="primary">@Text.LogoCreatorUse</button>
+            </div>
+        </div>
+    </section>
+    <script src="~/js/logo-creator.js" defer asp-append-version="true"></script>
 </div>
 
 <div class="card">

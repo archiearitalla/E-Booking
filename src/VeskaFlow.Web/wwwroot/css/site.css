@@ -664,6 +664,8 @@ button.danger { color: #2b0a07; }
 @media (min-width: 48rem) { .card { padding: 1.5rem 1.625rem; } }
 
 /* Phones: a card followed by a list keeps a gap (on desktop the grid gap does this). */
+/* A card that needs the whole width of the page (the Logo Creator, the Promo Creator) instead of sharing a row with another card. */
+.admin-main > .card.card-wide { flex: 1 1 100%; }
 .admin-main > .card { margin-bottom: 1rem; }
 @media (min-width: 64rem) { .admin-main > .card { margin-bottom: 0; } }
 
@@ -772,3 +774,24 @@ button.saved::before {
 .chat-form { display: flex; gap: 0.5rem; align-items: stretch; }
 .chat-form input[type="text"] { flex: 1; min-width: 0; }
 .chat-form button { width: auto; }
+
+/* Logo Creator (Settings): the preview beside the choices on a wide screen, stacked on a phone. */
+.logo-creator { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.logo-creator h3 { margin: 0 0 0.25rem; font-size: 1.125rem; }
+.logo-creator-grid { display: grid; gap: 1rem; }
+.logo-creator-preview img { display: block; width: 100%; max-width: 12rem; height: auto; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.04); }
+.lc-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; }
+.lc-options .choice { min-width: 0; }
+.lc-options .choice > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.lc-icon { flex: none; width: 1.5rem; height: 1.5rem; }
+.logo-swatch { display: inline-grid; place-items: center; flex: none; width: 1.75rem; height: 1.75rem; border-radius: 0.4rem; font-size: 0.8125rem; font-weight: 800; background: var(--lc-bg); color: var(--lc-fg); }
+.lc-c-teal { --lc-bg: #0f766e; --lc-fg: #ffffff; }
+.lc-c-blue { --lc-bg: #1d4ed8; --lc-fg: #ffffff; }
+.lc-c-orange { --lc-bg: #c2410c; --lc-fg: #ffffff; }
+.lc-c-rose { --lc-bg: #be123c; --lc-fg: #ffffff; }
+.lc-c-violet { --lc-bg: #6d28d9; --lc-fg: #ffffff; }
+.lc-c-slate { --lc-bg: #334155; --lc-fg: #ffffff; }
+.lc-c-green { --lc-bg: #166534; --lc-fg: #ffffff; }
+.lc-c-black { --lc-bg: #111827; --lc-fg: #f5c451; }
+.lc-c-gold { --lc-bg: #f5c451; --lc-fg: #111827; }
+@media (min-width: 48rem) { .logo-creator-grid { grid-template-columns: 12rem minmax(0, 1fr); align-items: start; } .logo-creator-preview { position: sticky; top: 5rem; } }
