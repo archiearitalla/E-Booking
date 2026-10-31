@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WeeklyClosure> WeeklyClosures => Set<WeeklyClosure>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<BookingExtra> BookingExtras => Set<BookingExtra>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder m)
@@ -48,6 +49,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<BusinessHour>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<BusinessLogo>().HasKey(x => x.BusinessId);
         m.Entity<BusinessBanner>().HasKey(x => x.BusinessId);
+        m.Entity<BookingExtra>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<BusinessBanner>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<PlatformSetting>().HasKey(x => x.Key);
         m.Entity<EmailDaily>().HasKey(x => new { x.Day, x.BusinessId });

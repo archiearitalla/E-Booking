@@ -64,7 +64,7 @@ else
                     <span class="badge">@b.Status.Label()</span>
                 </div>
                 <dl class="facts">
-                    <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" />@if (b.Status == BookingStatus.Completed && b.PaidAmount is { } paidTotal) { <text> &middot; @Text.AfterVisitPaidShort(DisplayFormat.Price(paidTotal))</text> }</dd>
+                    <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" />@if (b.ExtraLines.Count > 0) { <text> + @string.Join(", ", b.ExtraLines.Select(x => x.Name))</text> }@if (b.Status == BookingStatus.Completed && b.PaidAmount is { } paidTotal) { <text> &middot; @Text.AfterVisitPaidShort(DisplayFormat.Price(paidTotal))</text> }</dd>
                     <dt>@Text.ManageWith</dt><dd>@b.StaffName</dd>
                     <dt>@Text.ManageWho</dt><dd>@b.CustomerName
                         @if (DisplayFormat.IsPlaceholderPhone(b.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@b.CustomerPhone">@b.CustomerPhone</a></text> }</dd>

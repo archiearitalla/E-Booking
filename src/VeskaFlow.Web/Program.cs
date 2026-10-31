@@ -59,6 +59,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.AutoReminderService>();
 builder.Services.AddHostedService<VeskaFlow.Web.Services.ReminderEmailWorker>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AccountControlService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.BookingExtraService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerDataService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ReminderService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();

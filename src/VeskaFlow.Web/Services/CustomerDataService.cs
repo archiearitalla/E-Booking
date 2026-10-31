@@ -49,6 +49,11 @@ public sealed class CustomerDataService(IDbContextFactory<AppDbContext> dbFactor
             .OrderBy(a => a.AtUtc)
             .Select(a => new { a.AtUtc, a.Action, a.FromStatus, a.ToStatus, a.Reason }).ToListAsync(ct);
 
+        var extras = await db.BookingExtras.AsNoTracking().Where(e => e.BusinessId == businessId && ids.Contains(e.BookingId))
+            .OrderBy(e => e.CreatedAtUtc)
+            .Select(e => new { e.BookingId, Service = e.ServiceNameSnapshot, Price = e.PriceSnapshot, RegularPrice = e.RegularPriceSnapshot, DiscountPercent = e.DiscountPercentSnapshot, AddedAtUtc = e.CreatedAtUtc })
+            .ToListAsync(ct);
+
         var chats = new List<object>();
         if (ChatPattern(customer.Phone) is { } pattern)
         {
@@ -70,6 +75,7 @@ public sealed class CustomerDataService(IDbContextFactory<AppDbContext> dbFactor
             exportedAtUtc = DateTime.UtcNow,
             customer = new { customer.Name, customer.Phone, customer.Email, customer.CreatedAtUtc },
             bookings,
+            servicesDoneOnTop = extras,
             auditTrail = audit,
             assistantChats = chats,
         }, Json);
