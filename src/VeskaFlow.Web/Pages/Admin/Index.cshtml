@@ -172,6 +172,8 @@ else
                 }
                 @if (b.CanCancel)
                 {
+                    <details class="cancel-box">
+                    <summary>@Text.CancelOpen</summary>
                     <form method="post" asp-page-handler="Transition" class="actions cancel-form">
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="version" value="@b.Version" />
@@ -181,6 +183,7 @@ else
                         <input type="text" id="reason-@b.Id" name="reason" maxlength="200" required />
                         <button type="submit" name="action" value="cancel" class="danger" data-confirm="@Text.ConfirmCancelStaff">@Text.ActionCancel</button>
                     </form>
+                    </details>
                 }
             </li>
         }

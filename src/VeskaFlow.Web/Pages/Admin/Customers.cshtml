@@ -10,7 +10,7 @@
     <label for="q">@Text.CustomersSearchLabel</label>
     <input id="q" name="q" type="search" value="@Model.Query" maxlength="80" autocomplete="off" />
     <div class="actions">
-        <button type="submit">@Text.CustomersSearch</button>
+        <button type="submit" class="primary">@Text.CustomersSearch</button>
         @if (Model.Rows.Count > 0)
         {
             <a class="button secondary" href="/Admin/Customers?handler=Export&amp;q=@Uri.EscapeDataString(Model.Query ?? "")">@Text.CustomersExport</a>
