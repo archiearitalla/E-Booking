@@ -24,6 +24,10 @@ public class Business
     public bool AllowManualTotal { get; set; } = true;
     /// <summary>Is the "Record a sale" page switched on? Off by default (migration 027).</summary>
     public bool AllowManualSales { get; set; }
+    /// <summary>This shop's own AI limits (migration 028); null uses the default from settings.</summary>
+    public int? AiDailyLimit { get; set; }
+    public int? AiMonthlyLimit { get; set; }
+    public long? AiTokenLimit { get; set; }
     /// <summary>Until when the paid "more emails" add-on is active; null when it was never bought.</summary>
     public DateTime? EmailAddonUntilUtc { get; set; }
     /// <summary>Until when the paid AI receptionist add-on is switched on; null when it was never bought.</summary>
@@ -291,6 +295,14 @@ public class AiUsage
     public int Conversations { get; set; }
     public long InputTokens { get; set; }
     public long OutputTokens { get; set; }
+}
+
+/// <summary>Conversations the AI receptionist started for one shop on one UTC day (migration 028).</summary>
+public class AiUsageDay
+{
+    public DateOnly Day { get; set; }
+    public Guid BusinessId { get; set; }
+    public int Conversations { get; set; }
 }
 
 /// <summary>One customer conversation with the AI receptionist (migration 021). The transcript is JSON text of what was said, nothing else.</summary>

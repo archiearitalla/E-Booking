@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
     public DbSet<EmailDaily> EmailDailies => Set<EmailDaily>();
     public DbSet<AiUsage> AiUsages => Set<AiUsage>();
+    public DbSet<AiUsageDay> AiUsageDays => Set<AiUsageDay>();
     public DbSet<AiChat> AiChats => Set<AiChat>();
     public DbSet<PlatformImage> PlatformImages => Set<PlatformImage>();
     public DbSet<Blackout> Blackouts => Set<Blackout>();
@@ -54,6 +55,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<PlatformSetting>().HasKey(x => x.Key);
         m.Entity<EmailDaily>().HasKey(x => new { x.Day, x.BusinessId });
         m.Entity<AiUsage>().HasKey(x => new { x.Month, x.BusinessId });
+        m.Entity<AiUsageDay>().HasKey(x => new { x.Day, x.BusinessId });
         m.Entity<AiChat>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<PlatformImage>().HasKey(x => x.Key);
         m.Entity<BusinessLogo>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
