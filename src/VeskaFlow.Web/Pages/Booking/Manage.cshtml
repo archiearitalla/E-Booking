@@ -22,6 +22,10 @@
     {
         <div class="notice" role="status">@Text.ManageCancelled</div>
     }
+    @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Held && d.HoldExpiresAtUtc is { } heldUntil)
+    {
+        <div class="deposit-due" role="status"><p>@Text.ManageHeld(DisplayFormat.Time(heldUntil, d.TimeZone))</p></div>
+    }
     @if (Model.Notice is not null)
     {
         <div class="notice" role="status">@Model.Notice</div>

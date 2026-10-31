@@ -1,0 +1,37 @@
+@page "/confirm-booking/{token}"
+@model VeskaFlow.Web.Pages.Booking.ConfirmEmailModel
+@{
+    ViewData["Title"] = Text.ConfirmPageTitle;
+    var d = Model.Details!;
+    var b = d.Booking;
+    ViewData["Theme"] = d.BrandColor;
+    ViewData["Public"] = true;
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<div class="card">
+    <h1>@Text.ConfirmPageTitle</h1>
+    @if (Model.Message is not null)
+    {
+        <div class="alert" role="alert">@Model.Message</div>
+        <p><a href="/booking/@b.ManageToken">@Text.MoveBack</a></p>
+    }
+    else
+    {
+        <p class="hint">@Text.ConfirmPageHint</p>
+    }
+    <dl class="facts">
+        <dt>@Text.ManageShop</dt><dd>@d.BusinessName</dd>
+        <dt>@Text.ManageService</dt><dd>@b.ServiceName</dd>
+        <dt>@Text.ManageWith</dt><dd>@b.StaffName</dd>
+        <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(b.StartsAtUtc, d.TimeZone), @DisplayFormat.Time(b.StartsAtUtc, d.TimeZone)</dd>
+        <dt>@Text.ManageWho</dt><dd>@d.CustomerName</dd>
+    </dl>
+    @if (Model.Message is null)
+    {
+        <form method="post">
+            <button type="submit" class="primary once">@Text.ConfirmPageButton</button>
+        </form>
+    }
+</div>

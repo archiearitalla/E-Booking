@@ -256,6 +256,14 @@
         </div>
 
         <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.RequireEmailConfirm" value="true" checked="@Model.Input.RequireEmailConfirm" />
+                <span><strong>@Text.LabelRequireEmailConfirm</strong><span class="muted"> @Text.HintRequireEmailConfirm</span></span>
+            </label>
+            <input type="hidden" name="Input.RequireEmailConfirm" value="false" />
+        </div>
+
+        <div class="field">
             <label for="PayInstructions">@Text.LabelPayInstructions</label>
             <textarea id="PayInstructions" name="Input.PayInstructions" rows="3" maxlength="@ShopSettingsService.MaxPayInstructions"
                       aria-invalid="@(Model.ErrorFor("payInstructions") is null ? "false" : "true")" aria-describedby="PayInstructions-hint PayInstructions-error">@Model.Input.PayInstructions</textarea>

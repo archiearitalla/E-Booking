@@ -19,7 +19,7 @@ public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> Servi
 public sealed record PublicShop(
     Guid Id, string Slug, string Name, string TimeZone, int HorizonDays,
     DateOnly Today, IReadOnlyList<PublicService> Services, IReadOnlyList<PublicStaff> Staff, string BrandColor = BrandColors.Default,
-    bool AcceptingBookings = true, string Industry = Industries.Default, int? PromoPercent = null)
+    bool AcceptingBookings = true, string Industry = Industries.Default, int? PromoPercent = null, bool RequireEmailConfirm = false)
 {
     /// <summary>What a customer pays for this service if booked now: the regular price, or the promo price while a discount runs and the service is part of it.</summary>
     public ServicePrice PriceOf(PublicService service) =>
@@ -103,6 +103,6 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
             services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
             business.IsEnabled && (business.TrialEndsAtUtc is not { } ends
                 || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc)),
-            business.Industry, promoPercent);
+            business.Industry, promoPercent, business.RequireEmailConfirm);
     }
 }

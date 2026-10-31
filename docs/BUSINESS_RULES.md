@@ -242,6 +242,19 @@ The public booking page needs no account, so anyone can use it. One person must 
 - The address in the code is `App:PublicBaseUrl` when set (production: `https://flow.veskacode.com`), otherwise the address the page was opened on. The code is generated on the server with no external service and the same address always gives the same image.
 
 
+### 8.8 Require email confirmation to book ✅
+
+A per-shop switch (**Settings > "Require email confirmation to book"**, `business.require_email_confirm`, default off, migration 034) for a shop that gets fake bookings. It proves the booker can read the email address they typed. It is optional per shop because it costs customers who have no email, and each booking uses one email from the day's limit (section 17).
+
+- **Email is required** on the customer's booking form (the label says why). Without one the form is refused with "Please give an email address". **Staff bookings** (walk-ins, phone-ins, Record a sale) are never held and need no email.
+- **Held, not confirmed.** The booking is created `HELD` with `hold_expires_at_utc` = now + `Booking:EmailHoldMinutes` (default 20). A held booking **occupies the time** like any booking (the exclusion constraint already covers `HELD`), so nobody else can take it while it waits. The audit row `CREATED` says `HELD`.
+- **The email.** Right after booking, one email goes to the typed address with the confirmation link (`/confirm-booking/{secret}`, 128-bit random, stored only as a SHA-256 hash in `booking.email_confirm_hash`) and the manage link (to see or cancel). It does not depend on the shop's "email my customers" switch, but needs the email service and room in the daily limit. If the email cannot be sent (no service, limit used up, refused, or slower than 8 seconds) the held booking is **given back at once** (`HOLD_RELEASED`, cancelled by `SYSTEM`) and the form says nothing was booked; the customer can try again or contact the shop.
+- **Pressing the link.** Opening it only **shows** the booking (so a mail program that opens links to check them cannot confirm by itself); a button confirms. One conditional statement turns `HELD` into `CONFIRMED` only while the hold has not run out, so it cannot race with the release of an expired hold; audit `EMAIL_CONFIRMED`. Pressing it again is harmless. The secret authorizes exactly one booking: the manage link (which the booker sees on screen) does **not** confirm, and an unknown or malformed secret is "not found".
+- **Running out.** A hold past its time is released: the booking becomes `CANCELLED`, cancelled by `SYSTEM`, reason "The customer did not confirm by email in time.", audit `HOLD_EXPIRED`. A background worker does this every minute; availability and new bookings also ignore (and release) an expired hold at once, so a stale hold never blocks a real customer. A link pressed too late says the time was released.
+- **Everything else treats a held booking as not yet real:** no reminders, no "Complete", "Move" or "Deposit received" (those need `CONFIRMED`), no revenue. Staff see it in the day list as "Waiting for email" and may cancel it. The customer's manage page says to check the email until when the time is held, and lets them cancel.
+- **The AI chat does not book** for a shop with this switch on (it cannot collect an email or press a link); it tells the customer to use the booking form.
+- **Known limit.** It proves an inbox, not an identity: a person with many email addresses can still make many bookings; the per-person cap, the daily cap and the Turnstile check (6.y10) still apply.
+
 ## 9. Tenancy, roles and authorization
 
 - All back-office data access is scoped by the signed-in user's `business_id`. It is taken from the authenticated principal, never from the request.

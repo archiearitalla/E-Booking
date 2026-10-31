@@ -63,6 +63,31 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking, Cu
             Input.Name ?? "", Input.Phone ?? "", Input.Email, Input.IdempotencyKey ?? "",
             BookingActor.Customer((Input.Name ?? "Customer").Trim()), Input.ServiceNote, Input.MarketingOk), ct);
 
+        if (result.IsSuccess && result.Value!.EmailConfirmToken is { } confirmToken)
+        {
+            // This shop wants the email confirmed: the booking is held until the customer presses the emailed link. If the email cannot
+            // be sent the time is given back and nothing stays booked.
+            var root = config["App:PublicBaseUrl"] is { Length: > 0 } configuredRoot ? configuredRoot.Trim().TrimEnd('/') : $"{Request.Scheme}://{Request.Host}";
+            var sent = MailResult.NotSent;
+            using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct))
+            {
+                timeout.CancelAfter(TimeSpan.FromSeconds(8));
+                try { sent = await mailer.SendConfirmLinkAsync(Shop!.Id, result.Value.Booking.Id, root, confirmToken, timeout.Token); }
+                catch (Exception ex) when (ex is OperationCanceledException or HttpRequestException)
+                {
+                    log.LogWarning("The confirmation link email took too long or failed: {Reason}", ex.GetType().Name);
+                }
+            }
+            if (sent != MailResult.Sent)
+            {
+                await booking.ReleaseHeldAsync(Shop!.Id, result.Value.Booking.Id, Text.ConfirmEmailNotSent, CancellationToken.None);
+                Input.IdempotencyKey = Guid.NewGuid().ToString("N"); // the released booking keeps the old key
+                Errors = new Dictionary<string, string> { ["email"] = Text.ConfirmEmailNotSent };
+                return Page();
+            }
+            return RedirectToPage("/Booking/Manage", new { token = result.Value.Booking.ManageToken });
+        }
+
         if (result.IsSuccess)
         {
             // A new booking with an email address gets a confirmation email (within the daily limit). It never delays or breaks the booking.

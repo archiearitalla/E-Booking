@@ -166,6 +166,7 @@ public static class HelpTopics
                 "Opening hours: set one range and apply it to everyone, or set each person in Staff.",
                 "Time between slots, notice needed and how many days ahead customers can book are all here.",
                 "Cancel cutoff is how many hours before the appointment a customer can still cancel or move the booking on their own.",
+                "Tick Require email confirmation to book if you get fake bookings. Customers must then give an email, we email them a link, and the booking is only confirmed when they press it (the time is held for 20 minutes). Customers with no email cannot book online, and each booking uses one email from the daily limit.",
                 "Tick Staff can type the payment total to let staff change the total on the page after a visit. Tick Allow recording a sale by hand to turn on Record a sale.",
                 "Upload your logo, or make one with the Logo Creator.",
             ],

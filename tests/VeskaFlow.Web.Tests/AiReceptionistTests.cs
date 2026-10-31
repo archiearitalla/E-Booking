@@ -556,6 +556,28 @@ public class AiReceptionistTests
     }
 
     [Fact]
+    public async Task The_chat_does_not_book_for_a_shop_that_requires_email_confirmation_and_sends_the_customer_to_the_form()
+    {
+        Shop? shop = null;
+        var model = new FakeAiModel((n, _) => n == 1
+            ? FakeAiModel.Uses(FakeAiModel.Use("a", "create_booking", Booking(shop!)))
+            : FakeAiModel.Reply("Please use the booking form."));
+        var c = await SetupAsync(model);
+        var (s, slug) = await ShopWithAddonAsync(c);
+        shop = s;
+        await using (var ctx = c.Db.CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == s.BusinessId).ExecuteUpdateAsync(u => u.SetProperty(b => b.RequireEmailConfirm, true));
+
+        await SendAsync(c, slug, "Mark 09171234567, 10am please");
+
+        var result = model.LastToolResult();
+        Assert.True(result.IsError);
+        Assert.Contains("booking form", result.Text);
+        await using var db = c.Db.CreateDbContext();
+        Assert.Equal(0, await db.Bookings.CountAsync(b => b.BusinessId == s.BusinessId)); // nothing was booked, held or otherwise
+    }
+
+    [Fact]
     public async Task A_new_conversation_needs_the_person_check_when_Turnstile_is_on_and_the_rest_of_it_does_not()
     {
         Environment.SetEnvironmentVariable("Turnstile__SiteKey", "site-key-123");

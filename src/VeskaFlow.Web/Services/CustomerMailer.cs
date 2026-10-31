@@ -31,6 +31,49 @@ public sealed class CustomerMailer(
     public Task<MailResult> SendReminderAsync(Guid businessId, Guid bookingId, string baseUrl, CancellationToken ct = default) =>
         SendAsync(businessId, bookingId, baseUrl, reminder: true, ct);
 
+    /// <summary>
+    /// The email with the link that confirms a held booking ("Require email confirmation"). It is part of booking, so it does not depend on
+    /// the shop's "email my customers" switch, but it still needs the email service and room in the daily limit; without them nothing is
+    /// sent and the caller gives the slot back.
+    /// </summary>
+    public async Task<MailResult> SendConfirmLinkAsync(Guid businessId, Guid bookingId, string baseUrl, string confirmToken, CancellationToken ct = default)
+    {
+        if (!email.IsConfigured || string.IsNullOrWhiteSpace(baseUrl)) return MailResult.NotSent;
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await db.Bookings.AsNoTracking().Where(b => b.Id == bookingId && b.BusinessId == businessId)
+            .Select(b => new
+            {
+                b.Status, b.StartsAtUtc, b.HoldExpiresAtUtc, b.ManageToken, b.ServiceNameSnapshot, StaffName = b.Staff.Name,
+                CustomerName = b.Customer.Name, CustomerEmail = b.Customer.Email,
+                ShopName = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.Name).First(),
+                TimeZone = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.TimeZone).First(),
+                Enabled = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.IsEnabled).First(),
+            }).FirstOrDefaultAsync(ct);
+        if (row is null || !row.Enabled || row.Status != BookingStatus.Held) return MailResult.NotSent;
+        var to = (row.CustomerEmail ?? "").Trim();
+        if (to.Length is < 3 or > 120 || !to.Contains('@') || to.Contains(' ')) return MailResult.NotSent;
+
+        var room = await quota.CheckCustomerAsync(businessId, ct);
+        if (room == EmailRoom.ShopLimit) return MailResult.ShopLimit;
+        if (room == EmailRoom.PoolLimit) return MailResult.PoolLimit;
+
+        var first = row.CustomerName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? row.CustomerName;
+        var when = $"{LocalTime.ToLocal(row.StartsAtUtc, row.TimeZone).ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture)} at {DisplayFormat.Time(row.StartsAtUtc, row.TimeZone)}";
+        var minutes = row.HoldExpiresAtUtc is { } until ? Math.Max(1, (int)Math.Ceiling((until - DateTime.UtcNow).TotalMinutes)) : 20;
+        var root = baseUrl.TrimEnd('/');
+        var body = Text.BookingConfirmLinkBody(first, row.ShopName, row.ServiceNameSnapshot, row.StaffName, when, $"{root}/confirm-booking/{confirmToken}", minutes, $"{root}/booking/{row.ManageToken}");
+
+        var ok = await email.SendAsync(to, Text.BookingConfirmLinkSubject(row.ShopName), body, null, ct);
+        if (!ok)
+        {
+            log.LogWarning("A booking confirmation link email was not accepted by the email service."); // no address in the log
+            return MailResult.NotSent;
+        }
+        await quota.CountAsync(businessId, ct);
+        return MailResult.Sent;
+    }
+
     private async Task<MailResult> SendAsync(Guid businessId, Guid bookingId, string baseUrl, bool reminder, CancellationToken ct)
     {
         if (!email.IsConfigured || string.IsNullOrWhiteSpace(baseUrl)) return MailResult.NotSent;

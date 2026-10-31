@@ -37,7 +37,7 @@ public sealed class ServiceResult<T>
 /// Abuse limits for the open online booking page (BUSINESS_RULES 8.6). 0 turns a limit off. <c>MaxActivePerCustomer</c> is per person;
 /// <c>MaxOnlinePerDay</c> is how many bookings customers may make online in one shop in any 24 hours (staff bookings are not counted).
 /// </summary>
-public sealed record BookingLimits(int MaxActivePerCustomer = 2, int MaxOnlinePerDay = 150);
+public sealed record BookingLimits(int MaxActivePerCustomer = 2, int MaxOnlinePerDay = 150, int EmailHoldMinutes = 20);
 
 public sealed record BookingActor(ActorKind Kind, Guid? Id, string Label)
 {
@@ -84,7 +84,7 @@ public sealed record BookingSummary(
     public decimal Total => PaidAmount ?? Price + ExtrasTotal;
 }
 
-public sealed record CreateOutcome(BookingSummary Booking, bool AlreadyExisted);
+public sealed record CreateOutcome(BookingSummary Booking, bool AlreadyExisted, string? EmailConfirmToken = null);
 
 /// <summary>
 /// What the customer sees on their manage page. <c>CancelRefusal</c> explains why self-service cancel is closed
@@ -103,4 +103,5 @@ public sealed record BookingDetails(
     bool CanMove = false,
     decimal Deposit = 0m,
     bool DepositReceived = false,
-    string? PayInstructions = null);
+    string? PayInstructions = null,
+    DateTime? HoldExpiresAtUtc = null);

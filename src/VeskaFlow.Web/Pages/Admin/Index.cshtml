@@ -75,11 +75,11 @@
                             <summary>
                                 <span class="kpi-time">@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone)</span>
                                 <span class="kpi-who">@d.CustomerName</span>
-                                <span class="kpi-what muted">@d.ServiceName@(d.ExtraLines.Count > 0 ? $" +{d.ExtraLines.Count}" : "")</span>
+                                <span class="kpi-what muted">@d.ServiceName@(d.ExtraLines.Count > 0 ? $" +{d.ExtraLines.Count}" : "")@(d.IsManualSale ? " · " + Text.ManualSaleBadge : "")</span>
                                 <span class="kpi-price">@DisplayFormat.Price(d.Status == BookingStatus.Completed ? d.Amount : d.Price)</span>
                             </summary>
                             <div class="kpi-more">
-                                <p><strong>@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(d.EndsAtUtc, view.TimeZone)</strong> <span class="badge">@d.Status.Label()</span></p>
+                                <p><strong>@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(d.EndsAtUtc, view.TimeZone)</strong> <span class="badge">@(d.Status == BookingStatus.Held ? Text.StatusWaitingEmail : d.Status.Label())</span>@if (d.IsManualSale) { <text> </text><span class="badge manual">@Text.ManualSaleBadge</span> }</p>
                                 <dl class="facts">
                                     <dt>@Text.ManageService</dt><dd>@d.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(d.Price, d.RegularPrice, d.DiscountPercent)" />@if (d.ExtraLines.Count > 0) { <text> + @string.Join(", ", d.ExtraLines.Select(x => x.Name))</text> }</dd>
                                     @if (d.Status == BookingStatus.Completed)
@@ -125,7 +125,7 @@ else
             <li class="card booking @(b.Status.OccupiesSlot() ? "" : "inactive")">
                 <div class="booking-head">
                     <strong>@DisplayFormat.Time(b.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(b.EndsAtUtc, view.TimeZone)</strong>
-                    <span class="badge">@b.Status.Label()</span>
+                    <span class="badge">@(b.Status == VeskaFlow.Core.Domain.BookingStatus.Held ? Text.StatusWaitingEmail : b.Status.Label())</span>
                     @if (b.IsManualSale) { <span class="badge manual">@Text.ManualSaleBadge</span> }
                 </div>
                 <dl class="facts">

@@ -28,7 +28,7 @@ catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotF
 builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton(new VeskaFlow.Web.Services.BookingLimits(builder.Configuration.GetValue("Booking:MaxActivePerCustomer", 2), builder.Configuration.GetValue("Booking:MaxOnlinePerDay", 150)));
+builder.Services.AddSingleton(new VeskaFlow.Web.Services.BookingLimits(builder.Configuration.GetValue("Booking:MaxActivePerCustomer", 2), builder.Configuration.GetValue("Booking:MaxOnlinePerDay", 150), builder.Configuration.GetValue("Booking:EmailHoldMinutes", 20)));
 builder.Services.AddScoped<VeskaFlow.Web.Services.BookingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.OnboardingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AuthService>();
@@ -57,6 +57,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerMailer>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AutoReminderService>();
 builder.Services.AddHostedService<VeskaFlow.Web.Services.ReminderEmailWorker>();
+builder.Services.AddHostedService<VeskaFlow.Web.Services.HoldExpiryWorker>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AccountControlService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.BookingExtraService>();

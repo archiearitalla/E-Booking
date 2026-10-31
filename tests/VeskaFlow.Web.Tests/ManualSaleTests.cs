@@ -116,6 +116,32 @@ public class ManualSaleTests
     }
 
     [Fact]
+    public async Task The_label_shows_in_the_day_list_and_in_the_list_under_the_Done_and_Earned_cards()
+    {
+        var (factory, client) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+        var email = $"o{Guid.NewGuid():N}"[..12] + "@example.com";
+        var owner = (await new OnboardingService(db, TimeProvider.System).RegisterAsync(
+            new RegisterRequest("Label Shop", "lb" + Guid.NewGuid().ToString("N")[..10], "Owner", email, "correct-horse-1", TrialDays: 30))).Value!;
+        await using (var ctx = db.CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == owner.BusinessId).ExecuteUpdateAsync(u => u.SetProperty(b => b.AllowManualSales, true));
+        var serviceId = await db.CreateDbContext().Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
+        var made = await new ManualSaleService(db, TimeProvider.System).RecordAsync(owner.BusinessId,
+            new ManualSaleInput(serviceId, null, today, null, 200m, "Mark Santos", null, null, Guid.NewGuid().ToString("N")),
+            BookingActor.Staff(owner.AdminUserId, "Owner"));
+        Assert.True(made.IsSuccess, made.Message);
+
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, (await HttpApp.PostFormAsync(client, "/Login", new() { ["Input.Email"] = email, ["Input.Password"] = "correct-horse-1" })).StatusCode);
+        var date = DisplayFormat.DateParam(today);
+        string Page(string html) => System.Net.WebUtility.HtmlDecode(html);
+        Assert.Contains(Text.ManualSaleBadge, Page(await client.GetStringAsync($"/Admin?date={date}&status=done")));   // the Done list
+        Assert.Contains(Text.ManualSaleBadge, Page(await client.GetStringAsync($"/Admin?date={date}&kpi=done")));     // under the Done card
+        Assert.Contains(Text.ManualSaleBadge, Page(await client.GetStringAsync($"/Admin?date={date}&kpi=earned")));   // under the Earned card
+    }
+
+    [Fact]
     public async Task It_is_off_until_the_shop_switches_it_on_in_Settings()
     {
         var c = await SetupAsync(switchedOn: false);

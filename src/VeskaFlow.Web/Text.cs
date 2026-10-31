@@ -1053,6 +1053,22 @@ public static class Text
     public const string LabelAllowManualSales = "Allow recording a sale by hand";
     public const string HintAllowManualSales = "Adds a Record a sale page where a manager enters a service and what was paid, for your sales and customer records. A customer with no number is saved as a walk-in. Off by default.";
     public const string ManualSaleLink = "Record a sale";
+    public const string BookLabelEmailRequired = "Email (we send a link there to confirm your booking)";
+    public const string LabelRequireEmailConfirm = "Require email confirmation to book";
+    public const string HintRequireEmailConfirm = "For a shop that gets fake bookings. A customer must give an email, we email them a link, and the booking is only confirmed when they press it (the time is held for 20 minutes). Customers with no email can not book online, and each booking uses one email from your daily limit. Staff bookings are not affected. Off by default.";
+    public const string EmailRequiredToBook = "Please give an email address: we send a link there to confirm your booking.";
+    public const string ConfirmEmailNotSent = "We could not send the confirmation email, so nothing was booked. Check the address and try again, or contact the shop.";
+    public const string ConfirmLinkExpired = "This link has expired and the time was released. Please book again.";
+    public const string HoldExpiredReason = "The customer did not confirm by email in time.";
+    public const string StatusWaitingEmail = "Waiting for email";
+    public const string ConfirmPageTitle = "Confirm your booking";
+    public const string ConfirmPageHint = "Press the button to confirm this booking.";
+    public const string ConfirmPageButton = "Confirm my booking";
+    public const string ConfirmedByEmail = "Your booking is confirmed. Thank you.";
+    public static string ManageHeld(string until) => $"Check your email and press the link to confirm. Your time is held until {until}; after that it is released.";
+    public static string BookingConfirmLinkSubject(string shop) => $"Please confirm your booking at {shop}";
+    public static string BookingConfirmLinkBody(string firstName, string shop, string service, string staff, string whenText, string confirmUrl, int minutes, string manageUrl) =>
+        $"Hi {firstName},\n\nTo finish your booking at {shop}, please confirm it with this link within {minutes} minutes:\n{confirmUrl}\n\n{service} with {staff}\n{whenText}\n\nYour time is held until then. If you do not confirm, it is released.\n\nTo see or cancel the booking, use this link:\n{manageUrl}\n\nIf you did not ask for this, ignore this email.\n\n{CustomerEmailFooter(shop)}";
     public const string AiChatCaptchaWait = "One moment, we are checking that you are a person. Send your message again in a few seconds.";
     public const string OnlineBookingsFull = "Online booking is full for now. Please call or message the shop.";
     public const string ManualSaleTimeHint = "Starts as the time you are entering this. It must be inside the working hours, and while it is running that time cannot be booked.";

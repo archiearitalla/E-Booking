@@ -241,6 +241,9 @@ public sealed class AiReceptionistService(
     private async Task<(string, bool)> CreateBookingAsync(PublicShop shop, AiChat chat, JsonElement args, string baseUrl, List<string> manageLinks, CancellationToken ct)
     {
         if (ReadTarget(shop, args, out var service, out var date) is { } problem) return (problem, true);
+        // A shop that confirms bookings by email needs the customer's email and a press on the emailed link: only the form can do that.
+        if (shop.RequireEmailConfirm)
+            return ("This shop confirms every booking by email, which the chat cannot do. Do not book. Tell the customer to use the booking form on this page: pick the service and a time, then type the name, number and email.", true);
         if (!TimeOnly.TryParseExact(Str(args, "time"), "HH:mm", Invariant, DateTimeStyles.None, out var clock))
             return ("time must be written HH:mm (24-hour), as returned by check_slots.", true);
 

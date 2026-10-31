@@ -49,6 +49,8 @@ public class Business
     public int ReminderHours { get; set; } = 24;
     /// <summary>Where a customer sends a deposit (for example a GCash number and name); shown on the booking page of a service that asks for one (migration 032).</summary>
     public string? PayInstructions { get; set; }
+    /// <summary>An online booking is held until the customer presses the link emailed to them (migration 034). Off by default.</summary>
+    public bool RequireEmailConfirm { get; set; }
 }
 
 public class AdminUser
@@ -222,6 +224,8 @@ public class Booking
     public DateTime? DepositReceivedAtUtc { get; set; }
     /// <summary>Made by "Record a sale" (migration 033): a completed visit that blocks its time for new bookings while that time is still running.</summary>
     public bool IsManualSale { get; set; }
+    /// <summary>SHA-256 (hex) of the secret in the emailed confirmation link (migration 034); null when the booking never needed one.</summary>
+    public string? EmailConfirmHash { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;
