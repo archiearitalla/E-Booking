@@ -16,7 +16,7 @@ public sealed record ExtraChange(ExtraLine? Line, bool PaymentReset);
 /// <summary>
 /// Services done on top of the booked one (BUSINESS_RULES 6.y19): after a visit is done, staff add what else was done, each as its
 /// own line with its own price. A service in the list takes its own price, less the promo discount when a promo is running today and the
-/// service is part of it; the "Other" service takes a description and a price typed by staff. Only a completed visit can have extras,
+/// service is part of it; the "Other" service takes a description and a price typed by staff, and any service may take a typed amount instead when the shop allows it. Only a completed visit can have extras,
 /// at most <see cref="MaxExtras"/>. Changing the lines sends a saved payment total back to the items total (so it can never be stale),
 /// and every change is written to the audit log. Every query is scoped by the caller's business id.
 /// </summary>
@@ -69,6 +69,16 @@ public sealed class BookingExtraService(IDbContextFactory<AppDbContext> dbFactor
         {
             name = service.Name;
             price = service.Price;
+            if (typedPrice is not null)
+            {
+                // A price typed by staff for a listed service, when the shop allows typing amounts: it is what was charged, so no promo is applied on top.
+                if (!await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.AllowManualTotal).FirstAsync(ct))
+                    return ServiceResult<ExtraChange>.Fail(FailureKind.PolicyViolation, Text.PaymentManualOff);
+                if (typedPrice is < 0 or > MaxPrice) return ServiceResult<ExtraChange>.Invalid(new Dictionary<string, string> { ["price"] = Text.ExtraPriceInvalid });
+                price = Math.Round(typedPrice.Value, 2, MidpointRounding.AwayFromZero);
+            }
+            else
+            {
             // A promo running today takes its discount off a service that is part of it, like any booking made while it runs.
             var now = time.GetUtcNow().UtcDateTime;
             var zone = await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.TimeZone).FirstAsync(ct);
@@ -77,6 +87,7 @@ public sealed class BookingExtraService(IDbContextFactory<AppDbContext> dbFactor
             percent = PromoPricing.PercentFor(false, service.PromoEligible, service.Price,
                 promo is null ? null : PromoPricing.ActivePercent(promo.IsActive, promo.EndsOn, promo.DiscountPercent, LocalTime.LocalDateOf(now, zone)));
             if (percent is { } off) { regular = service.Price; price = PromoPricing.Net(service.Price, off); }
+            }
         }
 
         var line = new BookingExtra

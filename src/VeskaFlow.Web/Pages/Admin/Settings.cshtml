@@ -238,6 +238,14 @@
             <input type="hidden" name="Input.CustomerEmails" value="false" />
         </div>
 
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.AllowManualTotal" value="true" checked="@Model.Input.AllowManualTotal" />
+                <span><strong>@Text.LabelAllowManualTotal</strong><span class="muted"> @Text.HintAllowManualTotal</span></span>
+            </label>
+            <input type="hidden" name="Input.AllowManualTotal" value="false" />
+        </div>
+
         <fieldset class="field" aria-describedby="BrandColor-hint BrandColor-error">
             <legend>@Text.LabelBrandColor</legend>
             <div class="swatches">

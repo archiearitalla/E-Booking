@@ -17,6 +17,9 @@ public class AfterVisitModel(
     public string ShopName { get; private set; } = "";
     public string BookingUrl { get; private set; } = "";
     public string TimeZone { get; private set; } = "";
+
+    /// <summary>The shop's setting: may staff type the payment total? When false the page shows it but cannot change it.</summary>
+    public bool AllowManualTotal { get; private set; } = true;
     public string DayLink { get; private set; } = "/Admin";
 
     public string ThankYou
@@ -131,6 +134,7 @@ public class AfterVisitModel(
         Services = (await catalog.ListServicesAsync(BusinessId, ct)).Where(s => s.IsActive).ToList();
         ShopName = shop.Name;
         TimeZone = shop.TimeZone;
+        AllowManualTotal = shop.AllowManualTotal;
         BookingUrl = QrCodes.BookingUrl(config["App:PublicBaseUrl"], Request.Scheme, Request.Host.Value, shop.Slug);
         var date = VeskaFlow.Core.Scheduling.LocalTime.LocalDateOf(Booking.StartsAtUtc, shop.TimeZone);
         DayLink = $"/Admin?date={DisplayFormat.DateParam(date)}&status=done";

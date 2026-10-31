@@ -42,6 +42,27 @@ public class BookingExtraTests
         return made;
     }
 
+    [Fact]
+    public async Task Any_added_service_can_take_a_typed_amount_when_the_shop_allows_it()
+    {
+        var c = await SetupAsync();
+        Assert.True((await SetPromo(c, 20)).IsSuccess);
+        var done = await CompletedAsync(c);
+
+        var typed = await c.Extras.AddAsync(c.Shop.BusinessId, done.Id, c.ColorId, null, 450.555m, Staff);
+        Assert.True(typed.IsSuccess, typed.Message);
+        Assert.Equal(("Color", 450.56m, (decimal?)null, (int?)null), (typed.Value!.Line!.Name, typed.Value.Line.Price, typed.Value.Line.RegularPrice, typed.Value.Line.DiscountPercent)); // no promo on top of a typed amount
+        foreach (var bad in new[] { -1m, BookingExtraService.MaxPrice + 1 })
+            Assert.Equal(Text.ExtraPriceInvalid, (await c.Extras.AddAsync(c.Shop.BusinessId, done.Id, c.ColorId, null, bad, Staff)).FieldErrors["price"]);
+        Assert.Equal(240m, (await c.Extras.AddAsync(c.Shop.BusinessId, done.Id, c.ColorId, null, null, Staff)).Value!.Line!.Price);              // blank: the listed price, less the promo
+
+        var settings = new ShopSettingsService(c.Db, TimeProvider.System);
+        var s = (await settings.GetSettingsAsync(c.Shop.BusinessId))!;
+        await settings.SaveSettingsAsync(c.Shop.BusinessId, new SettingsInput(s.Name, s.TimeZone, s.SlotMinutes, s.LeadTimeMinutes, s.HorizonDays, s.CancelCutoffHours, AllowManualTotal: false));
+        Assert.Equal(Text.PaymentManualOff, (await c.Extras.AddAsync(c.Shop.BusinessId, done.Id, c.ColorId, null, 1m, Staff)).Message);
+        Assert.True((await c.Extras.AddAsync(c.Shop.BusinessId, done.Id, c.OtherId, "Beard", 80m, Staff)).IsSuccess);                         // Other always needs a typed price
+    }
+
     private static Task<ServiceResult<bool>> SetPromo(Ctx c, int percent, bool active = true, DateOnly? lastDay = null) =>
         c.Promo.SaveAsync(c.Shop.BusinessId, null, false, "Promo", null, null, "plain", active, lastDay, percent);
 
@@ -99,9 +120,9 @@ public class BookingExtraTests
         Assert.True(ok.IsSuccess, ok.Message);
         Assert.Equal(("Other: Beard dye", 80.46m, (decimal?)null), (ok.Value!.Line!.Name, ok.Value.Line.Price, ok.Value.Line.RegularPrice));
 
-        // A typed price is ignored for a service that has its own price (300.00, here less the 20% promo that is running).
+        // A service with its own price takes the typed amount instead when there is one (see the manual amount test), and the note is ignored.
         var color = await c.Extras.AddAsync(c.Shop.BusinessId, done.Id, c.ColorId, "ignored", 1m, Staff);
-        Assert.Equal(240.00m, color.Value!.Line!.Price);
+        Assert.Equal(("Color", 1m), (color.Value!.Line!.Name, color.Value.Line.Price));
     }
 
     [Fact]

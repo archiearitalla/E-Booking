@@ -846,7 +846,7 @@ public static class Text
     public const string ExtraAdd = "Add another service";
     public const string ExtraChoose = "Service";
     public const string ExtraNoteLabel = "What was done (only for Other)";
-    public const string ExtraPriceLabel = "Price (only for Other, PHP)";
+    public const string ExtraPriceLabel = "Amount (PHP). Leave blank to use the listed price; required for Other.";
     public const string ExtraAddButton = "Add service";
     public const string ExtraRemove = "Remove";
     public const string ExtraRemoveAsk = "Remove this service from the visit?";
@@ -855,6 +855,12 @@ public static class Text
     public const string ExtraRemoved = "The service was removed.";
     public const string ExtraPaymentReset = " The payment total went back to the items total; change it if the customer paid something else.";
     public const string ManageAlsoDone = "Also done";
+    public const string LabelAllowManualTotal = "Staff can set the payment total by hand when a visit is done";
+    public const string HintAllowManualTotal = "On: when staff press Done they can type what the customer paid (a tip, another discount). Off: the payment total is always the price of the services, and it cannot be typed.";
+    public const string PaymentManualOff = "Your shop settings do not allow the payment total to be set by hand. It is the price of the services.";
+    public const string PaymentFixedHint = "The payment total is the price of the services. Your shop's settings do not allow it to be typed.";
+    public const string PaymentEnteredBefore = "A payment total was typed earlier. Put the services price back as the total?";
+    public const string PaymentBackToItems = "Use the price of the services";
     public const string AfterVisitPaymentTitle = "Payment total";
     public const string AfterVisitPaymentHint = "What the customer paid for this visit. It starts at the price they were quoted; change it if they added something, got a different discount or left a tip.";
     public const string AfterVisitPaymentLabel = "Total paid (PHP)";

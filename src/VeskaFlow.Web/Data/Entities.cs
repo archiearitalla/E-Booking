@@ -20,6 +20,8 @@ public class Business
     public DateTime? TrialEndsAtUtc { get; set; }
     /// <summary>Email the shop's customers a booking confirmation and a reminder (when the customer gave an email).</summary>
     public bool CustomerEmails { get; set; } = true;
+    /// <summary>May staff type the payment total by hand when a visit is done (migration 026)? When false it is always what the services come to.</summary>
+    public bool AllowManualTotal { get; set; } = true;
     /// <summary>Until when the paid "more emails" add-on is active; null when it was never bought.</summary>
     public DateTime? EmailAddonUntilUtc { get; set; }
     /// <summary>Until when the paid AI receptionist add-on is switched on; null when it was never bought.</summary>
