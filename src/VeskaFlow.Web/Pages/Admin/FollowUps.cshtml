@@ -5,6 +5,7 @@
     var invariant = System.Globalization.CultureInfo.InvariantCulture;
 }
 <h1>@Text.AdminNavFollowUps</h1>
+<partial name="_HelpLink" model="@("followups")" />
 <p class="hint">@Text.FollowUpsHint</p>
 
 @if (Model.Rows.Count == 0)

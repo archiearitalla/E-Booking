@@ -29,6 +29,7 @@
         ("/Admin/Promo", Text.AdminNavPromo, AdminLevel.Owner),
         ("/Admin/Audit", Text.AdminNavAudit, AdminLevel.Manager),
         ("/Admin/Account", Text.AdminNavAccount, AdminLevel.Staff),
+        ("/Admin/Help", Text.AdminNavHelp, AdminLevel.Staff),
         ("/Admin/About", Text.AdminNavAbout, AdminLevel.Staff),
     ];
     var items = allItems.Where(i => level >= i.Minimum).Select(i => (i.Href, i.Label)).ToArray();

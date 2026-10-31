@@ -1,0 +1,47 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.HelpModel
+@{
+    ViewData["Title"] = Text.HelpTitle;
+}
+<h1>@Text.HelpTitle</h1>
+<p class="muted">@Text.HelpIntro</p>
+
+<form method="get" class="inline-form help-search" role="search">
+    <label for="q" class="sr-only">@Text.HelpSearch</label>
+    <input type="text" id="q" name="q" class="grow" value="@Model.Query" placeholder="@Text.HelpSearch" maxlength="60" autocomplete="off" />
+    <button type="submit" class="primary">@Text.DayGo</button>
+</form>
+
+@if (Model.Topics.Count == 0)
+{
+    <div class="card empty"><p>@Text.HelpNone</p></div>
+}
+else
+{
+    @if (string.IsNullOrWhiteSpace(Model.Query))
+    {
+        <nav class="card help-index" aria-label="@Text.HelpTitle">
+            <ul>
+                @foreach (var t in Model.AllForLevel) { <li><a href="#@t.Id">@t.Title</a></li> }
+            </ul>
+        </nav>
+    }
+    <div class="help-list">
+        @foreach (var t in Model.Topics)
+        {
+            <section class="card help-topic" id="@t.Id" tabindex="-1">
+                <details @(!string.IsNullOrWhiteSpace(Model.Query) || Model.Topics.Count == 1 || string.Equals(Model.Topic, t.Id, StringComparison.OrdinalIgnoreCase) ? "open" : null)>
+                    <summary><strong>@t.Title</strong><span class="muted">@t.Summary</span></summary>
+                    <div class="kpi-more">
+                        <h3>@Text.HelpHow</h3>
+                        <ol class="help-steps">
+                            @foreach (var step in t.Steps) { <li>@step</li> }
+                        </ol>
+                        @if (t.Tip is not null) { <p class="help-tip"><strong>@Text.HelpTip</strong> @t.Tip</p> }
+                        @if (t.Link is not null) { <p><a class="button secondary" href="@t.Link">@t.LinkLabel</a></p> }
+                    </div>
+                </details>
+            </section>
+        }
+    </div>
+}

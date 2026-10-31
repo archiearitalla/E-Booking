@@ -17,7 +17,7 @@ public class AdminWebTests
     private static readonly string[] AdminPages =
     [
         "/Admin", "/Admin/Services", "/Admin/Services/Edit", "/Admin/Staff", "/Admin/Staff/Edit",
-        "/Admin/Closures", "/Admin/Settings", "/Admin/Audit", "/Admin/About",
+        "/Admin/Closures", "/Admin/Settings", "/Admin/Audit", "/Admin/About", "/Admin/Help",
     ];
 
     private static async Task<Owner> RegisterOwnerAsync(AppFactory factory)

@@ -4,6 +4,7 @@
     ViewData["Title"] = Text.AdminNavReminders;
 }
 <h1>@Text.AdminNavReminders</h1>
+<partial name="_HelpLink" model="@("reminders")" />
 <p class="hint">@Text.RemindersHint</p>
 @if (Model.EmailRoomNow != VeskaFlow.Web.Services.EmailRoom.Ok)
 {

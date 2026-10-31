@@ -4,6 +4,7 @@
     ViewData["Title"] = Text.AdminNavStaff;
 }
 <h1>@Text.AdminNavStaff</h1>
+<partial name="_HelpLink" model="@("staff")" />
 <p><a class="button" href="/Admin/Staff/Edit">@Text.StaffAdd</a></p>
 <p class="hint">@string.Format(Text.StaffPlanNote, Model.Plan, PlanLimits.MaxStaff(Model.Plan, Model.InTrial)?.ToString() ?? Text.StaffUnlimited)</p>
 
