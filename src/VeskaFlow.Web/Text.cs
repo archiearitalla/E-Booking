@@ -686,7 +686,11 @@ public static class Text
     public const string AfterVisitBack = "Back to bookings";
     public const string AfterVisitHint = "Send a thank-you from your own phone, and save the customer's contact so they are easy to find when you follow up.";
     public const string SendByEmail = "Send by email";
-    public const string SendShare = "Share to another app";
+    public const string SendShare = "More apps (Messenger and others)";
+    public const string SendInApps = "Or send in an app:";
+    public const string SendWhatsApp = "WhatsApp";
+    public const string SendViber = "Viber";
+    public const string SendTelegram = "Telegram";
     public const string SaveContact = "Save contact";
     public static string ThankYouSubject(string shop) => $"Thank you from {shop}";
     public static string FollowUpSubject(string shop) => $"Your follow-up visit at {shop}";

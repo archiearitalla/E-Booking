@@ -862,6 +862,8 @@ a.kpi.open { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
 .cancel-box > summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; padding: 0.35rem 0; }
 .cancel-box[open] > summary { color: var(--ink); }
 .cancel-box .cancel-form { border-top: 0; padding-top: 0.25rem; }
+.send-apps { margin-top: 0.25rem; align-items: center; }
+.send-apps-label { flex-basis: 100%; font-size: 0.85rem; }
 .help-link { margin: -0.25rem 0 0.75rem; font-size: 0.9rem; }
 .help-list { display: grid; gap: 0.6rem; margin-top: 0.75rem; }
 .help-topic > details > summary { display: flex; flex-direction: column; gap: 0.15rem; cursor: pointer; }

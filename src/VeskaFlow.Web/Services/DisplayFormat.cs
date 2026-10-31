@@ -33,6 +33,20 @@ public static class DisplayFormat
     /// <summary>A walk-in recorded without a phone number is stored with a generated placeholder; it is never shown or dialled.</summary>
     public const string WalkInPhonePrefix = "walkin-";
 
+    /// <summary>
+    /// The number as digits with the country code and no plus sign, as WhatsApp and Viber want it (09171234567 becomes 639171234567).
+    /// Null for a walk-in placeholder or a number that does not look like a mobile number.
+    /// </summary>
+    public static string? InternationalDigits(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone) || IsPlaceholderPhone(phone)) return null;
+        var digits = new string(phone.Where(char.IsAsciiDigit).ToArray());
+        if (phone.TrimStart().StartsWith('+')) return digits.Length is >= 8 and <= 15 ? digits : null;
+        if (digits.Length == 11 && digits[0] == '0') return "63" + digits[1..];          // Philippine mobile number written 09...
+        if (digits.Length == 12 && digits.StartsWith("63", StringComparison.Ordinal)) return digits;
+        return null;
+    }
+
     public static bool IsPlaceholderPhone(string? phone) => phone is not null && phone.StartsWith(WalkInPhonePrefix, StringComparison.Ordinal);
 
     public static string DateParam(DateOnly date) => date.ToString("yyyy-MM-dd", Invariant);
