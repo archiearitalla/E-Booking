@@ -138,6 +138,30 @@ public class AiLimitTests
         Assert.Contains("Tenant Shop", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform/Ai?q=tenant")));
     }
 
+    [Fact]
+    public async Task The_platform_shop_list_is_one_line_per_shop_with_a_search_and_suggestions()
+    {
+        var bossEmail = $"boss{Guid.NewGuid():N}@example.com";
+        var (factory, _) = await HttpApp.StartAsync(platformAdminEmails: bossEmail);
+        using var _f = factory;
+        var boss = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(boss, "/Register", Form(bossEmail, "Boss Shop"));
+        var tenantEmail = $"shop{Guid.NewGuid():N}@example.com";
+        await HttpApp.PostFormAsync(HttpApp.NewClient(factory), "/Register", Form(tenantEmail, "Zebra Salon Unique"));
+
+        var page = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform"));
+        Assert.Contains("class=\"shop-sum\"", page);                                      // a summary line per shop
+        Assert.Contains("<datalist id=\"shop-suggestions\">", page);
+        Assert.Contains("value=\"Zebra Salon Unique\"", page);                            // suggested while typing
+
+        var found = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform?q=zebra"));
+        Assert.Contains("1 shop", found);
+        Assert.Contains(tenantEmail, found);
+        Assert.Contains("value=\"Boss Shop\"", found);                                    // suggestions still list every shop
+        Assert.DoesNotContain("class=\"shop-name\">Boss Shop", found);                    // but the list is narrowed
+        Assert.Contains(Text.PlatformEmpty, WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform?q=no-such-shop-zzz")));
+    }
+
     private static async Task<Guid> ShopIdAsync(AppFactory factory, string name)
     {
         await using var ctx = new TestDbFactory(await TestDb.ConnectionStringAsync()).CreateDbContext();

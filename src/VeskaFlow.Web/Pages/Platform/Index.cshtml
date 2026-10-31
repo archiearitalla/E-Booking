@@ -66,21 +66,38 @@
     </div>
 </div>
 
+<form method="get" class="inline-form shop-search" data-search-submit>
+    <label for="q" class="sr-only">@Text.PlatformSearch</label>
+    <input type="text" id="q" name="q" class="grow" value="@Model.Query" placeholder="@Text.PlatformSearch" maxlength="80" list="shop-suggestions" autocomplete="off" />
+    <datalist id="shop-suggestions">
+        @foreach (var sh in Model.AllShops) { <option value="@sh.Name" label="@sh.OwnerEmail &middot; /b/@sh.Slug"></option> }
+    </datalist>
+    <button type="submit" class="primary">@Text.DayGo</button>
+</form>
+<p class="muted">@Text.PlatformCount(Model.Shops.Count)</p>
+
 @if (Model.Shops.Count == 0)
 {
     <div class="card empty"><p>@Text.PlatformEmpty</p></div>
 }
 else
 {
-    <ul class="bookings">
+    <ul class="bookings shop-list">
         @foreach (var s in Model.Shops)
         {
             <li class="card @(s.Enabled ? "" : "inactive")">
-                <div class="booking-head">
-                    <strong>@s.Name</strong>
-                    <span class="badge @(s.Enabled ? "" : "off")">@(s.Enabled ? Text.PlatformOn : Text.PlatformOff)</span>
-                    <span class="badge @(s.EmailConfirmed ? "" : "off")">@(s.EmailConfirmed ? Text.PlatformEmailOk : Text.PlatformEmailPending)</span>
-                </div>
+                @* One short line per shop; open it for the details and the buttons. *@
+                <details>
+                <summary class="shop-sum">
+                    <strong class="shop-name">@s.Name</strong>
+                    <span class="shop-badges">
+                        <span class="badge @(s.Enabled ? "" : "off")">@(s.Enabled ? Text.PlatformOn : Text.PlatformOff)</span>
+                        @if (!s.EmailConfirmed) { <span class="badge off">@Text.PlatformEmailPending</span> }
+                        @if (s.AiAddonUntilUtc is { } aiOn && aiOn > DateTime.UtcNow) { <span class="badge">@Text.PlatformAiAddon</span> }
+                    </span>
+                    <span class="shop-sub muted">@s.OwnerEmail &middot; /b/@s.Slug</span>
+                </summary>
+                <div class="kpi-more">
                 <dl class="facts">
                     <dt>@Text.PlatformOwner</dt><dd>@s.OwnerName &middot; @s.OwnerEmail</dd>
                     <dt>@Text.SettingsAddress</dt><dd><a href="/b/@s.Slug">/b/@s.Slug</a> &middot; @s.Industry</dd>
@@ -157,6 +174,8 @@ else
                         </form>
                     }
                 </div>
+                </div>
+                </details>
             </li>
         }
     </ul>

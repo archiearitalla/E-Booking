@@ -997,6 +997,8 @@ public static class Text
     public const string AiLimitsSaved = "Limits saved.";
     public const string AiLimitInvalid = "Enter a whole number, or leave it blank for the default.";
     public const string PlatformAiLink = "AI usage and cost";
+    public const string PlatformSearch = "Search by shop, address, owner or email";
+    public static string PlatformCount(int n) => n == 1 ? "1 shop" : $"{n} shops";
     public const string PlatformAiAddon = "AI add-on";
     public const string PlatformAiAddonAsk = "Add days to this shop's AI receptionist? Use this when the client has paid for it.";
     public static string PlatformAiAddonUntil(string until) => $"active until {until}";

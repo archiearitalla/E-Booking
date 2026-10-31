@@ -197,3 +197,10 @@ if ('serviceWorker' in navigator && location.pathname.toLowerCase().startsWith('
   panel.scrollIntoView({ block: 'start' });
   panel.focus({ preventScroll: true });
 })();
+
+// A search box with a list of suggestions (a <datalist>): choosing one runs the search at once.
+document.querySelectorAll('form[data-search-submit]').forEach(function (form) {
+  var input = form.querySelector('input[list]');
+  if (!input) return;
+  input.addEventListener('change', function () { if (typeof form.requestSubmit === 'function') form.requestSubmit(); else form.submit(); });
+});

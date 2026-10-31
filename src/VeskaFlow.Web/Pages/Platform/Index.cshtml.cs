@@ -16,6 +16,12 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     public Guid? OwnBusinessId => User.BusinessId();
 
     public IReadOnlyList<ShopRow> Shops { get; private set; } = [];
+
+    /// <summary>Every shop, for the suggestions under the search box (the list above is narrowed by the search).</summary>
+    public IReadOnlyList<ShopRow> AllShops { get; private set; } = [];
+
+    /// <summary>Narrows the list to shops whose name, booking address or owner (name or email) contains this text.</summary>
+    [BindProperty(SupportsGet = true, Name = "q")] public string? Query { get; set; }
     public bool EmailConfigured => accounts.EmailConfigured;
 
     /// <summary>Where the nightly backups are kept (the GitHub Actions page of the repository).</summary>
@@ -46,7 +52,10 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
-        Shops = await accounts.ListShopsAsync(ct);
+        Shops = AllShops = await accounts.ListShopsAsync(ct);
+        if ((Query ?? "").Trim() is { Length: > 0 } q)
+            Shops = Shops.Where(x => x.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || x.Slug.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || x.OwnerEmail.Contains(q, StringComparison.OrdinalIgnoreCase) || x.OwnerName.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
         PayQrVersion = await images.VersionAsync(PlatformImageService.GcashQr, ct);
         EmailsToday = await quota.TodayTotalAsync(ct);
         BackupCopySavedAtUtc = await accounts.GetBackupCopySavedAsync(ct);
