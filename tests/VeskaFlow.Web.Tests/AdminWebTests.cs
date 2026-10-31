@@ -716,6 +716,7 @@ public class AdminWebTests
         var todo = Dec(await a.Client.GetStringAsync(day + "&kpi=todo"));
         Assert.Contains("id=\"kpi-details\"", todo);
         Assert.Contains("Juan Dela Cruz", todo);
+        Assert.Contains("<summary>", todo);                                                       // one short line per booking
         Assert.Contains("09175550111", todo);
         Assert.DoesNotContain("09175550222", todo);                                               // another shop's booking never shows
 

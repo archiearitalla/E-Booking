@@ -56,7 +56,7 @@
 @if (Model.OpenKpi is { } openKpi)
 {
     var detailRows = Model.KpiBookings;
-    <section class="card kpi-details" id="kpi-details" aria-label="@Text.KpiDetailsTitle">
+    <section class="card kpi-details" id="kpi-details" tabindex="-1" aria-label="@Text.KpiDetailsTitle">
         <h2>@kpiCards.First(k => k.Key == openKpi).Label &middot; @dateText</h2>
         @if (detailRows.Count == 0)
         {
@@ -64,25 +64,33 @@
         }
         else
         {
+            @* One short line per booking so a busy day stays easy to scan; tap a line for the rest. *@
             <ul class="kpi-list">
                 @foreach (var d in detailRows)
                 {
                     <li>
-                        <div class="booking-head">
-                            <strong>@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(d.EndsAtUtc, view.TimeZone)</strong>
-                            <span class="badge">@d.Status.Label()</span>
-                        </div>
-                        <dl class="facts">
-                            <dt>@Text.ManageService</dt><dd>@d.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(d.Price, d.RegularPrice, d.DiscountPercent)" />@if (d.ExtraLines.Count > 0) { <text> + @string.Join(", ", d.ExtraLines.Select(x => x.Name))</text> }</dd>
-                            @if (d.Status == BookingStatus.Completed)
-                            {
-                                <dt>@Text.AfterVisitPaymentTitle</dt><dd>@DisplayFormat.Price(d.Amount)</dd>
-                            }
-                            <dt>@Text.ManageWith</dt><dd>@d.StaffName</dd>
-                            <dt>@Text.ManageWho</dt><dd>@d.CustomerName
-                                @if (DisplayFormat.IsPlaceholderPhone(d.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@d.CustomerPhone">@d.CustomerPhone</a></text> }</dd>
-                        </dl>
-                        @if (d.Status == BookingStatus.Completed) { <p><a href="/Admin/AfterVisit/@d.Id">@Text.AfterVisitOpen</a></p> }
+                        <details>
+                            <summary>
+                                <span class="kpi-time">@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone)</span>
+                                <span class="kpi-who">@d.CustomerName</span>
+                                <span class="kpi-what muted">@d.ServiceName@(d.ExtraLines.Count > 0 ? $" +{d.ExtraLines.Count}" : "")</span>
+                                <span class="kpi-price">@DisplayFormat.Price(d.Status == BookingStatus.Completed ? d.Amount : d.Price)</span>
+                            </summary>
+                            <div class="kpi-more">
+                                <p><strong>@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(d.EndsAtUtc, view.TimeZone)</strong> <span class="badge">@d.Status.Label()</span></p>
+                                <dl class="facts">
+                                    <dt>@Text.ManageService</dt><dd>@d.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(d.Price, d.RegularPrice, d.DiscountPercent)" />@if (d.ExtraLines.Count > 0) { <text> + @string.Join(", ", d.ExtraLines.Select(x => x.Name))</text> }</dd>
+                                    @if (d.Status == BookingStatus.Completed)
+                                    {
+                                        <dt>@Text.AfterVisitPaymentTitle</dt><dd>@DisplayFormat.Price(d.Amount)</dd>
+                                    }
+                                    <dt>@Text.ManageWith</dt><dd>@d.StaffName</dd>
+                                    <dt>@Text.ManageWho</dt><dd>@d.CustomerName
+                                        @if (DisplayFormat.IsPlaceholderPhone(d.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@d.CustomerPhone">@d.CustomerPhone</a></text> }</dd>
+                                </dl>
+                                @if (d.Status == BookingStatus.Completed) { <p><a href="/Admin/AfterVisit/@d.Id">@Text.AfterVisitOpen</a></p> }
+                            </div>
+                        </details>
                     </li>
                 }
             </ul>
