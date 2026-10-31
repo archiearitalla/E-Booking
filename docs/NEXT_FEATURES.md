@@ -61,9 +61,11 @@ Note: `BUSINESS_RULES.md` already describes an online deposit with a held slot (
 
 **Acceptance:** tests for tenant isolation, staff scoping, expiry and the quota stopping the email.
 
-### 4. Customer email required at booking (needs the owner's decision first)
+### 4. Customer email required at booking (DECIDED: keep it optional; skip this item)
 
-Ask the owner before building. If yes: make email required on the public booking form with clear validation text, keep walk-ins in the back office optional, and explain why on the form ("for your confirmation and reminder"). Existing customers without an email must still work.
+Decision: the phone number stays the customer key and email stays optional. Many customers have no email, and a required field would lose bookings. Shops that want emails already get the confirmation and reminder for every customer who gives one. The text below is the option that was rejected.
+
+If it were required: make email required on the public booking form with clear validation text, keep walk-ins in the back office optional, and explain why on the form ("for your confirmation and reminder"). Existing customers without an email must still work.
 
 ### 5. Per-staff time off (check the gap first)
 
