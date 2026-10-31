@@ -21,6 +21,7 @@
         @if (Model.PayQrVersion is { } qrVersion) { <partial name="_PayQr" model="qrVersion" /> }
         <p class="hint">@(billing.Note.Length > 0 ? billing.Note : Text.BillingProof)</p>
     }
+    <p><a class="button" href="/Admin/Billing">@Text.BillingPayNow</a></p>
     @if (billing.ContactUrl.Length > 0)
     {
         <p><a class="button" href="@billing.ContactUrl">@Text.TrialEndedContact</a></p>

@@ -17,6 +17,9 @@ public abstract class AdminPageModel : FormPageModel
     /// <summary>What the signed-in person may do, read from the database on every request.</summary>
     public AdminLevel Level { get; private set; } = AdminLevel.Staff;
 
+    /// <summary>True for the pages a shop whose access has ended can still open, so it can pay (the billing pages).</summary>
+    protected virtual bool AllowWhenEnded => false;
+
     /// <summary>The staff member this person is limited to (their own bookings only), or null for the whole shop.</summary>
     public Guid? ScopeStaffId { get; private set; }
 
@@ -77,7 +80,7 @@ public abstract class AdminPageModel : FormPageModel
             var ends = await settings.TrialEndsAtAsync(id, context.HttpContext.RequestAborted);
             // The header bell shows what the database says now, not the date frozen in the cookie at sign-in.
             context.HttpContext.Items[UserClaims.TrialEndsItemKey] = ends;
-            if (settings.IsEnded(ends))
+            if (settings.IsEnded(ends) && !AllowWhenEnded)
             {
                 context.Result = RedirectToPage("/Admin/TrialEnded");
                 return;

@@ -1,5 +1,6 @@
 @inject VeskaFlow.Web.Services.FollowUpService FollowUps
 @inject VeskaFlow.Web.Services.AccountControlService PlatformAccounts
+@inject VeskaFlow.Web.Services.PaymentService PaymentsForOwner
 @{
     Layout = "_Layout";
     var path = Context.Request.Path.Value ?? "";
@@ -8,8 +9,9 @@
     var alert = User.BusinessId() is { } businessId ? await FollowUps.AlertAsync(businessId, default, scopeStaff) : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
     Context.Items[VeskaFlow.Web.Services.FollowUpAlert.ItemKey] = alert;
     // The platform owner is told here, on every back-office page, when a client's subscription is ending (or has just ended).
-    var expiring = !path.StartsWith("/Platform", StringComparison.OrdinalIgnoreCase) && await PlatformAccounts.IsPlatformAdminAsync(User.UserId())
-        ? await PlatformAccounts.CountExpiringShopsAsync() : 0;
+    var isPlatformOwner = !path.StartsWith("/Platform", StringComparison.OrdinalIgnoreCase) && await PlatformAccounts.IsPlatformAdminAsync(User.UserId());
+    var expiring = isPlatformOwner ? await PlatformAccounts.CountExpiringShopsAsync() : 0;
+    var waitingPayments = isPlatformOwner ? await PaymentsForOwner.PendingCountAsync() : 0;
     var onFollowUps = path.StartsWith("/Admin/FollowUps", StringComparison.OrdinalIgnoreCase);
     var onReminders = path.StartsWith("/Admin/Reminders", StringComparison.OrdinalIgnoreCase);
     var level = Context.Items.TryGetValue(AdminRoles.LevelItemKey, out var lv) && lv is AdminLevel l ? l : AdminLevel.Staff;
@@ -25,6 +27,7 @@
         ("/Admin/Staff", Text.AdminNavStaff, AdminLevel.Manager),
         ("/Admin/Closures", Text.AdminNavClosures, AdminLevel.Manager),
         ("/Admin/Team", Text.AdminNavTeam, AdminLevel.Owner),
+        ("/Admin/Billing", Text.BillingPageTitle, AdminLevel.Owner),
         ("/Admin/Settings", Text.AdminNavSettings, AdminLevel.Owner),
         ("/Admin/Promo", Text.AdminNavPromo, AdminLevel.Owner),
         ("/Admin/Audit", Text.AdminNavAudit, AdminLevel.Manager),
@@ -48,6 +51,13 @@
 </nav>
 
 <div class="admin-main">
+@if (waitingPayments > 0)
+{
+    <div class="notice" role="status">
+        <a href="/Platform/Payments">@Text.PaymentsAlert(waitingPayments) @Text.PaymentsAlertView</a>
+    </div>
+}
+
 @if (expiring > 0)
 {
     <div class="notice" role="status">

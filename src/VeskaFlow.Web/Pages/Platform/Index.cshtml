@@ -10,7 +10,7 @@
 <h1>@Text.PlatformTitle</h1>
 <p class="muted">@Text.PlatformEmailsToday(Model.EmailsToday, Model.EmailLimit)</p>
 <p class="hint">@Text.PlatformHint</p>
-<p><a class="button secondary" href="/Platform/Ai">@Text.PlatformAiLink</a></p>
+<p class="actions"><a class="button secondary" href="/Platform/Payments">@Text.PaymentsLink</a> <a class="button secondary" href="/Platform/Ai">@Text.PlatformAiLink</a></p>
 @if (!Model.EmailConfigured) { <div class="notice" role="status">@Text.PlatformNoEmail</div> }
 @if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
 @if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
