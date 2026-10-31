@@ -22,6 +22,8 @@ public class Business
     public bool CustomerEmails { get; set; } = true;
     /// <summary>May staff type the payment total by hand when a visit is done (migration 026)? When false it is always what the services come to.</summary>
     public bool AllowManualTotal { get; set; } = true;
+    /// <summary>Is the "Record a sale" page switched on? Off by default (migration 027).</summary>
+    public bool AllowManualSales { get; set; }
     /// <summary>Until when the paid "more emails" add-on is active; null when it was never bought.</summary>
     public DateTime? EmailAddonUntilUtc { get; set; }
     /// <summary>Until when the paid AI receptionist add-on is switched on; null when it was never bought.</summary>

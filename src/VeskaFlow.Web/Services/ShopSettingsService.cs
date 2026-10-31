@@ -8,12 +8,12 @@ namespace VeskaFlow.Web.Services;
 public sealed record ShopSettings(
     string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
     string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null, int FollowUpNoticeDays = 3, int ReminderHours = 24,
-    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default);
+    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default, bool AllowManualSales = false);
 
 /// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged.</summary>
 public sealed record SettingsInput(
     string? Name, string? TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
-    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null, bool? CustomerEmails = null, bool? AllowManualTotal = null);
+    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null, bool? CustomerEmails = null, bool? AllowManualTotal = null, bool? AllowManualSales = null);
 
 /// <summary>The accent colors a shop can pick. The keys match the CHECK constraint and the <c>data-theme</c> rules in site.css.</summary>
 public static class BrandColors
@@ -58,7 +58,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry, b.AllowManualSales))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -103,6 +103,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.ReminderHours is { } reminderHours) business.ReminderHours = reminderHours;
         if (input.CustomerEmails is { } customerEmails) business.CustomerEmails = customerEmails;
         if (input.AllowManualTotal is { } manualTotal) business.AllowManualTotal = manualTotal;
+        if (input.AllowManualSales is { } manualSales) business.AllowManualSales = manualSales;
         var zoneChanged = !string.Equals(business.TimeZone, zone, StringComparison.Ordinal);
         business.Name = name;
         business.TimeZone = zone;

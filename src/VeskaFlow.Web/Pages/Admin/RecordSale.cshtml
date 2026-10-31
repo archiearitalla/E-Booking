@@ -1,0 +1,63 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.RecordSaleModel
+@{
+    ViewData["Title"] = Text.ManualSaleTitle;
+    string? Err(string key) => Model.ErrorFor(key);
+}
+<h1>@Text.ManualSaleTitle</h1>
+<p class="muted">@Text.ManualSaleIntro</p>
+
+<div class="card">
+    <form method="post">
+        <input type="hidden" name="Input.IdempotencyKey" value="@Model.Input.IdempotencyKey" />
+        <div class="field">
+            <label for="serviceId">@Text.BookService</label>
+            <select id="serviceId" name="Input.ServiceId" required>
+                @foreach (var s in Model.Services)
+                {
+                    <option value="@s.Id" data-other="@(s.IsOther ? "true" : "false")" selected="@(Model.Input.ServiceId == s.Id)">@s.Name@(s.IsOther ? "" : " · " + DisplayFormat.Price(s.Price))</option>
+                }
+            </select>
+        </div>
+        <div class="field" data-other-field>
+            <label for="note">@Text.ExtraNoteLabel</label>
+            <input type="text" id="note" name="Input.Note" value="@Model.Input.Note" maxlength="60" />
+            @if (Err("note") is { } eN) { <p class="error">@eN</p> }
+        </div>
+        <div class="field">
+            <label for="amount">@Text.ManualSaleAmount</label>
+            <input type="text" id="amount" name="Input.Amount" value="@Model.Input.Amount" inputmode="decimal" maxlength="14" required />
+            @if (Err("amount") is { } eA) { <p class="error">@eA</p> }
+        </div>
+        <div class="field">
+            <label for="date">@Text.ManualSaleDate</label>
+            <input type="date" id="date" name="Input.Date" value="@Model.Input.Date" min="@Model.Earliest" max="@Model.Today" required />
+            @if (Err("date") is { } eD) { <p class="error">@eD</p> }
+        </div>
+        <div class="field">
+            <label for="time">@Text.ManualSaleTime</label>
+            <input type="time" id="time" name="Input.Time" value="@Model.Input.Time" />
+        </div>
+        @if (Model.ScopeStaffId is null)
+        {
+            <div class="field">
+                <label for="staffId">@Text.ManualSaleStaff</label>
+                <select id="staffId" name="Input.StaffId">
+                    <option value="">@Text.WalkInAnyone</option>
+                    @foreach (var st in Model.Staff) { <option value="@st.Id" selected="@(Model.Input.StaffId == st.Id)">@st.Name</option> }
+                </select>
+            </div>
+        }
+        <div class="field">
+            <label for="name">@Text.ManualSaleName</label>
+            <input type="text" id="name" name="Input.Name" value="@Model.Input.Name" maxlength="80" />
+            @if (Err("name") is { } eNa) { <p class="error">@eNa</p> }
+        </div>
+        <div class="field">
+            <label for="phone">@Text.ManualSalePhone</label>
+            <input type="tel" id="phone" name="Input.Phone" value="@Model.Input.Phone" inputmode="tel" maxlength="20" />
+            @if (Err("phone") is { } eP) { <p class="error">@eP</p> }
+        </div>
+        <button type="submit" class="primary" data-save>@Text.ManualSaleSave</button>
+    </form>
+</div>

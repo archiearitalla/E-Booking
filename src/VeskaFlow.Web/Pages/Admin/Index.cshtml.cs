@@ -44,6 +44,9 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
 
     public DayView? View { get; private set; }
 
+    /// <summary>The shop switched on "Record a sale", so the day view links to it.</summary>
+    public bool ManualSales { get; private set; }
+
     public string Filter => Status is Cancelled or Done ? Status : Confirmed;
 
     public IReadOnlyList<DayBooking> Shown => View!.Bookings.Where(b => Matches(Filter, b.Status)).ToList();
@@ -61,6 +64,7 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         View = await days.GetDayAsync(BusinessId, Date, ct, ScopeStaffId);
+        ManualSales = (await settings.GetSettingsAsync(BusinessId, ct))?.AllowManualSales == true;
         return View is null ? NotFound() : Page();
     }
 
