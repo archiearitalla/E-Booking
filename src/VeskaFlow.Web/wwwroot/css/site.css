@@ -823,3 +823,8 @@ a.kpi.open { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
 .ai-list { margin-top: 1rem; }
 .inline-form input.grow { flex: 1 1 14rem; min-width: 0; }
 .limits-form { display: grid; gap: 0.5rem; }
+.shop-list { display: grid; gap: 0.6rem; }
+.shop-sum { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 0.75rem; align-items: center; cursor: pointer; }
+.shop-name { min-width: 0; overflow-wrap: anywhere; }
+.shop-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: flex-end; }
+.shop-sub { grid-column: 1 / 3; min-width: 0; overflow-wrap: anywhere; font-size: 0.85rem; }
