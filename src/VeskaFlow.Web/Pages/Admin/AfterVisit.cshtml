@@ -42,11 +42,11 @@
                 <select id="extraService" name="serviceId" required>
                     @foreach (var s in Model.Services)
                     {
-                        <option value="@s.Id">@s.Name@(s.IsOther ? "" : " · " + DisplayFormat.Price(s.Price))</option>
+                        <option value="@s.Id" data-other="@(s.IsOther ? "true" : "false")">@s.Name@(s.IsOther ? "" : " · " + DisplayFormat.Price(s.Price))</option>
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field" data-other-field>
                 <label for="extraNote">@Text.ExtraNoteLabel</label>
                 <input type="text" id="extraNote" name="note" maxlength="60" />
             </div>
@@ -95,6 +95,8 @@
     }
 </div>
 
+@if (Model.ShowMedicalRecord)
+{
 <div class="card">
     <form method="post" asp-page-handler="Notes" asp-route-id="@b.Id">
         <h2>@Text.VisitNotesTitle</h2>
@@ -106,10 +108,12 @@
         <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveRecord">@Text.VisitNotesSave</button>
     </form>
 </div>
+}
 
 <div class="card">
     <form method="post" asp-page-handler="FollowUp" asp-route-id="@b.Id" class="followup-form">
-        <h2>@Text.FollowUpTitle</h2>
+        <h2>@Text.FollowUpTitleOptional</h2>
+        <p class="hint">@Text.FollowUpOptionalHint</p>
         @if (b.FollowUpOn is null && b.SuggestedFollowUp is not null) { <p class="hint">@Text.FollowUpSuggested</p> }
         <div class="field">
             <label for="fu">@Text.FollowUpDate</label>

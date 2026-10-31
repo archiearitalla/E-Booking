@@ -20,6 +20,8 @@ public class AfterVisitModel(
 
     /// <summary>The shop's setting: may staff type the payment total? When false the page shows it but cannot change it.</summary>
     public bool AllowManualTotal { get; private set; } = true;
+    /// <summary>The medical record card is for clinics; any other shop sees it only when a record is already on the visit.</summary>
+    public bool ShowMedicalRecord { get; private set; }
     public string DayLink { get; private set; } = "/Admin";
 
     public string ThankYou
@@ -107,7 +109,8 @@ public class AfterVisitModel(
         Guid id, string? followUpOn, string? followUpNote, Guid? followUpServiceId, string? clear, CancellationToken ct)
     {
         DateOnly? when = null;
-        if (clear is null)
+        // A follow-up is optional: an empty date means there is none, so it is the same as removing it.
+        if (clear is null && !string.IsNullOrWhiteSpace(followUpOn))
         {
             if (!DateOnly.TryParseExact(followUpOn, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.None, out var parsed))
@@ -135,6 +138,7 @@ public class AfterVisitModel(
         ShopName = shop.Name;
         TimeZone = shop.TimeZone;
         AllowManualTotal = shop.AllowManualTotal;
+        ShowMedicalRecord = shop.Industry == "clinic" || !string.IsNullOrEmpty(Booking.VisitNotes);
         BookingUrl = QrCodes.BookingUrl(config["App:PublicBaseUrl"], Request.Scheme, Request.Host.Value, shop.Slug);
         var date = VeskaFlow.Core.Scheduling.LocalTime.LocalDateOf(Booking.StartsAtUtc, shop.TimeZone);
         DayLink = $"/Admin?date={DisplayFormat.DateParam(date)}&status=done";

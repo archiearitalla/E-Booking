@@ -8,7 +8,7 @@ namespace VeskaFlow.Web.Services;
 public sealed record ShopSettings(
     string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
     string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null, int FollowUpNoticeDays = 3, int ReminderHours = 24,
-    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true);
+    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default);
 
 /// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged.</summary>
 public sealed record SettingsInput(
@@ -58,7 +58,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry))
             .FirstOrDefaultAsync(ct);
     }
 

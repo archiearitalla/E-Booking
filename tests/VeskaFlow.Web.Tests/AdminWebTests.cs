@@ -520,7 +520,21 @@ public class AdminWebTests
             await ctx.SaveChangesAsync();
         }
 
+        // The medical record card belongs to clinics: a barbershop does not see it, and a blank follow-up date is fine (it is optional).
+        var plainPage = Dec(await owner.Client.GetStringAsync($"/Admin/AfterVisit/{booking.Id}"));
+        Assert.DoesNotContain(Text.VisitNotesTitle, plainPage);
+        Assert.Contains(Text.FollowUpTitleOptional, plainPage);
+        var blankUrl = $"/Admin/AfterVisit/{booking.Id}";
+        var blank = await PostAsync(owner.Client, blankUrl, $"{blankUrl}?handler=FollowUp", new() { ["followUpOn"] = "", ["followUpNote"] = "" });
+        Assert.Equal(HttpStatusCode.Redirect, blank.StatusCode);
+        Assert.DoesNotContain(Text.FollowUpDateInvalid, Dec(await owner.Client.GetStringAsync(blankUrl)));
+        await using (var ctxClinic = owner.Db.CreateDbContext())
+            await ctxClinic.Businesses.Where(x => x.Id == owner.BusinessId).ExecuteUpdateAsync(u => u.SetProperty(x => x.Industry, "clinic"));
+
         var page = Dec(await owner.Client.GetStringAsync($"/Admin/AfterVisit/{booking.Id}"));
+        Assert.Contains(Text.VisitNotesTitle, page);
+        Assert.Contains("data-other-field", page);                                                  // "What was done" shows only for Other
+        Assert.Contains("data-other=\"false\"", page);
         Assert.Contains(Text.AfterVisitSendTitle, page);
         Assert.Contains("thank you for visiting", page);
         Assert.Contains("Send as text", page);
