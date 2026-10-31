@@ -341,6 +341,7 @@ public static class Text
     public const string InstallIphone = "iPhone (Safari):";
     public const string InstallIphoneSteps = "tap Share, then Add to Home Screen.";
     public const string KpiLabel = "The day at a glance";
+    public const string CancelOpen = "Cancel this booking...";
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
     public const string KpiHidden = "\u20B1 \u2022\u2022\u2022\u2022";
