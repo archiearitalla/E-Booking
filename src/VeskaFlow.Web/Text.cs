@@ -97,6 +97,7 @@ public static class Text
 
     public const string BookTitle = "Book an appointment";
     public const string BookService = "Service";
+    public const string WalkInChooseService = "Choose a service";
     public const string BookServicePlaceholder = "Choose a service";
     public const string BookStaff = "Barber";
     public const string BookStaffAny = "Any available";
@@ -232,6 +233,8 @@ public static class Text
 
     public const string AdminNavFollowUps = "Follow-ups";
     public const string FollowUpTitle = "Follow-up visit";
+    public const string FollowUpTitleOptional = "Follow-up visit (optional)";
+    public const string FollowUpOptionalHint = "Only if the customer should come back. Leave it empty if not; nothing is needed here to finish the visit.";
     public const string FollowUpSuggested = "Suggested from this service. Change the date or save it as it is.";
     public const string FollowUpDate = "Come back on";
     public const string FollowUpNote = "Note (optional)";
@@ -848,7 +851,7 @@ public static class Text
     public const string ExtraBooked = "Booked";
     public const string ExtraAdd = "Add another service";
     public const string ExtraChoose = "Service";
-    public const string ExtraNoteLabel = "What was done (only for Other)";
+    public const string ExtraNoteLabel = "What was done";
     public const string ExtraPriceLabel = "Amount (PHP). Leave blank to use the listed price; required for Other.";
     public const string ExtraAddButton = "Add service";
     public const string ExtraRemove = "Remove";
