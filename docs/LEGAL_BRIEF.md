@@ -124,3 +124,12 @@ providers keep data outside the Philippines?
 - The Terms now say the add-on is paid separately and add a section on the assistant (replies may be wrong, not a
   professional, no medical advice, the shop stays responsible for its customers' data, monthly limit, may pause).
 
+
+## 11. Added with promo messages to customers (BUSINESS_RULES 6.y21)
+
+For the lawyer to review before shops rely on it:
+
+- **Consent.** A customer is sent promo messages only after an unticked box on the booking form (or staff recording a yes after asking). The wording is "Send me promos and offers from <shop> by text or email. Optional. You can say STOP any time." Please check that it is enough consent under the Data Privacy Act of 2012 (RA 10173) for marketing by text and email, and whether the Privacy Notice must say it plainly (purpose: promos from the shop; how to withdraw).
+- **Withdrawal.** Every message ends with "Reply STOP if you do not want promo messages". The shop must then turn promo messages off for that customer in their history (recorded in the audit log). Please confirm this is acceptable while messages are sent by hand.
+- **Who sends.** The shop, from its own phone or email program; the system sends nothing. The system stores only: yes or no, when the yes was given, and when the last promo was marked as sent.
+- **Not built:** bulk sending by the system. If it is built, it needs an unsubscribe link in every email and a stronger consent record (the exact wording shown and the time).

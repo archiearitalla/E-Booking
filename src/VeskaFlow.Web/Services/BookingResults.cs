@@ -55,7 +55,8 @@ public sealed record CreateBookingRequest(
     string? Email,
     string IdempotencyKey,
     BookingActor Actor,
-    string? ServiceNote = null); // what the customer needs, required when the service is "Other"
+    string? ServiceNote = null, // what the customer needs, required when the service is "Other"
+    bool MarketingOk = false);  // the customer ticked "send me promos"; a repeat booking without the tick never takes an earlier yes away
 
 /// <summary>Read model of a booking. <c>Version</c> is the row's xmin; pass it back to detect a stale edit.</summary>
 public sealed record BookingSummary(

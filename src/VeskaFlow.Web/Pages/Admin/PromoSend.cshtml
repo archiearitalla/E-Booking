@@ -1,0 +1,82 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.PromoSendModel
+@{
+    ViewData["Title"] = Text.PromoSendTitle;
+    var v = Model.View;
+}
+<h1>@Text.PromoSendTitle</h1>
+<partial name="_HelpLink" model="@("promosend")" />
+<p class="muted">@Text.PromoSendIntro</p>
+
+@if (v.Promo is null)
+{
+    <div class="card empty">
+        <p>@Text.PromoSendNoPromo</p>
+        <p><a class="button" href="/Admin/Promo">@Text.PromoSendMakeOne</a></p>
+    </div>
+}
+else
+{
+    <section class="kpis" aria-label="@Text.PromoSendTitle">
+        <div class="kpi"><span class="kpi-value">@v.Eligible</span><span class="kpi-label">@Text.PromoSendCanReach</span></div>
+        <div class="kpi"><span class="kpi-value">@v.Sent</span><span class="kpi-label">@Text.PromoSendSent</span></div>
+        <div class="kpi"><span class="kpi-value">@(v.Eligible - v.Sent)</span><span class="kpi-label">@Text.PromoSendToGo</span></div>
+    </section>
+
+    <div class="card">
+        <h2>@Text.PromoSendPreview</h2>
+        <p class="promo-preview-text">@(v.Promo.Headline)@(string.IsNullOrWhiteSpace(v.Promo.Details) ? "" : " · " + v.Promo.Details)</p>
+        <p class="hint">@Text.PromoSendConsentNote</p>
+    </div>
+
+    <form method="get" class="inline-form" role="search">
+        <label for="q" class="sr-only">@Text.PromoSendSearch</label>
+        <input type="text" id="q" name="q" class="grow" value="@Model.Query" placeholder="@Text.PromoSendSearch" maxlength="80" autocomplete="off" />
+        <button type="submit" class="primary">@Text.DayGo</button>
+    </form>
+
+    @if (v.Eligible == 0)
+    {
+        <div class="card empty"><p>@Text.PromoSendNobody</p></div>
+    }
+    else if (v.Recipients.Count == 0)
+    {
+        <div class="card empty"><p>@Text.HelpNone</p></div>
+    }
+    else
+    {
+        @if (v.Matching > v.Recipients.Count) { <p class="muted">@Text.PromoSendShowing(v.Recipients.Count, v.Matching)</p> }
+        @* One short line per customer, those not yet sent first; open a line for the ready message and the send buttons. *@
+        <ul class="kpi-list ai-list">
+            @foreach (var r in v.Recipients)
+            {
+                <li class="card">
+                    <details>
+                        <summary>
+                            <span class="kpi-time"><span class="badge @(r.SentAtUtc is null ? "off" : "")">@(r.SentAtUtc is null ? Text.PromoSendNotYet : Text.PromoSendDone)</span></span>
+                            <span class="kpi-who">@r.Name</span>
+                            <span class="kpi-what muted">@(DisplayFormat.IsPlaceholderPhone(r.Phone) ? r.Email : r.Phone)</span>
+                        </summary>
+                        <div class="kpi-more">
+                            @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
+                                "p" + r.Id.ToString("N"), Model.MessageFor(r), r.Phone, r.Email, Text.PromoSendSubject(Model.ShopName), $"/Admin/Customers"))
+                            <form method="post" asp-page-handler="Mark" class="actions">
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <input type="hidden" name="q" value="@Model.Query" />
+                                <input type="hidden" name="sent" value="@((r.SentAtUtc is null).ToString().ToLowerInvariant())" />
+                                <button type="submit" class="@(r.SentAtUtc is null ? "primary" : "secondary")">@(r.SentAtUtc is null ? Text.PromoSendMarkSent : Text.PromoSendUnmark)</button>
+                            </form>
+                        </div>
+                    </details>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (v.Sent > 0)
+    {
+        <form method="post" asp-page-handler="Reset" class="actions">
+            <button type="submit" class="secondary" data-confirm="@Text.PromoSendResetAsk">@Text.PromoSendReset</button>
+        </form>
+    }
+}

@@ -50,7 +50,7 @@ public static class HelpTopics
                 "Open Walk-in and choose the service from the list. If you choose Other, say what the customer needs.",
                 "Choose who will do it, or leave it on Anyone.",
                 "Press Show free times and pick the time.",
-                "Type the customer's name. A mobile number is optional; with no number they are saved as a walk-in.",
+                "Type the customer's name. A mobile number is optional; with no number they are saved as a walk-in. Tick the promo box only if the customer agrees to get promos.",
                 "Press Book. It appears in Bookings.",
             ],
             "Walk-ins skip the lead time but still follow your hours and closures, so you never double-book.", "/Admin/WalkIn", "Open Walk-in"),
@@ -131,6 +131,18 @@ public static class HelpTopics
                 "Normal opening hours are in Settings.",
             ],
             "Add closures early so customers do not book those days.", "/Admin/Closures", "Open Closures", AdminLevel.Manager),
+
+        new("promosend", "Send a promo to customers",
+            "Your promo, ready to send to customers who agreed to get promo messages.",
+            [
+                "Make and switch on your promo in the Promo Creator first.",
+                "Open Send a promo to customers (a button on the Promo page). You see how many customers can be reached.",
+                "Tap a customer. You see the ready message with their name, your promo, the last day and your booking link.",
+                "Press Send as text or Email to send it from your own phone, or Copy to paste it in Messenger or another app.",
+                "Press Mark as sent so you do not send the same promo twice. When you start a new promo, press Clear all sent marks.",
+                "Only customers who said yes are listed. New customers tick a box when they book; for walk-ins, ask first and tick the box. If someone says STOP, open their history and press They asked to stop.",
+            ],
+            "The system never sends the message by itself, so you stay in control of who gets it.", "/Admin/PromoSend", "Open Send a promo", AdminLevel.Manager),
 
         new("promo", "Promo Creator: banner and discount",
             "Put a promo on your booking page in a minute, with an optional discount.",
