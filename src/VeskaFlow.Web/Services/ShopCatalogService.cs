@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false, bool PromoEligible = true);
+public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false, bool PromoEligible = true, decimal DepositAmount = 0m);
 
 /// <summary>A service's price on the booking page: the regular price, and, while a promo discount applies to it, the price after the discount.</summary>
 public sealed record ServicePrice(decimal Regular, decimal Net, int? Percent)
@@ -85,7 +85,7 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
         var services = await db.Services.AsNoTracking()
             .Where(s => s.BusinessId == business.Id && s.IsActive)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther, s.PromoEligible))
+            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther, s.PromoEligible, s.DepositAmount))
             .ToListAsync(ct);
 
         var staffRows = await db.StaffMembers.AsNoTracking()

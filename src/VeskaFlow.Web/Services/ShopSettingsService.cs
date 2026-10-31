@@ -8,12 +8,13 @@ namespace VeskaFlow.Web.Services;
 public sealed record ShopSettings(
     string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
     string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null, int FollowUpNoticeDays = 3, int ReminderHours = 24,
-    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default, bool AllowManualSales = false);
+    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default, bool AllowManualSales = false, string? PayInstructions = null);
 
-/// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged.</summary>
+/// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged. <c>PayInstructions</c> null leaves it unchanged; empty clears it.</summary>
 public sealed record SettingsInput(
     string? Name, string? TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
-    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null, bool? CustomerEmails = null, bool? AllowManualTotal = null, bool? AllowManualSales = null);
+    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null, bool? CustomerEmails = null, bool? AllowManualTotal = null, bool? AllowManualSales = null,
+    string? PayInstructions = null);
 
 /// <summary>The accent colors a shop can pick. The keys match the CHECK constraint and the <c>data-theme</c> rules in site.css.</summary>
 public static class BrandColors
@@ -51,6 +52,7 @@ public sealed record WeeklyClosureInput(Guid? StaffId, int? DayOfWeek, string? R
 public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
     public static readonly int[] AllowedSlotMinutes = [5, 10, 15, 20, 30, 60];
+    public const int MaxPayInstructions = 300;
 
     // ------------------------------------------------------------------ settings
 
@@ -58,7 +60,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry, b.AllowManualSales))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry, b.AllowManualSales, b.PayInstructions))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -92,6 +94,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.BrandColor is not null && !BrandColors.IsValid(input.BrandColor)) errors["brandColor"] = Text.BrandColorInvalid;
         if (input.FollowUpNoticeDays is < 0 or > 60) errors["followUpNoticeDays"] = Text.FollowUpNoticeDaysInvalid;
         if (input.ReminderHours is < 1 or > 168) errors["reminderHours"] = Text.ReminderHoursInvalid;
+        if (input.PayInstructions is { } instructions && instructions.Trim().Length > MaxPayInstructions) errors["payInstructions"] = Text.PayInstructionsInvalid;
         if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -104,6 +107,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.CustomerEmails is { } customerEmails) business.CustomerEmails = customerEmails;
         if (input.AllowManualTotal is { } manualTotal) business.AllowManualTotal = manualTotal;
         if (input.AllowManualSales is { } manualSales) business.AllowManualSales = manualSales;
+        if (input.PayInstructions is { } payInstructions) business.PayInstructions = payInstructions.Trim().Length == 0 ? null : payInstructions.Trim();
         var zoneChanged = !string.Equals(business.TimeZone, zone, StringComparison.Ordinal);
         business.Name = name;
         business.TimeZone = zone;

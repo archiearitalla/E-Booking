@@ -27,6 +27,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
             Name = row.Name, DurationMinutes = row.DurationMinutes, BufferMinutes = row.BufferMinutes,
             Price = row.Price.ToString("0.00", CultureInfo.InvariantCulture), IsActive = row.IsActive, SortOrder = row.SortOrder,
             FollowUpDays = row.FollowUpDays, PromoEligible = row.PromoEligible,
+            Deposit = row.DepositAmount.ToString("0.00", CultureInfo.InvariantCulture),
         };
         return Page();
     }
@@ -39,9 +40,13 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         {
             price = -1; // makes the service report the price error with its own message
         }
+        var deposit = 0m;
+        if (!string.IsNullOrWhiteSpace(Input.Deposit)
+            && !decimal.TryParse(Input.Deposit, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out deposit))
+            deposit = -1; // reports the deposit error with its own message
 
         var result = await catalog.SaveServiceAsync(BusinessId,
-            new ServiceInput(id, Input.Name, Input.DurationMinutes, Input.BufferMinutes, price, Input.IsActive, Input.SortOrder, Input.FollowUpDays, Input.PromoEligible), ct);
+            new ServiceInput(id, Input.Name, Input.DurationMinutes, Input.BufferMinutes, price, Input.IsActive, Input.SortOrder, Input.FollowUpDays, Input.PromoEligible, deposit), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -61,6 +66,7 @@ public class EditModel(CatalogAdminService catalog) : AdminPageModel
         public int DurationMinutes { get; set; } = 30;
         public int BufferMinutes { get; set; }
         public string? Price { get; set; } = "0.00";
+        public string? Deposit { get; set; } = "0.00";
         /// <summary>A browser sends nothing for an unticked box, so "not sent" must mean off: the defaults are false and the page fills the boxes from the saved service (or ticks them for a new one).</summary>
         public bool IsActive { get; set; }
         public bool PromoEligible { get; set; }

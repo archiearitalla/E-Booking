@@ -109,6 +109,7 @@ public static class HelpTopics
                 "Press Add suggested services to get the usual list for your kind of shop. Ones you already have are skipped.",
                 "Open a service to change it. Untick Active to hide it from customers without deleting it.",
                 "Tick Part of the promo if the promo discount should apply to this service.",
+                "To ask for a deposit, type an amount in Deposit (not more than the price). In Settings, write where customers send it (for example your GCash number). The customer sees it on their booking page; the time stays booked. When the money arrives, press Deposit received on the booking.",
                 "The Other service lets staff record something that is not on the list. You set its time; the price is typed each time.",
             ],
             "Changing a price never changes bookings that were already made.", "/Admin/Services", "Open Services", AdminLevel.Manager),

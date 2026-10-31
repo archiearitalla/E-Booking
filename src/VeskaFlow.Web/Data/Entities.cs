@@ -47,6 +47,8 @@ public class Business
     public string? TermsVersion { get; set; }
     /// <summary>Customers are due a reminder when their appointment is within this many hours (default 24).</summary>
     public int ReminderHours { get; set; } = 24;
+    /// <summary>Where a customer sends a deposit (for example a GCash number and name); shown on the booking page of a service that asks for one (migration 032).</summary>
+    public string? PayInstructions { get; set; }
 }
 
 public class AdminUser
@@ -98,6 +100,8 @@ public class Service
     public bool IsOther { get; set; }
     /// <summary>Part of the promo discount while one runs (migration 024). On by default; the owner can leave a service out.</summary>
     public bool PromoEligible { get; set; } = true;
+    /// <summary>What the shop asks to keep a slot (migration 032); 0 means no deposit. Paid by hand outside the app.</summary>
+    public decimal DepositAmount { get; set; }
 }
 
 public class StaffService
@@ -212,6 +216,10 @@ public class Booking
     public string? VisitNotes { get; set; }
     /// <summary>When staff marked that this customer was reminded of the appointment. Null means not yet.</summary>
     public DateTime? RemindedAtUtc { get; set; }
+    /// <summary>The deposit asked when the booking was made (migration 032), never above the price; 0 means none.</summary>
+    public decimal DepositSnapshot { get; set; }
+    /// <summary>When staff marked the deposit as received; null means not yet.</summary>
+    public DateTime? DepositReceivedAtUtc { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;

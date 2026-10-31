@@ -39,7 +39,9 @@ The text below is the original brief, kept for reference. Skip this item.
 
 **Acceptance:** tests for allowed move, move into a taken slot (clean "slot taken"), before and after the cutoff, wrong token, token of another booking.
 
-### 2. Deposit or advance payment (manual first)
+### 2. Deposit or advance payment (manual first) (DONE: rules in section 7.1, migration 032)
+
+Built as a note on a confirmed booking (the slot is held either way, no new state). Not built: a per-shop GCash QR image (only text instructions), a deposit-only report. The text below is the original brief.
 
 Note: `BUSINESS_RULES.md` already describes an online deposit with a held slot (PENDING, TTL, idempotent, invariant I6) for a later PayMongo or Xendit step. Keep the manual version consistent with that design so it can be upgraded later.
 

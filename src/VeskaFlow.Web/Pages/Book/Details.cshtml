@@ -15,6 +15,11 @@
         <dt>@Text.ManageWith</dt><dd>@(Model.Staff?.Name ?? Text.BookStaffAny)</dd>
         <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(Model.StartUtc, shop.TimeZone), @DisplayFormat.Time(Model.StartUtc, shop.TimeZone)</dd>
         <dt>@Text.ManagePrice</dt><dd>@if (Model.Service.IsOther) { @Text.OtherServicePrice } else { var price = shop.PriceOf(Model.Service); <partial name="_PriceLine" model="new PriceLineModel(price.Net, price.HasPromo ? price.Regular : null, price.Percent)" /> } &middot; @Text.BookPayOnSite</dd>
+        @if (!Model.Service.IsOther && Model.Service.DepositAmount > 0)
+        {
+            var asked = Math.Min(Model.Service.DepositAmount, shop.PriceOf(Model.Service).Net);
+            <dt>@Text.DepositLabel</dt><dd>@DisplayFormat.Price(asked) &middot; @Text.BookDepositNote</dd>
+        }
     </dl>
     <p><a href="@Model.ChangeTimeUrl">@Text.BookChangeTime</a></p>
 </div>

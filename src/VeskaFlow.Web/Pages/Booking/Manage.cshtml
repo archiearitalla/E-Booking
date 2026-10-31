@@ -49,6 +49,22 @@
         <dt>@Text.ManageStatus</dt><dd><span class="badge">@b.Status.Label()</span></dd>
     </dl>
 
+    @if (d.Deposit > 0 && b.Status == VeskaFlow.Core.Domain.BookingStatus.Confirmed)
+    {
+        <div class="@(d.DepositReceived ? "notice" : "deposit-due")" role="status">
+            @if (d.DepositReceived)
+            {
+                <p>@string.Format(Text.ManageDepositReceived, DisplayFormat.Price(d.Deposit))</p>
+            }
+            else
+            {
+                <h2>@string.Format(Text.ManageDepositDue, DisplayFormat.Price(d.Deposit))</h2>
+                @if (!string.IsNullOrWhiteSpace(d.PayInstructions)) { <p class="pay-instructions">@d.PayInstructions</p> }
+                <p class="hint">@Text.ManageDepositHow</p>
+            }
+        </div>
+    }
+
     @if (b.Status != VeskaFlow.Core.Domain.BookingStatus.Cancelled)
     {
         <div class="save-booking">

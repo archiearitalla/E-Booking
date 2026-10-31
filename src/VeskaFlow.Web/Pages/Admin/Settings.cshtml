@@ -255,6 +255,14 @@
             <input type="hidden" name="Input.AllowManualSales" value="false" />
         </div>
 
+        <div class="field">
+            <label for="PayInstructions">@Text.LabelPayInstructions</label>
+            <textarea id="PayInstructions" name="Input.PayInstructions" rows="3" maxlength="@ShopSettingsService.MaxPayInstructions"
+                      aria-invalid="@(Model.ErrorFor("payInstructions") is null ? "false" : "true")" aria-describedby="PayInstructions-hint PayInstructions-error">@Model.Input.PayInstructions</textarea>
+            <p class="hint" id="PayInstructions-hint">@Text.HintPayInstructions</p>
+            @if (Model.ErrorFor("payInstructions") is { } e10) { <p class="error" id="PayInstructions-error">@e10</p> }
+        </div>
+
         <fieldset class="field" aria-describedby="BrandColor-hint BrandColor-error">
             <legend>@Text.LabelBrandColor</legend>
             <div class="swatches">

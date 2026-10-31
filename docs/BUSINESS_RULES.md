@@ -159,6 +159,17 @@ Further rules:
 - No-show: marked by staff after the grace period. No fee in the MVP (pay on site). The count per customer is a roadmap item.
 - **Rescheduling by staff** ✅: a confirmed booking that has not started moves to another free time with the same staff member and service. The time is checked again on the server, the exclusion constraint is the last word, the booking is updated in place (so the customer never loses the slot), and the audit row `RESCHEDULED` records the old and new time. The customer is told by the shop.
 - **Rescheduling by the customer** ✅: from `/booking/{token}/move`, linked from the manage page. Same rules as staff with these differences: it follows the cancel cutoff (the button is hidden and the page refuses once now > start − cutoff), only confirmed bookings that have not started can be moved, and the customer rules for free times apply (lead time and booking horizon). Same staff member, same service, same length. The token authorizes exactly one booking; an unknown token is "not found". The audit row says `CUSTOMER` with the customer's name, and the booking is due a new reminder. A lost race is the normal "slot taken" answer. The AI receptionist still cannot move a booking; it gives the manage link.
+### 7.1 Deposit paid by hand ✅
+
+A shop can ask for a deposit to cut no-shows, with no payment gateway and no new booking state.
+
+- **Amount.** Each service has an optional deposit (0 = none), between 0 and the price; a free service has none. The booking keeps the amount as it was when it was made (`deposit_snapshot`), never above the price owed after a promo discount. The "Other" service never has one. Changing the service later does not change bookings already made.
+- **The slot is held either way.** A booking that asks for a deposit is `CONFIRMED` at once, exactly like any other. The deposit is a note on it, not a state, so the state machine and the exclusion constraint (invariant I6) are untouched. An unpaid deposit never expires or cancels a booking by itself; staff decide.
+- **How the customer pays.** The booking summary says a deposit is asked. The manage page shows the amount and the shop's "Where customers send a deposit" text (Settings, up to 300 characters, for example a GCash number), until it is received; then it says it was received. The customer pays outside the app and sends the proof to the shop.
+- **Marking.** Staff press "Deposit received" (with a confirm) on a confirmed booking that asks for one, and can undo it. Only staff of the same shop; a customer, another shop's login, a cancelled/finished booking, or a booking with no deposit is refused. Each change is audited (`DEPOSIT_RECEIVED`, `DEPOSIT_UNDONE`, with the amount); repeating the same change adds no row.
+- **Cancelling.** The system never refunds or keeps money. When a booking with a received deposit is cancelled by staff, the cancel box reminds them to write in the reason whether the deposit is refunded or kept.
+- **Later (gateway).** An automatic deposit (PayMongo or Xendit) would use the held slot, a time limit and idempotent payment calls described in section 14; it is not built.
+
 - Closing a shop day or changing hours **never silently cancels** existing bookings. The admin sees a warning with the number of affected bookings and handles them deliberately.
 
 ## 8. Booking creation

@@ -130,6 +130,10 @@ else
                 <dl class="facts">
                     <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" />@if (b.ExtraLines.Count > 0) { <text> + @string.Join(", ", b.ExtraLines.Select(x => x.Name))</text> }@if (b.Status == BookingStatus.Completed && b.PaidAmount is { } paidTotal) { <text> &middot; @Text.AfterVisitPaidShort(DisplayFormat.Price(paidTotal))</text> }</dd>
                     <dt>@Text.ManageWith</dt><dd>@b.StaffName</dd>
+                    @if (b.Deposit > 0)
+                    {
+                        <dt>@Text.DepositLabel</dt><dd>@DisplayFormat.Price(b.Deposit) &middot; <span class="badge">@(b.DepositReceived ? Text.DepositReceived : Text.DepositNotYet)</span></dd>
+                    }
                     <dt>@Text.ManageWho</dt><dd>@b.CustomerName
                         @if (DisplayFormat.IsPlaceholderPhone(b.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@b.CustomerPhone">@b.CustomerPhone</a></text> }</dd>
                 </dl>
@@ -167,6 +171,24 @@ else
                         </div>
                     </div>
                 }
+                @if (b.Deposit > 0 && b.Status == VeskaFlow.Core.Domain.BookingStatus.Confirmed)
+                {
+                    <form method="post" asp-page-handler="Deposit" class="actions">
+                        <input type="hidden" name="id" value="@b.Id" />
+                        <input type="hidden" name="date" value="@dateParam" />
+                        <input type="hidden" name="status" value="@filter" />
+                        @if (b.DepositReceived)
+                        {
+                            <input type="hidden" name="received" value="false" />
+                            <button type="submit" class="secondary" data-confirm="@Text.ConfirmDepositUndo">@Text.DepositUndo</button>
+                        }
+                        else
+                        {
+                            <input type="hidden" name="received" value="true" />
+                            <button type="submit" class="secondary" data-confirm="@Text.ConfirmDepositReceived">@Text.DepositMarkReceived</button>
+                        }
+                    </form>
+                }
                 @if (b.CanMove)
                 {
                     <div class="actions"><a class="button secondary" href="/Admin/Reschedule/@b.Id">@Text.RescheduleLink</a></div>
@@ -175,6 +197,7 @@ else
                 {
                     <details class="cancel-box">
                     <summary>@Text.CancelOpen</summary>
+                    @if (b.DepositReceived) { <p class="hint">@Text.DepositCancelHint</p> }
                     <form method="post" asp-page-handler="Transition" class="actions cancel-form">
                         <input type="hidden" name="id" value="@b.Id" />
                         <input type="hidden" name="version" value="@b.Version" />

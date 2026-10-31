@@ -228,6 +228,8 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 PriceSnapshot = percent is { } off ? PromoPricing.Net(service.Price, off) : service.Price,
                 RegularPriceSnapshot = percent is null ? null : service.Price,
                 DiscountPercentSnapshot = percent,
+                // The deposit is part of the price, so after a promo discount it can never be more than what is owed.
+                DepositSnapshot = service.IsOther ? 0m : Math.Min(service.DepositAmount, percent is { } off2 ? PromoPricing.Net(service.Price, off2) : service.Price),
                 ServiceNameSnapshot = service.IsOther ? $"{service.Name}: {(request.ServiceNote ?? "").Trim()}" : service.Name,
                 ManageToken = NewManageToken(),
                 IdempotencyKey = key,
@@ -431,6 +433,43 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!);
     }
 
+    /// <summary>
+    /// Staff mark that the deposit arrived (or undo it). The slot is held either way: the deposit is a note on a confirmed
+    /// booking, not a state. Only a confirmed booking that asks for a deposit; the audit row keeps who and when.
+    /// </summary>
+    public async Task<ServiceResult<BookingSummary>> SetDepositReceivedAsync(
+        Guid businessId, Guid bookingId, bool received, BookingActor actor, CancellationToken ct = default)
+    {
+        if (actor.Kind != ActorKind.Staff) return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.NotAllowed);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
+        if (booking is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (booking.Status != BookingStatus.Confirmed || booking.DepositSnapshot <= 0)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.DepositNotApplicable);
+        if ((booking.DepositReceivedAtUtc is not null) == received)
+            return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!); // nothing to change
+
+        var now = time.GetUtcNow().UtcDateTime;
+        booking.DepositReceivedAtUtc = received ? now : null;
+        booking.UpdatedAtUtc = now;
+        db.AuditLogs.Add(new AuditLog
+        {
+            BusinessId = businessId,
+            BookingId = booking.Id,
+            ActorType = actor.TypeCode,
+            ActorId = actor.Id,
+            ActorLabel = actor.Label,
+            Action = received ? "DEPOSIT_RECEIVED" : "DEPOSIT_UNDONE",
+            FromStatus = booking.Status.ToDb(),
+            ToStatus = booking.Status.ToDb(),
+            Reason = DisplayFormat.Price(booking.DepositSnapshot),
+            AtUtc = now,
+        });
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!);
+    }
+
     private async Task<ServiceResult<BookingSummary>> ApplyTransitionAsync(
         AppDbContext db, Booking booking, BookingStatus to, BookingActor actor,
         string? reason, uint? expectedVersion, CancellationToken ct)
@@ -513,6 +552,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 CustomerName = b.Customer.Name,
                 TimeZone = b.LocationTimeZone,
                 BrandColor = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.BrandColor).First(),
+                Deposit = b.DepositSnapshot,
+                DepositReceived = b.DepositReceivedAtUtc != null,
+                PayInstructions = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.PayInstructions).First(),
             })
             .FirstOrDefaultAsync(ct);
         if (row is null) return null;
@@ -525,7 +567,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             .Select(x => new ExtraLine(x.Id, x.ServiceNameSnapshot, x.PriceSnapshot, x.RegularPriceSnapshot, x.DiscountPercentSnapshot)).ToListAsync(ct);
         var canMove = BookingPolicy.CanReschedule(
             row.Summary.Status, row.Summary.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, row.CutoffHours).Allowed;
-        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras, canMove);
+        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras, canMove, row.Deposit, row.DepositReceived, row.PayInstructions);
     }
 
     public async Task<BookingSummary?> LoadSummaryAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)

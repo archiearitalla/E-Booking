@@ -97,4 +97,7 @@ public sealed record BookingDetails(
     string? CancelRefusal,
     string BrandColor = BrandColors.Default,
     IReadOnlyList<ExtraLine>? Extras = null,
-    bool CanMove = false);
+    bool CanMove = false,
+    decimal Deposit = 0m,
+    bool DepositReceived = false,
+    string? PayInstructions = null);

@@ -108,14 +108,16 @@ public class ReminderTests
 
         Assert.Contains(Text.RemindersEmpty, WebUtility.HtmlDecode(await client.GetStringAsync("/Admin/Reminders")));
 
-        // A confirmed appointment about 5 hours from now, found by looking for a free time today or tomorrow.
+        // A confirmed appointment inside the reminder window, found by looking for the first free time in the next days.
+        // The window is a week so the test does not depend on the weekday or the hour it runs (the shop is closed on Sundays and at night).
+        await ctx.Businesses.Where(b => b.Id == shopId).ExecuteUpdateAsync(u => u.SetProperty(b => b.ReminderHours, 168));
         var svc = new BookingService(db, TimeProvider.System);
         BookingSummary? booked = null;
-        for (var d = 0; d < 3 && booked is null; d++)
+        for (var d = 0; d < 8 && booked is null; d++)
         {
             var day = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8).AddDays(d));
             var free = (await svc.GetFreeStartsAsync(shopId, serviceId, staffId, day)).Value!;
-            var start = free.FirstOrDefault(t => t > DateTime.UtcNow.AddHours(1) && t < DateTime.UtcNow.AddHours(23));
+            var start = free.FirstOrDefault(t => t > DateTime.UtcNow.AddHours(1) && t < DateTime.UtcNow.AddHours(150));
             if (start == default) continue;
             booked = (await svc.CreateAsync(new CreateBookingRequest(shopId, serviceId, staffId, start, "Maria Santos", "09175550304", null, Id("k"),
                 BookingActor.Customer("Maria")))).Value!.Booking;
