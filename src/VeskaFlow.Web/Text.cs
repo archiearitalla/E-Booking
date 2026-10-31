@@ -339,6 +339,9 @@ public static class Text
     public const string InstallIphoneSteps = "tap Share, then Add to Home Screen.";
     public const string KpiLabel = "The day at a glance";
     public const string KpiToDo = "Still to do";
+    public const string KpiDetailsTitle = "Bookings behind this number";
+    public const string KpiDetailsNone = "No bookings here today.";
+    public const string KpiDetailsClose = "Close the list";
     public const string KpiDone = "Done";
     public const string KpiRevenue = "Earned";
     public const string KpiNoShows = "No-shows";
