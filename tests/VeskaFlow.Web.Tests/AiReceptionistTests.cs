@@ -548,6 +548,65 @@ public class AiReceptionistTests
         Assert.Equal(0, offModel.Calls);
     }
 
+    private sealed class OnlyGoodCaptcha : ICaptcha
+    {
+        public bool IsEnabled => true;
+        public string SiteKey => "site-key-123";
+        public Task<bool> VerifyAsync(string? token, string? clientIp, CancellationToken ct = default) => Task.FromResult(token == "good");
+    }
+
+    [Fact]
+    public async Task A_new_conversation_needs_the_person_check_when_Turnstile_is_on_and_the_rest_of_it_does_not()
+    {
+        Environment.SetEnvironmentVariable("Turnstile__SiteKey", "site-key-123");
+        Environment.SetEnvironmentVariable("Turnstile__SecretKey", "secret-key");
+        try
+        {
+            var (root, _, _, _, slug) = await WebAsync(addon: true);
+            using var _r = root;
+            var model = new FakeAiModel((_, _) => FakeAiModel.Reply("Hello from the assistant"));
+            var client = root.WithWebHostBuilder(b => b.ConfigureServices(s =>
+                {
+                    s.AddSingleton<IAiModel>(model);
+                    s.AddSingleton<ICaptcha>(new OnlyGoodCaptcha());
+                }))
+                .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+
+            var page = await client.GetStringAsync($"/b/{slug}");
+            Assert.Contains("id=\"chat-captcha\"", page);       // the check is inside the chat form
+            Assert.Contains("data-sitekey=\"site-key-123\"", page);
+            var token = await HttpApp.TokenFromAsync(client, $"/b/{slug}");
+
+            Task<HttpResponseMessage> Post(string message, Guid? chatId, string? answer) =>
+                client.PostAsync($"/b/{slug}/chat", new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["message"] = message, ["chatId"] = chatId?.ToString() ?? "", ["__RequestVerificationToken"] = token,
+                    ["cf-turnstile-response"] = answer ?? "",
+                }));
+
+            // No answer, or a wrong one: refused, nothing counted, the model is never called.
+            var none = await Post("hello", null, null);
+            Assert.Equal(HttpStatusCode.BadRequest, none.StatusCode);
+            Assert.Contains("could not check that you are a person", WebUtility.HtmlDecode(await none.Content.ReadAsStringAsync()));
+            Assert.Equal(HttpStatusCode.BadRequest, (await Post("hello", null, "bad")).StatusCode);
+            Assert.Equal(0, model.Calls);
+
+            // The first message with a good answer starts the conversation; the next ones in it need no new answer.
+            var first = await Post("hello", null, "good");
+            Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+            using var doc = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
+            var chatId = doc.RootElement.GetProperty("chatId").GetGuid();
+            Assert.Equal(HttpStatusCode.OK, (await Post("and then?", chatId, null)).StatusCode);
+            // A made-up chat id is still not found, with or without an answer.
+            Assert.Equal(HttpStatusCode.NotFound, (await Post("hi", Guid.NewGuid(), null)).StatusCode);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Turnstile__SiteKey", null);
+            Environment.SetEnvironmentVariable("Turnstile__SecretKey", null);
+        }
+    }
+
     [Fact]
     public async Task Chat_messages_are_limited_per_client_and_the_limit_is_a_429()
     {

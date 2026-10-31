@@ -121,7 +121,7 @@
 {
     @* Hidden until chat.js runs: without JavaScript the form above is the way to book. *@
     <section class="card" id="chat" hidden aria-labelledby="chat-title"
-             data-working="@Text.AiChatWorking" data-network="@Text.AiChatNetwork" data-unavailable="@Text.AiChatUnavailable">
+             data-working="@Text.AiChatWorking" data-network="@Text.AiChatNetwork" data-unavailable="@Text.AiChatUnavailable" data-captcha-wait="@Text.AiChatCaptchaWait">
         <h2 id="chat-title">@Text.AiChatTitle</h2>
         <p class="hint">@Text.AiChatIntro</p>
         <p class="hint">@Text.AiChatNotice <a href="/Privacy">@Text.AiChatNoticeLink</a></p>
@@ -133,6 +133,8 @@
             <label for="chat-input" class="sr-only">@Text.AiChatPlaceholder</label>
             <input type="text" id="chat-input" name="message" maxlength="500" placeholder="@Text.AiChatPlaceholder" required />
             <button type="submit" class="primary">@Text.AiChatSend</button>
+            @* The check is asked once, for the first message of a conversation (the widget adds its answer to this form). *@
+            <div class="chat-captcha" id="chat-captcha"><partial name="_Captcha" /></div>
         </form>
     </section>
     <script src="~/js/chat.js" defer asp-append-version="true"></script>

@@ -126,7 +126,7 @@ Render's free web service sleeps after 15 minutes without traffic, and the first
 
 ## Bot check (Cloudflare Turnstile, free)
 
-Sign-up, forgot password and the customer booking form (the last step, where the customer types their name and number) can ask visitors to pass a quick "are you a person" check. It is off until both keys are set. It does not apply to staff booking or recording a sale, and not to the AI chat:
+Sign-up, forgot password and the customer booking form (the last step, where the customer types their name and number) can ask visitors to pass a quick "are you a person" check. It is off until both keys are set. It also applies to the first message of each AI chat conversation (not the rest of that conversation), and not to staff booking or recording a sale:
 
 1. In Cloudflare, **Turnstile**, **Add widget**. Hostname: `flow.veskacode.com`. Mode: Managed. Copy the **Site key** and the **Secret key**.
 2. In Render, Environment, add `Turnstile__SiteKey` (the site key) and `Turnstile__SecretKey` (the secret key), then deploy. Keep the secret key out of chats, commits and screenshots.

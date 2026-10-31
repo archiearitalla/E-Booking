@@ -11,12 +11,22 @@ namespace VeskaFlow.Web.Pages.Book;
 /// </summary>
 [EnableRateLimiting(RateLimitPolicies.Chat)]
 [RequestSizeLimit(4096)]
-public class ChatModel(AiReceptionistService assistant, IConfiguration config) : PageModel
+public class ChatModel(AiReceptionistService assistant, IConfiguration config, ICaptcha captcha) : PageModel
 {
     public IActionResult OnGet() => NotFound();
 
     public async Task<IActionResult> OnPostAsync(string slug, [FromForm] Guid? chatId, [FromForm] string? message, CancellationToken ct)
     {
+        // A new conversation needs the "are you a person" check (when Turnstile is on); the rest of that conversation does not, since
+        // only the server hands out a chat id and a conversation is limited to 20 messages. A check is single-use, so the page asks
+        // for a fresh one after a failure.
+        if (chatId is null
+            && !await captcha.VerifyAsync(Request.Form["cf-turnstile-response"], HttpContext.Connection.RemoteIpAddress?.ToString(), ct))
+        {
+            Response.Headers.CacheControl = "no-store";
+            return new JsonResult(new { error = Text.CaptchaFailed }) { StatusCode = StatusCodes.Status400BadRequest };
+        }
+
         var baseUrl = config["App:PublicBaseUrl"] is { Length: > 0 } configured ? configured.Trim().TrimEnd('/') : $"{Request.Scheme}://{Request.Host}";
         var result = await assistant.SendAsync(slug, chatId, message, baseUrl, ct);
         Response.Headers.CacheControl = "no-store";

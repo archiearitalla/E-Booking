@@ -791,7 +791,9 @@ a.kpi.open { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
 .chat-msg.bot { align-self: flex-start; background: var(--brand-soft); color: var(--ink); }
 .chat-msg.me { align-self: flex-end; background: var(--brand); color: var(--brand-ink); }
 .chat-msg.wait { opacity: 0.7; font-style: italic; }
-.chat-form { display: flex; gap: 0.5rem; align-items: stretch; }
+.chat-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: stretch; }
+.chat-captcha { flex-basis: 100%; }
+.chat-captcha .field { margin: 0; }
 .chat-form input[type="text"] { flex: 1; min-width: 0; }
 .chat-form button { width: auto; }
 

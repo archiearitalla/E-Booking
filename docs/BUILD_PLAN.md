@@ -189,7 +189,7 @@ Still open: a registration and booking run on a real phone against the live link
 | Team roles: owner, manager, staff; Team page; menu and pages by role; switched-off people signed out at once | 6.y7 | tests | Team page and a staff sign-in on a real phone |
 | Shop logo (Settings upload, booking page) and exact-date filter on Reports | 6.y8 | tests; migration 013 | upload from a real phone; live deploy |
 | Forgot password (emailed one-hour link) and My account change password | 6.y9 | tests with a capturing email sender; migration 014 | **a real reset email through Brevo**, pages in a browser |
-| Turnstile bot check on sign-up, forgot password and the customer booking form (off until keys are set) | 6.y10 | tests with a fake Cloudflare | **the real Cloudflare widget in a browser**, keys on Render |
+| Turnstile bot check on sign-up, forgot password, the customer booking form and the first message of an AI chat (off until keys are set) | 6.y10 | tests with a fake Cloudflare | **the real Cloudflare widget in a browser**, keys on Render |
 | Platform backup card: link, last copy saved, 30-day warning | 6.y11 | tests; migration 015 | page in a browser |
 | Day KPI cards on Bookings; installable back office (manifest, icons, service worker) | 6.y12 | tests | **Install app on a real Android and iPhone** |
 | Renewal: reminder emails before access ends, how to pay (GCash) on trial-ended and About | 6.y13 | tests; migration 016 | **a real reminder email**, the pages in a browser |

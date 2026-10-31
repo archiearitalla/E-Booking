@@ -45,6 +45,12 @@
     event.preventDefault();
     var text = input.value.trim();
     if (!text || button.disabled) return;
+    // The first message of a conversation carries the "are you a person" answer (when the check is on): wait until it is ready.
+    var check = form.elements['cf-turnstile-response'];
+    if (check && !check.value && !form.elements['chatId'].value) {
+      add('bot', box.getAttribute('data-captcha-wait') || '...');
+      return;
+    }
     var body = new URLSearchParams(new FormData(form));
     add('me', text);
     input.value = '';
@@ -62,6 +68,12 @@
           add('bot', result.data.reply);
         } else {
           add('bot', result.data.error || box.getAttribute('data-unavailable'));
+        }
+        // The answer is single-use. Once a conversation has started the check is done; until then ask for a fresh one.
+        var captcha = document.getElementById('chat-captcha');
+        if (captcha) {
+          if (form.elements['chatId'].value) captcha.hidden = true;
+          else if (window.turnstile) window.turnstile.reset();
         }
       })
       .catch(function () {
