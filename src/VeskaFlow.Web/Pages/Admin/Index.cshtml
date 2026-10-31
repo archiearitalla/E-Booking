@@ -34,13 +34,62 @@
     var dayBookings = view.Bookings;
     var kpiRevenue = dayBookings.Where(x => x.Status == BookingStatus.Completed).Sum(x => x.Amount);
 }
+@{
+    string KpiLink(string key) => $"?date={dateParam}" + (filter == IndexModel.Confirmed ? "" : $"&status={filter}") + (Model.OpenKpi == key ? "" : $"&kpi={key}") + "#kpi-details";
+    var kpiCards = new (string Key, string Value, string Label)[]
+    {
+        ("todo", dayBookings.Count(x => x.Status == BookingStatus.Confirmed).ToString(), Text.KpiToDo),
+        ("done", dayBookings.Count(x => x.Status == BookingStatus.Completed).ToString(), Text.KpiDone),
+        ("earned", DisplayFormat.Price(kpiRevenue), Text.KpiRevenue),
+        ("noshow", dayBookings.Count(x => x.Status == BookingStatus.NoShow).ToString(), Text.KpiNoShows),
+        ("cancelled", dayBookings.Count(x => x.Status == BookingStatus.Cancelled).ToString(), Text.KpiCancelled),
+    };
+}
 <section class="kpis" aria-label="@Text.KpiLabel">
-    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.Confirmed)</span><span class="kpi-label">@Text.KpiToDo</span></div>
-    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.Completed)</span><span class="kpi-label">@Text.KpiDone</span></div>
-    <div class="kpi"><span class="kpi-value">@DisplayFormat.Price(kpiRevenue)</span><span class="kpi-label">@Text.KpiRevenue</span></div>
-    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.NoShow)</span><span class="kpi-label">@Text.KpiNoShows</span></div>
-    <div class="kpi"><span class="kpi-value">@dayBookings.Count(x => x.Status == BookingStatus.Cancelled)</span><span class="kpi-label">@Text.KpiCancelled</span></div>
+    @foreach (var card in kpiCards)
+    {
+        @* Each card is a link: clicking it lists that group's bookings with their details just below; clicking it again closes the list. *@
+        <a class="kpi @(Model.OpenKpi == card.Key ? "open" : "")" href="@KpiLink(card.Key)" aria-current="@(Model.OpenKpi == card.Key ? "true" : null)" data-kpi="@card.Key"><span class="kpi-value">@card.Value</span><span class="kpi-label">@card.Label</span></a>
+    }
 </section>
+
+@if (Model.OpenKpi is { } openKpi)
+{
+    var detailRows = Model.KpiBookings;
+    <section class="card kpi-details" id="kpi-details" aria-label="@Text.KpiDetailsTitle">
+        <h2>@kpiCards.First(k => k.Key == openKpi).Label &middot; @dateText</h2>
+        @if (detailRows.Count == 0)
+        {
+            <p class="muted">@Text.KpiDetailsNone</p>
+        }
+        else
+        {
+            <ul class="kpi-list">
+                @foreach (var d in detailRows)
+                {
+                    <li>
+                        <div class="booking-head">
+                            <strong>@DisplayFormat.Time(d.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(d.EndsAtUtc, view.TimeZone)</strong>
+                            <span class="badge">@d.Status.Label()</span>
+                        </div>
+                        <dl class="facts">
+                            <dt>@Text.ManageService</dt><dd>@d.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(d.Price, d.RegularPrice, d.DiscountPercent)" />@if (d.ExtraLines.Count > 0) { <text> + @string.Join(", ", d.ExtraLines.Select(x => x.Name))</text> }</dd>
+                            @if (d.Status == BookingStatus.Completed)
+                            {
+                                <dt>@Text.AfterVisitPaymentTitle</dt><dd>@DisplayFormat.Price(d.Amount)</dd>
+                            }
+                            <dt>@Text.ManageWith</dt><dd>@d.StaffName</dd>
+                            <dt>@Text.ManageWho</dt><dd>@d.CustomerName
+                                @if (DisplayFormat.IsPlaceholderPhone(d.CustomerPhone)) { <span class="muted">&middot; @Text.WalkInNoPhone</span> } else { <text>&middot; <a href="tel:@d.CustomerPhone">@d.CustomerPhone</a></text> }</dd>
+                        </dl>
+                        @if (d.Status == BookingStatus.Completed) { <p><a href="/Admin/AfterVisit/@d.Id">@Text.AfterVisitOpen</a></p> }
+                    </li>
+                }
+            </ul>
+        }
+        <p><a href="@KpiLink(openKpi)">@Text.KpiDetailsClose</a></p>
+    </section>
+}
 
 <nav class="seg" aria-label="@Text.FilterLabel">
     @foreach (var (key, label) in filters)

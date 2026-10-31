@@ -25,6 +25,23 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
     /// <summary>Which bookings to list: confirmed (the default), cancelled, or done (completed and no-show).</summary>
     [BindProperty(SupportsGet = true)] public string? Status { get; set; }
 
+    /// <summary>The card of the day at a glance that was clicked: todo, done, earned, noshow or cancelled. Its bookings are listed under the cards.</summary>
+    [BindProperty(SupportsGet = true)] public string? Kpi { get; set; }
+
+    public static readonly string[] KpiKeys = ["todo", "done", "earned", "noshow", "cancelled"];
+
+    public string? OpenKpi => Kpi is not null && KpiKeys.Contains(Kpi) ? Kpi : null;
+
+    /// <summary>The day's bookings behind a card, earliest first. "Earned" lists the completed visits, since those are what it adds up.</summary>
+    public IReadOnlyList<DayBooking> KpiBookings => View!.Bookings.Where(b => OpenKpi switch
+    {
+        "todo" => b.Status == BookingStatus.Confirmed,
+        "done" or "earned" => b.Status == BookingStatus.Completed,
+        "noshow" => b.Status == BookingStatus.NoShow,
+        "cancelled" => b.Status == BookingStatus.Cancelled,
+        _ => false,
+    }).OrderBy(b => b.StartsAtUtc).ToList();
+
     public DayView? View { get; private set; }
 
     public string Filter => Status is Cancelled or Done ? Status : Confirmed;

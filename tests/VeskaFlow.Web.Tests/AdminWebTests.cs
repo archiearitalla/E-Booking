@@ -685,6 +685,31 @@ public class AdminWebTests
     }
 
     [Fact]
+    public async Task Clicking_a_card_of_the_day_at_a_glance_lists_its_bookings_with_their_details()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var a = await RegisterOwnerAsync(factory);
+        var b = await RegisterOwnerAsync(factory);
+        var mine = await BookNextFreeAsync(a, "09175550111");
+        await BookNextFreeAsync(b, "09175550222");
+        var day = $"/Admin?date={DateOf(mine)}";
+
+        var plain = Dec(await a.Client.GetStringAsync(day));
+        Assert.DoesNotContain("id=\"kpi-details\"", plain);                                       // closed until a card is clicked
+        Assert.Contains($"kpi=todo", plain);                                                      // the card is a link
+
+        var todo = Dec(await a.Client.GetStringAsync(day + "&kpi=todo"));
+        Assert.Contains("id=\"kpi-details\"", todo);
+        Assert.Contains("Juan Dela Cruz", todo);
+        Assert.Contains("09175550111", todo);
+        Assert.DoesNotContain("09175550222", todo);                                               // another shop's booking never shows
+
+        Assert.Contains(Text.KpiDetailsNone, Dec(await a.Client.GetStringAsync(day + "&kpi=cancelled")));
+        Assert.DoesNotContain("id=\"kpi-details\"", Dec(await a.Client.GetStringAsync(day + "&kpi=<script>")));  // an unknown card opens nothing
+    }
+
+    [Fact]
     public async Task Settings_can_be_saved_and_invalid_values_are_refused()
     {
         var (factory, _) = await HttpApp.StartAsync();
