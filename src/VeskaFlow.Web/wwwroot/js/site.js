@@ -189,3 +189,11 @@ if ('serviceWorker' in navigator && location.pathname.toLowerCase().startsWith('
     });
   });
 })();
+
+// Day view: after a card of the day at a glance is clicked, bring its list into view and put focus on it.
+(function () {
+  var panel = document.getElementById('kpi-details');
+  if (!panel) return;
+  panel.scrollIntoView({ block: 'start' });
+  panel.focus({ preventScroll: true });
+})();
