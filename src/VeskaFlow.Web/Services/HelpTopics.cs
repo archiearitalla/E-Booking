@@ -140,6 +140,7 @@ public static class HelpTopics
                 "Tap a customer. You see the ready message with their name, your promo, the last day and your booking link.",
                 "Press Send as text or Email to send it from your own phone. Or send it in an app: WhatsApp opens the customer's chat with the message ready; Viber and Telegram open with the message ready and you choose the customer; More apps lists every app on your phone, such as Messenger. Copy also works for any other app.",
                 "Press Mark as sent so you do not send the same promo twice. When you start a new promo, press Clear all sent marks.",
+                "To send it to everyone who has an email address, press Send it by email to N customers. The system emails them for you, within your daily email limit (what is left goes out the next day), and every email has a link to stop promo messages. You can press Stop sending any time.",
                 "Only customers who said yes are listed. New customers tick a box when they book; for walk-ins, ask first and tick the box. If someone says STOP, open their history and press They asked to stop.",
             ],
             "The system never sends the message by itself, so you stay in control of who gets it.", "/Admin/PromoSend", "Open Send a promo", AdminLevel.Manager),

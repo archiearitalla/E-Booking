@@ -1,0 +1,26 @@
+@page "/Unsubscribe/{token}"
+@model VeskaFlow.Web.Pages.UnsubscribeModel
+@{
+    ViewData["Title"] = Text.UnsubscribeTitle;
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<div class="card">
+    <h1>@Text.UnsubscribeTitle</h1>
+    @if (Model.Done)
+    {
+        <div class="notice" role="status">@Text.UnsubscribeDone</div>
+    }
+    else if (Model.ShopName is null)
+    {
+        <p>@Text.UnsubscribeUnknown</p>
+    }
+    else
+    {
+        <p>@Text.UnsubscribeAsk(Model.ShopName)</p>
+        <form method="post">
+            <button type="submit" class="primary">@Text.UnsubscribeButton</button>
+        </form>
+    }
+</div>

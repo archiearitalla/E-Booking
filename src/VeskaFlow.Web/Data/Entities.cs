@@ -24,6 +24,8 @@ public class Business
     public bool AllowManualTotal { get; set; } = true;
     /// <summary>Is the "Record a sale" page switched on? Off by default (migration 027).</summary>
     public bool AllowManualSales { get; set; }
+    /// <summary>Set while the shop's promo email is being sent in the background (migration 030).</summary>
+    public DateTime? PromoEmailStartedAtUtc { get; set; }
     /// <summary>This shop's own AI limits (migration 028); null uses the default from settings.</summary>
     public int? AiDailyLimit { get; set; }
     public int? AiMonthlyLimit { get; set; }
@@ -167,6 +169,8 @@ public class Customer
     public DateTime? MarketingOkAtUtc { get; set; }
     /// <summary>When staff last marked the current promo as sent to this customer; null when not yet.</summary>
     public DateTime? PromoSentAtUtc { get; set; }
+    /// <summary>The secret in this customer's unsubscribe link (migration 030); made when the first promo email is sent.</summary>
+    public string? MarketingToken { get; set; }
 }
 
 public class Booking
