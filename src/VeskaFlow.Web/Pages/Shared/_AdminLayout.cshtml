@@ -1,4 +1,5 @@
 @inject VeskaFlow.Web.Services.FollowUpService FollowUps
+@inject VeskaFlow.Web.Services.AccountControlService PlatformAccounts
 @{
     Layout = "_Layout";
     var path = Context.Request.Path.Value ?? "";
@@ -6,6 +7,9 @@
     var scopeStaff = Context.Items.TryGetValue(VeskaFlow.Web.Services.AdminRoles.ScopeItemKey, out var sc) ? sc as Guid? : null;
     var alert = User.BusinessId() is { } businessId ? await FollowUps.AlertAsync(businessId, default, scopeStaff) : new VeskaFlow.Web.Services.FollowUpAlert(0, 0);
     Context.Items[VeskaFlow.Web.Services.FollowUpAlert.ItemKey] = alert;
+    // The platform owner is told here, on every back-office page, when a client's subscription is ending (or has just ended).
+    var expiring = !path.StartsWith("/Platform", StringComparison.OrdinalIgnoreCase) && await PlatformAccounts.IsPlatformAdminAsync(User.UserId())
+        ? await PlatformAccounts.CountExpiringShopsAsync() : 0;
     var onFollowUps = path.StartsWith("/Admin/FollowUps", StringComparison.OrdinalIgnoreCase);
     var onReminders = path.StartsWith("/Admin/Reminders", StringComparison.OrdinalIgnoreCase);
     var level = Context.Items.TryGetValue(AdminRoles.LevelItemKey, out var lv) && lv is AdminLevel l ? l : AdminLevel.Staff;
@@ -43,6 +47,13 @@
 </nav>
 
 <div class="admin-main">
+@if (expiring > 0)
+{
+    <div class="notice" role="status">
+        <a href="/Platform?expiring=true">@Text.ExpiryAlert(expiring) @Text.ExpiryAlertView</a>
+    </div>
+}
+
 @if (alert.Reminders > 0 && !onReminders)
 {
     <div class="notice" role="status">

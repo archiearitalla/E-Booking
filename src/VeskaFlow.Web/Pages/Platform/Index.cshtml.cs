@@ -17,6 +17,14 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
 
     public IReadOnlyList<ShopRow> Shops { get; private set; } = [];
 
+    /// <summary>Show only the shops that have something ending soon or just ended.</summary>
+    [BindProperty(SupportsGet = true, Name = "expiring")] public bool OnlyExpiring { get; set; }
+
+    public DateTime Now { get; } = DateTime.UtcNow;
+
+    /// <summary>Everything due across all shops, soonest first (the strip at the top).</summary>
+    public IReadOnlyList<ExpiryItem> DueItems { get; private set; } = [];
+
     /// <summary>Every shop, for the suggestions under the search box (the list above is narrowed by the search).</summary>
     public IReadOnlyList<ShopRow> AllShops { get; private set; } = [];
 
@@ -53,6 +61,8 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Shops = AllShops = await accounts.ListShopsAsync(ct);
+        DueItems = AllShops.SelectMany(x => ShopExpiry.Due(x, Now)).OrderBy(i => i.EndUtc).ToList();
+        if (OnlyExpiring) Shops = Shops.Where(x => ShopExpiry.Due(x, Now).Count > 0).ToList();
         if ((Query ?? "").Trim() is { Length: > 0 } q)
             Shops = Shops.Where(x => x.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || x.Slug.Contains(q, StringComparison.OrdinalIgnoreCase)
                 || x.OwnerEmail.Contains(q, StringComparison.OrdinalIgnoreCase) || x.OwnerName.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();

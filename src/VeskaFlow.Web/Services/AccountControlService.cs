@@ -196,6 +196,19 @@ public sealed class AccountControlService(
                && listed.Any(a => string.Equals(a, user.Email, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>How many switched-on shops have an access end or an add-on end that is due (see <see cref="ShopExpiry"/>), for the strip shown to the platform owner.</summary>
+    public async Task<int> CountExpiringShopsAsync(CancellationToken ct = default)
+    {
+        var now = DateTime.UtcNow;
+        var from = now.AddDays(-ShopExpiry.RecentDays - 1);
+        var to = now.AddDays(ShopExpiry.WarnDays + 1);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.Businesses.AsNoTracking().Where(b => b.IsEnabled && (
+                (b.TrialEndsAtUtc >= from && b.TrialEndsAtUtc <= to) || (b.AiAddonUntilUtc >= from && b.AiAddonUntilUtc <= to) || (b.EmailAddonUntilUtc >= from && b.EmailAddonUntilUtc <= to)))
+            .Select(b => new { b.TrialEndsAtUtc, b.AiAddonUntilUtc, b.EmailAddonUntilUtc }).ToListAsync(ct);
+        return rows.Count(r => ShopExpiry.IsDue(r.TrialEndsAtUtc, now) || ShopExpiry.IsDue(r.AiAddonUntilUtc, now) || ShopExpiry.IsDue(r.EmailAddonUntilUtc, now));
+    }
+
     /// <summary>Every shop with its owner, newest first.</summary>
     public async Task<IReadOnlyList<ShopRow>> ListShopsAsync(CancellationToken ct = default)
     {
