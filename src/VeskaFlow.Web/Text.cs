@@ -392,6 +392,38 @@ public static class Text
         sb.Append($" Book here: {bookingUrl} . Reply STOP if you do not want promo messages.");
         return sb.ToString();
     }
+    public static string PromoEmailBody(string firstName, string shop, string headline, string? details, int? percent, DateOnly? endsOn, string bookingUrl, string unsubscribeUrl)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"Hi {firstName}!\n\n{shop} has a promo: {headline}.");
+        if (!string.IsNullOrWhiteSpace(details)) sb.Append($" {details.Trim().TrimEnd('.')}.");
+        if (percent is { } p) sb.Append($" {p}% off.");
+        if (endsOn is { } d) sb.Append($" Until {d.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture)}.");
+        sb.Append($"\n\nBook here: {bookingUrl}\n\n");
+        sb.Append($"You get this email because you agreed to promo messages from {shop}. To stop them, open this link: {unsubscribeUrl}");
+        return sb.ToString();
+    }
+    public const string PromoEmailCardTitle = "Send it by email automatically";
+    public const string PromoEmailCardHint = "The system emails your promo to the customers who agreed and have an email address. Every email has a link to stop promo messages. It sends in the background, within your daily email limit; what is left goes out the next day.";
+    public const string PromoEmailNoService = "The email service is not set up yet, so nothing can be sent by email. Ask the platform owner.";
+    public const string PromoEmailSwitchedOff = "Customer emails are switched off for your shop. Turn them on in Settings to use this.";
+    public static string PromoEmailPending(int n) => n == 1 ? "1 customer will get it by email." : $"{n} customers will get it by email.";
+    public const string PromoEmailNobody = "No customer who agreed has an email address that has not been sent this promo yet.";
+    public static string PromoEmailLimit(int perDay) => $"Your shop can send up to {perDay} promo emails a day.";
+    public const string PromoEmailLimitAddon = "Your email add-on is active, so your shop shares the larger daily limit.";
+    public static string PromoEmailStartButton(int n) => n == 1 ? "Send it by email to 1 customer" : $"Send it by email to {n} customers";
+    public const string PromoEmailStartAsk = "Email this promo to every customer who agreed and has an email address? Each email has a link to stop promo messages.";
+    public const string PromoEmailSending = "Sending in the background. Customers who already got it are marked sent. If the daily limit is reached, the rest go out tomorrow.";
+    public const string PromoEmailStop = "Stop sending";
+    public const string PromoEmailStopAsk = "Stop sending this promo by email? The ones already sent stay sent.";
+    public const string PromoEmailStarted = "Sending started. You can leave this page.";
+    public const string PromoEmailStopped = "Sending stopped.";
+    public const string PromoEmailNeedPromo = "Switch on a promo first.";
+    public const string UnsubscribeTitle = "Stop promo messages";
+    public static string UnsubscribeAsk(string shop) => $"Do you want to stop getting promos and offers from {shop}?";
+    public const string UnsubscribeButton = "Yes, stop promo messages";
+    public const string UnsubscribeDone = "Done. You will not get promo messages from this shop any more. You can still book as usual.";
+    public const string UnsubscribeUnknown = "This link is not valid any more.";
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
     public const string KpiHidden = "\u20B1 \u2022\u2022\u2022\u2022";

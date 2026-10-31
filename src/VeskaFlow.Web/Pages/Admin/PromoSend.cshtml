@@ -29,6 +29,31 @@ else
         <p class="hint">@Text.PromoSendConsentNote</p>
     </div>
 
+    <div class="card" id="promo-email">
+        <h2>@Text.PromoEmailCardTitle</h2>
+        <p class="hint">@Text.PromoEmailCardHint</p>
+        @if (!Model.Email.ServiceReady) { <p class="warn">@Text.PromoEmailNoService</p> }
+        else if (!Model.Email.CustomersEmailOn) { <p class="warn">@Text.PromoEmailSwitchedOff <a href="/Admin/Settings">@Text.AdminNavSettings</a></p> }
+        else
+        {
+            <p>@(Model.Email.Pending > 0 ? Text.PromoEmailPending(Model.Email.Pending) : Text.PromoEmailNobody)</p>
+            <p class="muted">@(Model.Email.HasAddon ? Text.PromoEmailLimitAddon : Text.PromoEmailLimit(Model.Email.PerDay))</p>
+            @if (Model.Email.Queued)
+            {
+                <div class="notice" role="status">@Text.PromoEmailSending</div>
+                <form method="post" asp-page-handler="EmailStop" class="actions">
+                    <button type="submit" class="secondary" data-confirm="@Text.PromoEmailStopAsk">@Text.PromoEmailStop</button>
+                </form>
+            }
+            else if (Model.Email.Pending > 0)
+            {
+                <form method="post" asp-page-handler="EmailStart" class="actions">
+                    <button type="submit" class="primary" data-confirm="@Text.PromoEmailStartAsk">@Text.PromoEmailStartButton(Model.Email.Pending)</button>
+                </form>
+            }
+        }
+    </div>
+
     <form method="get" class="inline-form" role="search">
         <label for="q" class="sr-only">@Text.PromoSendSearch</label>
         <input type="text" id="q" name="q" class="grow" value="@Model.Query" placeholder="@Text.PromoSendSearch" maxlength="80" autocomplete="off" />
