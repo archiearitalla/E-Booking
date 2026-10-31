@@ -451,7 +451,8 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 Summary = new BookingSummary(
                     b.Id, b.BusinessId, b.StaffId, b.Staff.Name, b.ServiceId, b.ServiceNameSnapshot,
                     b.StartsAtUtc, b.EndsAtUtc, b.Status, b.ManageToken, b.PriceSnapshot, EF.Property<uint>(b, "xmin"),
-                    b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount),
+                    b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount,
+                    db.BookingExtras.Where(x => x.BookingId == b.Id).Sum(x => (decimal?)x.PriceSnapshot) ?? 0m),
                 BusinessName = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.Name).First(),
                 CutoffHours = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.CancelCutoffHours).First(),
                 CustomerName = b.Customer.Name,
@@ -464,25 +465,29 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var policy = BookingPolicy.CanCancel(
             row.Summary.Status, row.Summary.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, row.CutoffHours);
         var refusal = !policy.Allowed && !row.Summary.Status.IsTerminal() ? policy.Reason : null;
-        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor);
+        var extras = await db.BookingExtras.AsNoTracking().Where(x => x.BookingId == row.Summary.Id && x.BusinessId == row.Summary.BusinessId)
+            .OrderBy(x => x.CreatedAtUtc).ThenBy(x => x.ServiceNameSnapshot)
+            .Select(x => new ExtraLine(x.Id, x.ServiceNameSnapshot, x.PriceSnapshot, x.RegularPriceSnapshot, x.DiscountPercentSnapshot)).ToListAsync(ct);
+        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras);
     }
 
     public async Task<BookingSummary?> LoadSummaryAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await Summaries(db.Bookings.AsNoTracking().Where(b => b.BusinessId == businessId && b.Id == bookingId))
+        return await Summaries(db, db.Bookings.AsNoTracking().Where(b => b.BusinessId == businessId && b.Id == bookingId))
             .FirstOrDefaultAsync(ct);
     }
 
     private static Task<BookingSummary?> FindByIdempotencyKeyAsync(AppDbContext db, Guid businessId, string key, CancellationToken ct) =>
-        Summaries(db.Bookings.AsNoTracking().Where(b => b.BusinessId == businessId && b.IdempotencyKey == key))
+        Summaries(db, db.Bookings.AsNoTracking().Where(b => b.BusinessId == businessId && b.IdempotencyKey == key))
             .FirstOrDefaultAsync(ct);
 
-    private static IQueryable<BookingSummary> Summaries(IQueryable<Booking> bookings) =>
+    private static IQueryable<BookingSummary> Summaries(AppDbContext db, IQueryable<Booking> bookings) =>
         bookings.Select(b => new BookingSummary(
             b.Id, b.BusinessId, b.StaffId, b.Staff.Name, b.ServiceId, b.ServiceNameSnapshot,
             b.StartsAtUtc, b.EndsAtUtc, b.Status, b.ManageToken, b.PriceSnapshot,
-            EF.Property<uint>(b, "xmin"), b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount));
+            EF.Property<uint>(b, "xmin"), b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount,
+            db.BookingExtras.Where(x => x.BookingId == b.Id).Sum(x => (decimal?)x.PriceSnapshot) ?? 0m));
 
     private static Task<Business?> LoadBusinessAsync(AppDbContext db, Guid businessId, CancellationToken ct) =>
         db.Businesses.AsNoTracking().FirstOrDefaultAsync(b => b.Id == businessId, ct);

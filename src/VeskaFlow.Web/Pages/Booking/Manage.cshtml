@@ -36,7 +36,11 @@
         <dt>@Text.ManagePrice</dt><dd><partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" />@if (b.Status != VeskaFlow.Core.Domain.BookingStatus.Completed) { <text> &middot; @Text.BookPayOnSite</text> }</dd>
         @if (b.Status == VeskaFlow.Core.Domain.BookingStatus.Completed)
         {
-            <dt>@Text.ManageTotalPaid</dt><dd><strong>@DisplayFormat.Price(b.PaidAmount ?? b.Price)</strong></dd>
+            @foreach (var extra in d.Extras ?? [])
+            {
+                <dt>@Text.ManageAlsoDone</dt><dd>@extra.Name &middot; <partial name="_PriceLine" model="new PriceLineModel(extra.Price, extra.RegularPrice, extra.DiscountPercent)" /></dd>
+            }
+            <dt>@Text.ManageTotalPaid</dt><dd><strong>@DisplayFormat.Price(b.Total)</strong></dd>
         }
         <dt>@Text.ManageStatus</dt><dd><span class="badge">@b.Status.Label()</span></dd>
     </dl>

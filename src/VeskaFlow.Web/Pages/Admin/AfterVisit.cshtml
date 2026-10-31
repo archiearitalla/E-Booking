@@ -16,11 +16,55 @@
 </div>
 
 <div class="card">
+    <h2>@Text.ExtraTitle</h2>
+    <p class="hint">@Text.ExtraHint</p>
+    <ul class="plain-list">
+        <li><strong>@b.ServiceName</strong> <span class="muted">(@Text.ExtraBooked)</span> &middot; <partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" /></li>
+        @foreach (var line in b.ExtraLines)
+        {
+            <li>
+                <strong>@line.Name</strong> &middot; <partial name="_PriceLine" model="new PriceLineModel(line.Price, line.RegularPrice, line.DiscountPercent)" />
+                <form method="post" asp-page-handler="RemoveService" asp-route-id="@b.Id" class="inline-form">
+                    <input type="hidden" name="extraId" value="@line.Id" />
+                    <button type="submit" class="link danger" data-confirm="@Text.ExtraRemoveAsk">@Text.ExtraRemove<span class="sr-only"> @line.Name</span></button>
+                </form>
+            </li>
+        }
+    </ul>
+    <p><strong>@Text.ExtraItemsTotal:</strong> @DisplayFormat.Price(b.ItemsTotal)</p>
+
+    @if (b.ExtraLines.Count < BookingExtraService.MaxExtras)
+    {
+        <form method="post" asp-page-handler="AddService" asp-route-id="@b.Id">
+            <h3>@Text.ExtraAdd</h3>
+            <div class="field">
+                <label for="extraService">@Text.ExtraChoose</label>
+                <select id="extraService" name="serviceId" required>
+                    @foreach (var s in Model.Services)
+                    {
+                        <option value="@s.Id">@s.Name@(s.IsOther ? "" : " · " + DisplayFormat.Price(s.Price))</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label for="extraNote">@Text.ExtraNoteLabel</label>
+                <input type="text" id="extraNote" name="note" maxlength="60" />
+            </div>
+            <div class="field">
+                <label for="extraPrice">@Text.ExtraPriceLabel</label>
+                <input type="text" id="extraPrice" name="price" inputmode="decimal" maxlength="12" />
+            </div>
+            <button type="submit" class="secondary">@Text.ExtraAddButton</button>
+        </form>
+    }
+</div>
+
+<div class="card">
     <form method="post" asp-page-handler="Payment" asp-route-id="@b.Id">
         <h2>@Text.AfterVisitPaymentTitle</h2>
         <p class="hint">@Text.AfterVisitPaymentHint</p>
         <dl class="facts">
-            <dt>@Text.AfterVisitPaymentQuoted</dt><dd><partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" /></dd>
+            <dt>@Text.AfterVisitPaymentQuoted</dt><dd>@DisplayFormat.Price(b.ItemsTotal)</dd>
         </dl>
         <div class="field">
             <label for="paidAmount">@Text.AfterVisitPaymentLabel</label>

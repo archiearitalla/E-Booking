@@ -11,10 +11,17 @@ public sealed record DayBooking(
     bool CanComplete, bool CanNoShow, bool CanCancel,
     DateOnly? FollowUpOn = null, string? FollowUpNote = null, bool FollowUpDone = false, DateOnly? SuggestedFollowUp = null,
     string? CustomerEmail = null, string? FollowUpService = null, string? VisitNotes = null, Guid CustomerId = default,
-    bool CanMove = false, decimal? RegularPrice = null, int? DiscountPercent = null, decimal? PaidAmount = null)
+    bool CanMove = false, decimal? RegularPrice = null, int? DiscountPercent = null, decimal? PaidAmount = null,
+    IReadOnlyList<ExtraLine>? Extras = null)
 {
-    /// <summary>The money for this visit: the payment total staff entered, otherwise the price the customer was quoted (after any promo).</summary>
-    public decimal Amount => PaidAmount ?? Price;
+    /// <summary>The services done on top of the booked one (empty for most visits).</summary>
+    public IReadOnlyList<ExtraLine> ExtraLines => Extras ?? [];
+
+    /// <summary>What the services come to: the booked one (after any promo) and the extras.</summary>
+    public decimal ItemsTotal => Price + ExtraLines.Sum(e => e.Price);
+
+    /// <summary>The money for this visit: the payment total staff entered, otherwise what the services come to.</summary>
+    public decimal Amount => PaidAmount ?? ItemsTotal;
 }
 
 /// <summary>A customer's contact details for saving to the staff phone's contacts (a .vcf file).</summary>
@@ -60,6 +67,13 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
             })
             .ToListAsync(ct);
 
+        var ids = rows.Select(r => r.Id).ToList();
+        var extras = (await db.BookingExtras.AsNoTracking().Where(e => e.BusinessId == businessId && ids.Contains(e.BookingId))
+                .OrderBy(e => e.CreatedAtUtc).ThenBy(e => e.ServiceNameSnapshot)
+                .Select(e => new { e.BookingId, Line = new ExtraLine(e.Id, e.ServiceNameSnapshot, e.PriceSnapshot, e.RegularPriceSnapshot, e.DiscountPercentSnapshot) })
+                .ToListAsync(ct))
+            .GroupBy(e => e.BookingId).ToDictionary(g => g.Key, g => (IReadOnlyList<ExtraLine>)g.Select(e => e.Line).ToList());
+
         var bookings = rows.Select(r => new DayBooking(
             r.Id, r.StaffName, r.ServiceNameSnapshot, r.CustomerName, r.CustomerPhone,
             r.StartsAtUtc, r.EndsAtUtc, r.Status, r.PriceSnapshot, r.Version,
@@ -70,7 +84,8 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
             r.ServiceFollowUpDays is { } days ? LocalTime.LocalDateOf(r.StartsAtUtc, business.TimeZone).AddDays(days) : null,
             r.CustomerEmail, r.FollowUpService, r.VisitNotes, r.CustomerId,
             CanMove: r.Status == BookingStatus.Confirmed && r.StartsAtUtc > now,
-            RegularPrice: r.RegularPriceSnapshot, DiscountPercent: r.DiscountPercentSnapshot, PaidAmount: r.PaidAmount)).ToList();
+            RegularPrice: r.RegularPriceSnapshot, DiscountPercent: r.DiscountPercentSnapshot, PaidAmount: r.PaidAmount,
+            Extras: extras.GetValueOrDefault(r.Id))).ToList();
 
         return new DayView(day, business.TimeZone, bookings, LocalTime.LocalDateOf(now, business.TimeZone));
     }

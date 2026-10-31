@@ -10,7 +10,7 @@ namespace VeskaFlow.Web.Pages.Admin;
 /// </summary>
 public class AfterVisitModel(
     AdminDayService days, FollowUpService followUps, VisitRecordService records, CatalogAdminService catalog,
-    ShopSettingsService settings, IConfiguration config) : AdminPageModel
+    ShopSettingsService settings, IConfiguration config, BookingExtraService extras) : AdminPageModel
 {
     public DayBooking? Booking { get; private set; }
     public IReadOnlyList<ServiceRow> Services { get; private set; } = [];
@@ -37,6 +37,37 @@ public class AfterVisitModel(
         return Booking!.Status == BookingStatus.Completed ? Page() : Redirect("/Admin");
     }
 
+    /// <summary>Adds a service that was done on top of the booked one. "Other" takes a description and a price typed by staff.</summary>
+    public async Task<IActionResult> OnPostAddServiceAsync(Guid id, Guid serviceId, string? note, string? price, CancellationToken ct)
+    {
+        decimal? typed = null;
+        var text = (price ?? "").Replace(",", "").Replace("\u20B1", "").Trim();
+        if (text.Length > 0)
+        {
+            if (!decimal.TryParse(text, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            {
+                Failure = Text.ExtraPriceInvalid;
+                return RedirectToPage(new { id });
+            }
+            typed = parsed;
+        }
+
+        var result = await extras.AddAsync(BusinessId, id, serviceId, note, typed, StaffActor, ct, ScopeStaffId);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.ExtraAdded + (result.Value!.PaymentReset ? Text.ExtraPaymentReset : "");
+        else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostRemoveServiceAsync(Guid id, Guid extraId, CancellationToken ct)
+    {
+        var result = await extras.RemoveAsync(BusinessId, id, extraId, StaffActor, ct, ScopeStaffId);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.ExtraRemoved + (result.Value!.PaymentReset ? Text.ExtraPaymentReset : "");
+        else Failure = result.Message;
+        return RedirectToPage(new { id });
+    }
+
     /// <summary>Saves the payment total of this visit. Blank clears it (the quoted price counts again).</summary>
     public async Task<IActionResult> OnPostPaymentAsync(Guid id, string? paidAmount, CancellationToken ct)
     {
@@ -52,7 +83,7 @@ public class AfterVisitModel(
             amount = parsed;
         }
 
-        var result = await records.SetPaidAmountAsync(BusinessId, id, amount, ct, ScopeStaffId);
+        var result = await records.SetPaidAmountAsync(BusinessId, id, amount, ct, ScopeStaffId, StaffActor);
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (result.IsSuccess) Success = Text.AfterVisitPaymentSaved;
         else Failure = result.FieldErrors.Values.FirstOrDefault() ?? result.Message;

@@ -496,15 +496,20 @@ The owner makes a promo that shows as a banner at the top of the shop's public b
 - **Owner only.** Like the logo and the settings.
 - **Not built:** several promos at once, a fixed peso discount, a link or "book this promo" button, scheduling a start day, a different discount per service, a Manager role editing it, uploading to a library. The Terms do not yet say that the owner is responsible for what a promo says or for having the right to the picture; add that, with the next legal review.
 
-### 6.y19 Payment total
+### 6.y19 Payment total and the services done on a visit
 
-When staff mark a visit **Done**, the page that opens (`/Admin/AfterVisit/{id}`) starts with **Payment total**: what the customer actually paid. It starts at the price the customer was quoted (after any promo) and staff change it when the customer added something, got another discount or left a tip. Saved in `booking.paid_amount` (0 to 10,000,000, rounded to the centavo); empty clears it, and the quoted price counts again. A peso sign and thousands commas are accepted when typing.
+When staff mark a visit **Done**, the page that opens (`/Admin/AfterVisit/{id}`) shows what was done and what was paid.
 
-- Only a **completed** visit can have a payment total. The booking must be in the signed-in business, and a Staff login tied to one person can only set their own bookings' (another business's id and another person's booking are "not found").
-- **Money rule:** every figure about money uses the payment total when there is one, otherwise the quoted price: the day view's revenue, the Reports revenue (and its split by service and by staff member) and a customer's total spent. Reports also show **Promo discounts given** (regular price minus quoted price on bookings that had a promo, completed ones only).
-- **The customer sees it.** Once the visit is done, the customer's manage page shows **Total paid**.
-- A customer's export carries the quoted price, the regular price, the discount and the payment total.
-- **Not built:** a payment method (cash, GCash), and adding the services done on top of the booked one (an itemized receipt): until then staff put the right total in. Both are planned.
+**Services done (the itemized receipt).** A customer may book a haircut and also have a color. Staff add **another service** on this page, each as its own line with its own price, up to 10 per visit, and can remove a line again. A service from the list takes its own price, less the promo discount when a promo is running **today** and the service is part of it (6.y18); the "Other" service takes a description (1 to 60 characters) and a price (0 to 1,000,000) typed by staff and never gets a discount. The line keeps its name and price as they were when added (and the regular price and discount when a promo applied). Only a **completed** visit can have lines; a line belongs to a booking of the same business (the database ties them with a composite key, invariant I7) and is deleted with its booking.
+
+**Payment total.** What the customer actually paid. It starts at the **items total** (the booked service after any promo, plus the added services) and staff change it when the customer got another discount or left a tip. Saved in `booking.paid_amount` (0 to 10,000,000, rounded to the centavo); empty clears it, and the items total counts again. A peso sign and thousands commas are accepted when typing. **When the lines change, a saved payment total goes back to the items total** (the page says so), so it can never be left behind by the services.
+
+- Only a completed visit can have a payment total or services. The booking must be in the signed-in business, and a Staff login tied to one person can only change their own bookings' (another business's id and another person's booking are "not found").
+- **Audit:** adding a service (`EXTRA_ADDED`), removing one (`EXTRA_REMOVED`) and setting or clearing the payment total (`PAYMENT_SET`, with what it was before) are written to the audit log with who did it.
+- **Money rule:** every figure about money uses the payment total when there is one, otherwise the items total: the day view's revenue, the Reports revenue and a customer's total spent. In **Reports**, the lists by service and by staff member show the **prices of the services done** (a service done on top counts as one more of that service, credited to the booked staff member), and the part of the revenue that is not a service price (a tip, another discount typed in the total) is shown on its own as "Tips and other changes", so the two always add up to the revenue. Reports also show **Promo discounts given** (regular price minus price, on the booked service and on added ones, completed visits only).
+- **The customer sees it.** Once the visit is done, the customer's manage page shows the booked service, each "Also done" line with its price, and **Total paid**.
+- A customer's export carries the quoted price, the regular price, the discount, the payment total and the services done on top; deleting the customer deletes them.
+- **Not built:** a payment method (cash, GCash), editing the price of an added line, a receipt that can be printed or sent by message, and showing the added services in the customer's history page for staff.
 
 ### 6.z Who may use the system
 

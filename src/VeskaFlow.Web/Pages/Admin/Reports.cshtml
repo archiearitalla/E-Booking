@@ -37,6 +37,7 @@
         <tbody>
             <tr><th scope="row">@Text.ReportsRevenue</th><td>@DisplayFormat.Price(r.Revenue)</td></tr>
             @if (r.Discounts > 0) { <tr><th scope="row">@Text.ReportsDiscounts</th><td>@DisplayFormat.Price(r.Discounts)</td></tr> }
+            @if (r.Adjustments != 0) { <tr><th scope="row">@Text.ReportsAdjustments</th><td>@(r.Adjustments > 0 ? "+" : "-")@DisplayFormat.Price(Math.Abs(r.Adjustments))</td></tr> }
             <tr><th scope="row">@Text.ReportsCompleted</th><td>@r.Completed</td></tr>
             <tr><th scope="row">@Text.ReportsUpcoming</th><td>@r.Upcoming</td></tr>
             <tr><th scope="row">@Text.ReportsNoShows</th><td>@r.NoShows</td></tr>

@@ -73,7 +73,12 @@ public sealed record BookingSummary(
     uint Version,
     decimal? RegularPrice = null,
     int? DiscountPercent = null,
-    decimal? PaidAmount = null);
+    decimal? PaidAmount = null,
+    decimal ExtrasTotal = 0m)
+{
+    /// <summary>What the customer owes or paid: the payment total staff entered, otherwise the booked service and the extras.</summary>
+    public decimal Total => PaidAmount ?? Price + ExtrasTotal;
+}
 
 public sealed record CreateOutcome(BookingSummary Booking, bool AlreadyExisted);
 
@@ -89,4 +94,5 @@ public sealed record BookingDetails(
     string CustomerName,
     bool CanCancel,
     string? CancelRefusal,
-    string BrandColor = BrandColors.Default);
+    string BrandColor = BrandColors.Default,
+    IReadOnlyList<ExtraLine>? Extras = null);

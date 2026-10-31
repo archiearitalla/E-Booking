@@ -211,8 +211,9 @@ public class PromoPricingTests
         Assert.Equal(3, report.Completed);
         Assert.Equal(120.00m + 200.00m + 150.00m, report.Revenue);                                                              // the payment total where there is one
         Assert.Equal(60.00m, report.Discounts);                                                                                 // 30.00 given on each of the two promo bookings
-        Assert.Equal(470.00m, Assert.Single(report.ByService).Revenue);
-        Assert.Equal(470.00m, Assert.Single(report.ByStaff).Revenue);
+        Assert.Equal(390.00m, Assert.Single(report.ByService).Revenue);                                                         // the lists show service prices: 120 + 120 + 150
+        Assert.Equal(390.00m, Assert.Single(report.ByStaff).Revenue);
+        Assert.Equal(80.00m, report.Adjustments);                                                                               // the 80.00 typed on top of one payment total
 
         var customers = await new CustomerListService(c.Db).ListAsync(c.Shop.BusinessId, null);
         Assert.Equal(470.00m, customers.Sum(x => x.Spent));

@@ -201,6 +201,21 @@ public class Booking
     public Customer Customer { get; set; } = null!;
 }
 
+/// <summary>A service done on top of the booked one (migration 025): its own line on the receipt, with its price as it was when added.</summary>
+public class BookingExtra
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public Guid BookingId { get; set; }
+    public Guid ServiceId { get; set; }
+    public string ServiceNameSnapshot { get; set; } = "";
+    public decimal PriceSnapshot { get; set; }
+    /// <summary>The regular price when a promo discount applied to this line (then <c>DiscountPercentSnapshot</c> is set too); null otherwise.</summary>
+    public decimal? RegularPriceSnapshot { get; set; }
+    public int? DiscountPercentSnapshot { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
 public class AuditLog
 {
     public long Id { get; set; }

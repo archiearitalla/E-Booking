@@ -27,17 +27,20 @@ public sealed class CustomerListService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         var customers = await query.Select(c => new { c.Id, c.Name, c.Phone, c.Email, c.CreatedAtUtc }).ToListAsync(ct);
-        var stats = (await db.Bookings.AsNoTracking()
+        var visits = await db.Bookings.AsNoTracking()
             .Where(b => b.BusinessId == businessId && (b.Status == BookingStatus.Completed || b.Status == BookingStatus.NoShow))
-            .GroupBy(b => b.CustomerId)
-            .Select(g => new
-            {
-                CustomerId = g.Key,
-                Visits = g.Count(b => b.Status == BookingStatus.Completed),
-                NoShows = g.Count(b => b.Status == BookingStatus.NoShow),
-                Spent = g.Where(b => b.Status == BookingStatus.Completed).Sum(b => (decimal?)(b.PaidAmount ?? b.PriceSnapshot)) ?? 0m,
-                Last = g.Where(b => b.Status == BookingStatus.Completed).Max(b => (DateTime?)b.StartsAtUtc),
-            }).ToListAsync(ct)).ToDictionary(s => s.CustomerId);
+            .Select(b => new { b.Id, b.CustomerId, b.Status, b.PriceSnapshot, b.PaidAmount, b.StartsAtUtc }).ToListAsync(ct);
+        var completedIds = visits.Where(v => v.Status == BookingStatus.Completed).Select(v => v.Id).ToList();
+        var extraTotals = (await db.BookingExtras.AsNoTracking().Where(e => e.BusinessId == businessId && completedIds.Contains(e.BookingId))
+            .GroupBy(e => e.BookingId).Select(g => new { g.Key, Total = g.Sum(e => e.PriceSnapshot) }).ToListAsync(ct)).ToDictionary(x => x.Key, x => x.Total);
+        // What a customer spent: the payment total of each completed visit, otherwise what its services come to.
+        var stats = visits.GroupBy(v => v.CustomerId).ToDictionary(g => g.Key, g => new
+        {
+            Visits = g.Count(v => v.Status == BookingStatus.Completed),
+            NoShows = g.Count(v => v.Status == BookingStatus.NoShow),
+            Spent = g.Where(v => v.Status == BookingStatus.Completed).Sum(v => v.PaidAmount ?? v.PriceSnapshot + extraTotals.GetValueOrDefault(v.Id)),
+            Last = g.Where(v => v.Status == BookingStatus.Completed).Select(v => (DateTime?)v.StartsAtUtc).Max(),
+        });
 
         return customers.Select(c =>
             {

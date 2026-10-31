@@ -833,8 +833,28 @@ public static class Text
     public const string ServiceNotInPromo = "Not part of the promo";
     public const string ManageTotalPaid = "Total paid";
     public const string ReportsDiscounts = "Promo discounts given";
+    public const string ReportsAdjustments = "Tips and other changes in the revenue (not in the service prices)";
 
     // Payment total, entered when a visit is done (the page that opens after Done).
+    public const string ExtraOnlyCompleted = "Services can be added only to a completed visit.";
+    public static string ExtraTooMany(int max) => $"A visit can have at most {max} extra services.";
+    public const string ExtraNoteInvalid = "Say what was done, in 1 to 60 characters.";
+    public const string ExtraPriceInvalid = "Enter a price from 0 to 1,000,000, for example 250 or 250.50.";
+    public const string ExtraTitle = "Services done";
+    public const string ExtraHint = "The service that was booked, and anything else that was done. The payment total below follows these prices until you type a different one.";
+    public const string ExtraBooked = "Booked";
+    public const string ExtraAdd = "Add another service";
+    public const string ExtraChoose = "Service";
+    public const string ExtraNoteLabel = "What was done (only for Other)";
+    public const string ExtraPriceLabel = "Price (only for Other, PHP)";
+    public const string ExtraAddButton = "Add service";
+    public const string ExtraRemove = "Remove";
+    public const string ExtraRemoveAsk = "Remove this service from the visit?";
+    public const string ExtraItemsTotal = "Items total";
+    public const string ExtraAdded = "The service was added.";
+    public const string ExtraRemoved = "The service was removed.";
+    public const string ExtraPaymentReset = " The payment total went back to the items total; change it if the customer paid something else.";
+    public const string ManageAlsoDone = "Also done";
     public const string AfterVisitPaymentTitle = "Payment total";
     public const string AfterVisitPaymentHint = "What the customer paid for this visit. It starts at the price they were quoted; change it if they added something, got a different discount or left a tip.";
     public const string AfterVisitPaymentLabel = "Total paid (PHP)";
