@@ -343,6 +343,8 @@ public static class Text
     public const string KpiLabel = "The day at a glance";
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
+    public const string KpiHidden = "\u20B1 \u2022\u2022\u2022\u2022";
+    public const string KpiEarnedTotal = "Total earned";
     public const string KpiDetailsNone = "No bookings here today.";
     public const string KpiDetailsClose = "Close the list";
     public const string KpiDone = "Done";
