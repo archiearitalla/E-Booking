@@ -132,7 +132,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var result = await settings.SaveSettingsAsync(BusinessId,
-            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays, Input.ReminderHours, Input.CustomerEmails, Input.AllowManualTotal), ct);
+            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays, Input.ReminderHours, Input.CustomerEmails, Input.AllowManualTotal, Input.AllowManualSales), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -160,7 +160,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         {
             Name = s.Name, TimeZone = s.TimeZone, SlotMinutes = s.SlotMinutes,
             LeadTimeMinutes = s.LeadTimeMinutes, HorizonDays = s.HorizonDays, CancelCutoffHours = s.CancelCutoffHours,
-            BrandColor = s.BrandColor, FollowUpNoticeDays = s.FollowUpNoticeDays, ReminderHours = s.ReminderHours, CustomerEmails = s.CustomerEmails, AllowManualTotal = s.AllowManualTotal,
+            BrandColor = s.BrandColor, FollowUpNoticeDays = s.FollowUpNoticeDays, ReminderHours = s.ReminderHours, CustomerEmails = s.CustomerEmails, AllowManualTotal = s.AllowManualTotal, AllowManualSales = s.AllowManualSales,
         };
     }
 
@@ -177,5 +177,6 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         public int? ReminderHours { get; set; } = 24;
         public bool CustomerEmails { get; set; } = true;
         public bool AllowManualTotal { get; set; } = true;
+        public bool AllowManualSales { get; set; }
     }
 }

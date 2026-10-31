@@ -727,6 +727,47 @@ public class AdminWebTests
     }
 
     [Fact]
+    public async Task The_Record_a_sale_page_exists_only_while_the_Settings_switch_is_on_and_saves_a_sale()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync("/Admin/RecordSale")).StatusCode);              // off by default
+        Assert.DoesNotContain("/Admin/RecordSale", await owner.Client.GetStringAsync("/Admin"));
+        Assert.Matches("name=\"Input.AllowManualSales\"", Dec(await owner.Client.GetStringAsync("/Admin/Settings")));
+        Assert.DoesNotMatch("name=\"Input.AllowManualSales\"[^>]*checked", Dec(await owner.Client.GetStringAsync("/Admin/Settings")));
+
+        var fields = new Dictionary<string, string>
+        {
+            ["Input.Name"] = "Shop", ["Input.TimeZone"] = "Asia/Manila", ["Input.SlotMinutes"] = "15", ["Input.LeadTimeMinutes"] = "30",
+            ["Input.HorizonDays"] = "45", ["Input.CancelCutoffHours"] = "6", ["Input.AllowManualSales"] = "true",
+        };
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(owner.Client, "/Admin/Settings", "/Admin/Settings", fields)).StatusCode);
+
+        Assert.Contains("/Admin/RecordSale", await owner.Client.GetStringAsync("/Admin"));
+        var page = Dec(await owner.Client.GetStringAsync("/Admin/RecordSale"));
+        Assert.Contains(Text.ManualSaleAmount, page);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
+        var posted = await PostAsync(owner.Client, "/Admin/RecordSale", "/Admin/RecordSale", new()
+        {
+            ["Input.ServiceId"] = owner.ServiceId.ToString(), ["Input.Amount"] = "\u20B1450.50", ["Input.Date"] = today.ToString("yyyy-MM-dd"),
+            ["Input.Name"] = "Kuya Ben", ["Input.Phone"] = "", ["Input.IdempotencyKey"] = Guid.NewGuid().ToString("N"),
+        });
+        Assert.Equal(HttpStatusCode.Redirect, posted.StatusCode);
+        Assert.Contains(Text.ManualSaleSaved, Dec(await owner.Client.GetStringAsync("/Admin/RecordSale")));
+        await using var ctx = owner.Db.CreateDbContext();
+        var booking = await ctx.Bookings.SingleAsync(x => x.BusinessId == owner.BusinessId);
+        Assert.Equal((BookingStatus.Completed, 450.50m), (booking.Status, booking.PaidAmount));
+
+        var bad = await PostAsync(owner.Client, "/Admin/RecordSale", "/Admin/RecordSale", new()
+        {
+            ["Input.ServiceId"] = owner.ServiceId.ToString(), ["Input.Amount"] = "abc", ["Input.Date"] = today.ToString("yyyy-MM-dd"), ["Input.IdempotencyKey"] = Guid.NewGuid().ToString("N"),
+        });
+        Assert.Contains(Text.ManualSaleAmountInvalid, Dec(await bad.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
     public async Task Settings_can_be_saved_and_invalid_values_are_refused()
     {
         var (factory, _) = await HttpApp.StartAsync();

@@ -100,6 +100,11 @@
     </section>
 }
 
+@if (Model.ManualSales && Model.Level >= AdminLevel.Manager)
+{
+    <p><a class="button secondary" href="/Admin/RecordSale">@Text.ManualSaleLink</a></p>
+}
+
 <nav class="seg" aria-label="@Text.FilterLabel">
     @foreach (var (key, label) in filters)
     {

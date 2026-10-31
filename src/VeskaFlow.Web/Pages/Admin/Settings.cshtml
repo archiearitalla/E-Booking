@@ -246,6 +246,14 @@
             <input type="hidden" name="Input.AllowManualTotal" value="false" />
         </div>
 
+        <div class="field">
+            <label class="choice">
+                <input type="checkbox" name="Input.AllowManualSales" value="true" checked="@Model.Input.AllowManualSales" />
+                <span><strong>@Text.LabelAllowManualSales</strong><span class="muted"> @Text.HintAllowManualSales</span></span>
+            </label>
+            <input type="hidden" name="Input.AllowManualSales" value="false" />
+        </div>
+
         <fieldset class="field" aria-describedby="BrandColor-hint BrandColor-error">
             <legend>@Text.LabelBrandColor</legend>
             <div class="swatches">

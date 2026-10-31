@@ -512,6 +512,14 @@ When staff mark a visit **Done**, the page that opens (`/Admin/AfterVisit/{id}`)
 - A customer's export carries the quoted price, the regular price, the discount, the payment total and the services done on top; deleting the customer deletes them.
 - **Not built:** a payment method (cash, GCash), editing the price of a line after it was added (remove it and add it again), a receipt that can be printed or sent by message, and showing the added services in the customer's history page for staff.
 
+### 6.y20 Record a sale by hand
+
+For a service that was done and paid without a booking in the system, a shop can switch on **Settings > "Allow recording a sale by hand"** (`business.allow_manual_sales`, default off, migration 027). A **Record a sale** page (`/Admin/RecordSale`, Manager level and above) then takes the service (the "Other" service needs what was done), the **amount paid** (0 to 1,000,000), the date (today or earlier, at most 366 days back), an optional time, who did it, and the customer.
+
+- It is saved as a **completed** visit with the amount as its payment total, so reports, the day's earnings and the customer's history count it like any other visit. It holds no schedule time (only confirmed bookings do) and sends nothing to the customer.
+- **Customer:** with a mobile number the sale goes to that customer (matched by number; an existing customer keeps the name on file). With no number it is saved as a **walk-in** customer (name as typed, or "Walk-in"), each time its own customer, like any walk-in.
+- When the switch is off the page does not exist (not found). The same form sent twice is one sale (idempotency key). Another shop's service or staff member is "not found". The entry is written to the audit log as `MANUAL_SALE` with who did it.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.
