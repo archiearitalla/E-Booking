@@ -1,0 +1,86 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.AiModel
+@{
+    ViewData["Title"] = Text.AiAdminTitle;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var r = Model.Report;
+    string MonthLink(int delta) => "?month=" + r.Month.AddMonths(delta).ToString("yyyy-MM", inv) + (string.IsNullOrWhiteSpace(Model.Query) ? "" : "&q=" + Uri.EscapeDataString(Model.Query!));
+    var isCurrent = r.Month == Model.Admin.CurrentMonth;
+    string Lim(int? n) => n is { } v ? v.ToString("N0", inv) : "no limit";
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<h1>@Text.AiAdminTitle</h1>
+<p><a href="/Platform">&laquo; @Text.PlatformTitle</a></p>
+@if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
+@if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
+
+<div class="card">
+    <div class="daynav">
+        <a href="@MonthLink(-1)">&laquo; @Text.AiAdminPrevMonth</a>
+        <strong>@r.Month.ToString("MMMM yyyy", inv)</strong>
+        @if (!isCurrent) { <a href="@MonthLink(1)">@Text.AiAdminNextMonth &raquo;</a> } else { <span></span> }
+    </div>
+    <form method="get" class="inline-form">
+        <input type="hidden" name="month" value="@r.Month.ToString("yyyy-MM", inv)" />
+        <label for="q" class="sr-only">@Text.AiAdminSearch</label>
+        <input type="text" id="q" name="q" class="grow" value="@Model.Query" placeholder="@Text.AiAdminSearch" maxlength="80" />
+        <button type="submit" class="primary">@Text.DayGo</button>
+    </form>
+</div>
+
+<section class="kpis" aria-label="@Text.AiAdminTotals">
+    <div class="kpi"><span class="kpi-value">@r.TotalConversations.ToString("N0", inv)</span><span class="kpi-label">@Text.AiAdminConversations</span></div>
+    <div class="kpi"><span class="kpi-value">@r.TotalTokens.ToString("N0", inv)</span><span class="kpi-label">@Text.AiAdminTokens</span></div>
+    <div class="kpi"><span class="kpi-value">&#8369;@r.TotalCostPhp.ToString("N2", inv)</span><span class="kpi-label">@Text.AiAdminCost</span></div>
+    <div class="kpi"><span class="kpi-value">$@r.TotalCostUsd.ToString("N2", inv)</span><span class="kpi-label">@Text.AiAdminCostUsd</span></div>
+</section>
+<p class="hint">@Text.AiAdminEstimate(Model.Admin.InputUsdPerMillion.ToString("0.##", inv), Model.Admin.OutputUsdPerMillion.ToString("0.##", inv), Model.Admin.UsdToPhp.ToString("0.##", inv))</p>
+
+@if (r.Shops.Count == 0)
+{
+    <div class="card empty"><p>@Text.AiAdminNone</p></div>
+}
+else
+{
+    @* One short line per shop, biggest cost first; open a line for its limits. *@
+    <ul class="kpi-list ai-list">
+        @foreach (var s in r.Shops)
+        {
+            <li class="card">
+                <details>
+                    <summary>
+                        <span class="kpi-time"><span class="badge @(s.AddonActive ? "" : "off")">@(s.AddonActive ? Text.AiAdminOn : Text.AiAdminOff)</span></span>
+                        <span class="kpi-who">@s.Name</span>
+                        <span class="kpi-price">&#8369;@s.CostPhp.ToString("N2", inv)</span>
+                        <span class="kpi-what muted">@s.Conversations.ToString("N0", inv) / @s.Limits.Monthly.ToString("N0", inv) @Text.AiAdminConvShort &middot; @s.Tokens.ToString("N0", inv) @Text.AiAdminTokShort</span>
+                    </summary>
+                    <div class="kpi-more">
+                        <dl class="facts">
+                            <dt>@Text.PlatformOwner</dt><dd>@s.OwnerEmail &middot; /b/@s.Slug</dd>
+                            <dt>@Text.PlatformAiAddon</dt><dd>@(s.AddonUntilUtc is { } u ? Text.PlatformAiAddonUntil(u.ToString("MMM d, yyyy", inv)) : Text.PlatformAiAddonNone)</dd>
+                            <dt>@Text.AiAdminToday</dt><dd>@s.ConversationsToday.ToString("N0", inv) / @Lim(s.Limits.Daily)</dd>
+                            <dt>@Text.AiAdminMonth</dt><dd>@s.Conversations.ToString("N0", inv) / @s.Limits.Monthly.ToString("N0", inv)</dd>
+                            <dt>@Text.AiAdminTokens</dt><dd>@s.Tokens.ToString("N0", inv) (@s.InputTokens.ToString("N0", inv) in, @s.OutputTokens.ToString("N0", inv) out) / @(s.Limits.Tokens is { } tl ? tl.ToString("N0", inv) : "no limit")</dd>
+                            <dt>@Text.AiAdminCost</dt><dd>&#8369;@s.CostPhp.ToString("N2", inv) ($@s.CostUsd.ToString("N4", inv))</dd>
+                        </dl>
+                        <form method="post" asp-page-handler="Limits" class="limits-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <input type="hidden" name="q" value="@Model.Query" />
+                            <input type="hidden" name="month" value="@r.Month.ToString("yyyy-MM", inv)" />
+                            <div class="field"><label for="d-@s.BusinessId">@Text.AiLimitDaily</label>
+                                <input type="text" id="d-@s.BusinessId" name="daily" inputmode="numeric" maxlength="7" value="@s.DailyOverride" placeholder="@Text.AiLimitDefault" /></div>
+                            <div class="field"><label for="m-@s.BusinessId">@Text.AiLimitMonthly</label>
+                                <input type="text" id="m-@s.BusinessId" name="monthly" inputmode="numeric" maxlength="9" value="@s.MonthlyOverride" placeholder="@Text.AiLimitDefault" /></div>
+                            <div class="field"><label for="t-@s.BusinessId">@Text.AiLimitTokens</label>
+                                <input type="text" id="t-@s.BusinessId" name="tokens" inputmode="numeric" maxlength="14" value="@s.TokenOverride" placeholder="@Text.AiLimitDefault" /></div>
+                            <p class="hint">@Text.AiLimitHint</p>
+                            <button type="submit" class="primary" data-confirm="@Text.AiLimitAsk">@Text.AiLimitSave<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                    </div>
+                </details>
+            </li>
+        }
+    </ul>
+}
