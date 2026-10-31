@@ -328,6 +328,58 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         Guid businessId, Guid bookingId, DateTime newStartUtc, BookingActor actor, CancellationToken ct = default)
     {
         if (actor.Kind != ActorKind.Staff) return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.NotAllowed);
+        return await RescheduleCoreAsync(businessId, bookingId, newStartUtc, actor, ct);
+    }
+
+    /// <summary>The booking the manage token points at, as (shop, booking, customer name), or null.</summary>
+    private async Task<(Guid BusinessId, Guid BookingId, string Who)?> ResolveTokenAsync(string? manageToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(manageToken)) return null;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await db.Bookings.AsNoTracking().Where(b => b.ManageToken == manageToken)
+            .Select(b => new { b.BusinessId, b.Id, Who = b.Customer.Name }).FirstOrDefaultAsync(ct);
+        return row is null ? null : (row.BusinessId, row.Id, row.Who);
+    }
+
+    /// <summary>
+    /// Free start times for the customer moving their own booking to a local date (same staff member and service).
+    /// The customer rules apply: lead time and booking horizon. The booking's own slot counts as free.
+    /// </summary>
+    public async Task<ServiceResult<IReadOnlyList<DateTime>>> GetRescheduleStartsByTokenAsync(
+        string manageToken, DateOnly localDate, CancellationToken ct = default)
+    {
+        if (await ResolveTokenAsync(manageToken, ct) is not { } target)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var booking = await db.Bookings.AsNoTracking().FirstAsync(b => b.Id == target.BookingId, ct);
+        var business = await LoadBusinessAsync(db, target.BusinessId, ct);
+        var service = await db.Services.AsNoTracking().FirstOrDefaultAsync(s => s.Id == booking.ServiceId && s.BusinessId == target.BusinessId, ct);
+        if (business is null || service is null)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.NotFound, Text.NotFound);
+        var allowed = BookingPolicy.CanReschedule(booking.Status, booking.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, business.CancelCutoffHours);
+        if (!allowed.Allowed)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.PolicyViolation, allowed.Reason ?? Text.NotAllowed);
+        return ServiceResult<IReadOnlyList<DateTime>>.Ok(
+            await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, false, ct, booking.Id));
+    }
+
+    /// <summary>
+    /// Customer self-service move. The manage token authorizes exactly one booking; the cutoff is the same as for
+    /// cancelling. The time is checked again here and the database constraint stays the final guard.
+    /// </summary>
+    public async Task<ServiceResult<BookingSummary>> RescheduleByTokenAsync(
+        string manageToken, DateTime newStartUtc, CancellationToken ct = default)
+    {
+        if (await ResolveTokenAsync(manageToken, ct) is not { } target)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+        return await RescheduleCoreAsync(target.BusinessId, target.BookingId, newStartUtc, BookingActor.Customer(target.Who), ct);
+    }
+
+    private async Task<ServiceResult<BookingSummary>> RescheduleCoreAsync(
+        Guid businessId, Guid bookingId, DateTime newStartUtc, BookingActor actor, CancellationToken ct)
+    {
+        var byCustomer = actor.Kind == ActorKind.Customer;
         var start = LocalTime.AsUtc(newStartUtc);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -339,11 +391,12 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         if (business is null || service is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
 
         var now = time.GetUtcNow().UtcDateTime;
-        if (booking.Status != BookingStatus.Confirmed || booking.StartsAtUtc <= now)
-            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.RescheduleNotAllowed);
+        var policy = BookingPolicy.CanReschedule(booking.Status, booking.StartsAtUtc, now, actor.Kind, business.CancelCutoffHours);
+        if (!policy.Allowed)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, byCustomer ? policy.Reason! : Text.RescheduleNotAllowed);
 
         var localDate = LocalTime.LocalDateOf(start, business.TimeZone);
-        var free = await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, true, ct, booking.Id);
+        var free = await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, !byCustomer, ct, booking.Id);
         if (!free.Contains(start) || start <= now) return ServiceResult<BookingSummary>.Fail(FailureKind.SlotTaken, Text.SlotTaken);
 
         var oldStart = booking.StartsAtUtc;
@@ -470,7 +523,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var extras = await db.BookingExtras.AsNoTracking().Where(x => x.BookingId == row.Summary.Id && x.BusinessId == row.Summary.BusinessId)
             .OrderBy(x => x.CreatedAtUtc).ThenBy(x => x.ServiceNameSnapshot)
             .Select(x => new ExtraLine(x.Id, x.ServiceNameSnapshot, x.PriceSnapshot, x.RegularPriceSnapshot, x.DiscountPercentSnapshot)).ToListAsync(ct);
-        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras);
+        var canMove = BookingPolicy.CanReschedule(
+            row.Summary.Status, row.Summary.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, row.CutoffHours).Allowed;
+        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras, canMove);
     }
 
     public async Task<BookingSummary?> LoadSummaryAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)

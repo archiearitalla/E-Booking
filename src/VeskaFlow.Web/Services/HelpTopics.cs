@@ -162,7 +162,7 @@ public static class HelpTopics
                 "Open Settings. At the top you can change the shop name, time zone and booking rules.",
                 "Opening hours: set one range and apply it to everyone, or set each person in Staff.",
                 "Time between slots, notice needed and how many days ahead customers can book are all here.",
-                "Cancel cutoff is how many hours before the appointment a customer can still cancel on their own.",
+                "Cancel cutoff is how many hours before the appointment a customer can still cancel or move the booking on their own.",
                 "Tick Staff can type the payment total to let staff change the total on the page after a visit. Tick Allow recording a sale by hand to turn on Record a sale.",
                 "Upload your logo, or make one with the Logo Creator.",
             ],

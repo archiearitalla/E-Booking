@@ -22,6 +22,10 @@
     {
         <div class="notice" role="status">@Text.ManageCancelled</div>
     }
+    @if (Model.Notice is not null)
+    {
+        <div class="notice" role="status">@Model.Notice</div>
+    }
     @if (Model.Message is not null)
     {
         <div class="alert" role="alert">@Model.Message</div>
@@ -61,6 +65,11 @@
         </div>
     }
 
+    @if (d.CanMove)
+    {
+        <p class="hint">@string.Format(Text.ManageMoveHint, d.CancelCutoffHours)</p>
+        <p><a class="button" href="/booking/@b.ManageToken/move">@Text.ManageMoveButton</a></p>
+    }
     @if (d.CanCancel)
     {
         <form method="post" asp-page-handler="Cancel" asp-route-token="@b.ManageToken">

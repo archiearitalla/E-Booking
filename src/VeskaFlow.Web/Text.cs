@@ -145,6 +145,18 @@ public static class Text
     public const string ManageShop = "Shop";
     public const string ManageService = "Service";
     public const string ManageClosed = "This booking can no longer be changed online.";
+    public const string ManageMoveButton = "Move booking";
+    public const string ManageMoveHint = "You can also move it to another time, up to {0} hour(s) before your appointment.";
+    public const string MoveTitle = "Move your booking";
+    public const string MoveHint = "Pick a new date, then a free time. You keep the same staff member and service.";
+    public const string MoveCurrent = "Now";
+    public const string MoveDate = "New date";
+    public const string MoveShowTimes = "Show times";
+    public const string MoveNoTimes = "No free times on that date. Try another date.";
+    public const string MoveSave = "Move my booking";
+    public const string MoveConfirm = "Move your booking to the time you picked?";
+    public const string MoveDone = "Your booking was moved. The time below is your new time.";
+    public const string MoveBack = "Back to my booking";
 
     // Back office
     public const string SkipToContent = "Skip to content";

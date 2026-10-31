@@ -96,4 +96,5 @@ public sealed record BookingDetails(
     bool CanCancel,
     string? CancelRefusal,
     string BrandColor = BrandColors.Default,
-    IReadOnlyList<ExtraLine>? Extras = null);
+    IReadOnlyList<ExtraLine>? Extras = null,
+    bool CanMove = false);

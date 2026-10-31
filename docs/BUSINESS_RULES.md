@@ -157,7 +157,8 @@ Further rules:
 
 - A refused customer cancellation shows the shop's cutoff and tells the customer to contact the shop.
 - No-show: marked by staff after the grace period. No fee in the MVP (pay on site). The count per customer is a roadmap item.
-- **Rescheduling** ⬜: will be atomic. The new slot is secured first, then the old one released, so the customer never loses both. Until then, cancel and rebook.
+- **Rescheduling by staff** ✅: a confirmed booking that has not started moves to another free time with the same staff member and service. The time is checked again on the server, the exclusion constraint is the last word, the booking is updated in place (so the customer never loses the slot), and the audit row `RESCHEDULED` records the old and new time. The customer is told by the shop.
+- **Rescheduling by the customer** ✅: from `/booking/{token}/move`, linked from the manage page. Same rules as staff with these differences: it follows the cancel cutoff (the button is hidden and the page refuses once now > start − cutoff), only confirmed bookings that have not started can be moved, and the customer rules for free times apply (lead time and booking horizon). Same staff member, same service, same length. The token authorizes exactly one booking; an unknown token is "not found". The audit row says `CUSTOMER` with the customer's name, and the booking is due a new reminder. A lost race is the normal "slot taken" answer. The AI receptionist still cannot move a booking; it gives the manage link.
 - Closing a shop day or changing hours **never silently cancels** existing bookings. The admin sees a warning with the number of affected bookings and handles them deliberately.
 
 ## 8. Booking creation

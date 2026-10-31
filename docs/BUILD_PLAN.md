@@ -180,6 +180,7 @@ Still open: a registration and booking run on a real phone against the live link
 | Booking confirmation: copy link, add to calendar (.ics) | | tests | a real phone calendar |
 | Customer reminders: Reminders page, bell and strip, reminder hours setting (default 24), ready message with manage link, mark reminded | 6.y2 | tests; migration 012 | page and message on a real phone; live deploy |
 | Customers page: search, visits, spend, CSV download | 6.y3 | tests | page on a real phone |
+| Customer moves their own booking: `/booking/{token}/move`, same cutoff as cancel, same staff and service | 7 | tests (5 service and page tests, 4 Core checks) | page on a real phone, in Safari |
 | Reports: outcomes, revenue, by service and staff | 6.y4 | tests | page on a real phone |
 | Staff move a confirmed booking (Move button, free times, audit, new reminder) | 6.y5 | tests | page on a real phone |
 | Platform: extend a shop's access by 7, 30, 90 or 365 days | 6.y6 | test | Platform page on a real phone |
