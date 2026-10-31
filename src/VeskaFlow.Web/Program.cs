@@ -28,7 +28,7 @@ catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotF
 builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton(new VeskaFlow.Web.Services.BookingLimits(builder.Configuration.GetValue("Booking:MaxActivePerCustomer", 2)));
+builder.Services.AddSingleton(new VeskaFlow.Web.Services.BookingLimits(builder.Configuration.GetValue("Booking:MaxActivePerCustomer", 2), builder.Configuration.GetValue("Booking:MaxOnlinePerDay", 150)));
 builder.Services.AddScoped<VeskaFlow.Web.Services.BookingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.OnboardingService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AuthService>();

@@ -220,6 +220,8 @@ public class Booking
     public decimal DepositSnapshot { get; set; }
     /// <summary>When staff marked the deposit as received; null means not yet.</summary>
     public DateTime? DepositReceivedAtUtc { get; set; }
+    /// <summary>Made by "Record a sale" (migration 033): a completed visit that blocks its time for new bookings while that time is still running.</summary>
+    public bool IsManualSale { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;

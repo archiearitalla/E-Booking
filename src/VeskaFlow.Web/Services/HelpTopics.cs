@@ -60,6 +60,8 @@ public static class HelpTopics
             [
                 "Ask the owner to switch on Allow recording a sale by hand in Settings. Managers and owners then see Record a sale in Bookings.",
                 "Choose the service, type the amount paid and choose the date (today or up to a year back).",
+                "The time starts as now. You can change it, but it must be inside the working hours. While that service is running, the time cannot be booked by anyone else.",
+                "In the day list these show the label Manual input of sales.",
                 "Type the customer's name and mobile number if you have them. With no number, the customer is saved as a walk-in.",
                 "Press Save the sale. It is saved as a completed visit.",
             ],

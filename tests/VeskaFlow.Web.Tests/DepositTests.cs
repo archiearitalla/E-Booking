@@ -92,8 +92,8 @@ public class DepositTests
 
         await using var ctx = s.Db.CreateDbContext();
         Assert.Null((await ctx.Bookings.SingleAsync(b => b.Id == booking.Id)).DepositReceivedAtUtc);
-        var actions = await ctx.AuditLogs.Where(a => a.BookingId == booking.Id && a.Action.StartsWith("DEPOSIT")).OrderBy(a => a.AtUtc).Select(a => a.Action).ToListAsync();
-        Assert.Equal(["DEPOSIT_RECEIVED", "DEPOSIT_UNDONE"], actions); // the repeat left no extra row
+        var actions = await ctx.AuditLogs.Where(a => a.BookingId == booking.Id && a.Action.StartsWith("DEPOSIT")).OrderBy(a => a.Action).Select(a => a.Action).ToListAsync(); // the test clock is fixed, so both rows share one time
+        Assert.Equal(["DEPOSIT_RECEIVED", "DEPOSIT_UNDONE"], actions); // one of each: the repeat left no extra row
     }
 
     [Fact]

@@ -38,6 +38,8 @@
         <div class="field">
             <label for="time">@Text.ManualSaleTime</label>
             <input type="time" id="time" name="Input.Time" value="@Model.Input.Time" />
+            <p class="hint">@Text.ManualSaleTimeHint</p>
+            @if (Err("time") is { } eT) { <p class="error">@eT</p> }
         </div>
         @if (Model.ScopeStaffId is null)
         {

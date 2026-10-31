@@ -73,8 +73,34 @@ public sealed partial class ManualSaleService(IDbContextFactory<AppDbContext> db
         if (isWalkIn) phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N");
         if (who.Length == 0) who = Text.WalkInNameDefault;
 
-        var local = input.Date.ToDateTime(input.Time ?? new TimeOnly(12, 0));
-        var start = LocalTime.ToUtc(local, LocalTime.Zone(business.TimeZone));
+        // The time of the sale is when it was entered unless the person typed another time, and it stays inside the staff member's
+        // working hours for that day. A day with no hours set (the shop is closed) has no limit: the sale happened anyway.
+        var windows = await db.WorkingHours.AsNoTracking()
+            .Where(h => h.StaffId == staff.Id && h.DayOfWeek == (short)input.Date.DayOfWeek)
+            .OrderBy(h => h.OpenTime).Select(h => new { h.OpenTime, h.CloseTime }).ToListAsync(ct);
+        // A window that closes at or before it opens runs past midnight; for picking a time it ends at the end of the day.
+        var spans = windows.Select(w => (Open: w.OpenTime, Close: w.CloseTime > w.OpenTime ? w.CloseTime : new TimeOnly(23, 59))).ToList();
+        var zone = LocalTime.Zone(business.TimeZone);
+        var timeTyped = input.Time is not null;
+        var wanted = input.Time ?? (input.Date == today ? TimeOnly.FromDateTime(LocalTime.ToLocal(now, business.TimeZone)) : new TimeOnly(12, 0));
+        if (spans.Count > 0 && !spans.Any(s => wanted >= s.Open && wanted < s.Close))
+        {
+            if (timeTyped)
+            {
+                errors["time"] = string.Format(Text.ManualSaleTimeOutside, string.Join(", ", spans.Select(s => $"{s.Open:h:mm tt} - {s.Close:h:mm tt}")));
+                return ServiceResult<Guid>.Invalid(errors);
+            }
+            // Not typed: use the closest time inside the hours before it (the end of the last window it is past), or keep it when the shop was not open yet.
+            var before = spans.Where(s => s.Open <= wanted).ToList();
+            if (before.Count > 0)
+            {
+                var last = before[^1];
+                var length = Math.Max(1, service.DurationMinutes);
+                wanted = last.Close.AddMinutes(-length) > last.Open ? last.Close.AddMinutes(-length) : last.Open;
+            }
+        }
+        var local = input.Date.ToDateTime(wanted);
+        var start = LocalTime.ToUtc(local, zone);
         if (start > now) start = now; // a time later today than now is still today's sale
         var end = start.AddMinutes(Math.Max(1, service.DurationMinutes));
 
@@ -93,7 +119,7 @@ public sealed partial class ManualSaleService(IDbContextFactory<AppDbContext> db
             StartsAtUtc = start, EndsAtUtc = end, OccupiedUntilUtc = end, LocationTimeZone = business.TimeZone, Status = BookingStatus.Completed,
             PriceSnapshot = service.IsOther ? amount : service.Price, ServiceNameSnapshot = name, PaidAmount = amount,
             ManageToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace('+', '-').Replace('/', '_').TrimEnd('='),
-            IdempotencyKey = key, CreatedAtUtc = now, UpdatedAtUtc = now,
+            IdempotencyKey = key, CreatedAtUtc = now, UpdatedAtUtc = now, IsManualSale = true,
         };
         db.Bookings.Add(booking);
         db.AuditLogs.Add(new AuditLog

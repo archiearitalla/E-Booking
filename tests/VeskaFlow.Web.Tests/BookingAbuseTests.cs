@@ -13,9 +13,9 @@ public class BookingAbuseServiceTests
 {
     private static string Id(string prefix) => prefix + Guid.NewGuid().ToString("N")[..10];
 
-    private sealed record Setup(TestDbFactory Db, BookingService Bookings, RegisteredOwner Owner, Guid ServiceId, Guid StaffA, Guid StaffB);
+    private sealed record Setup(TestDbFactory Db, BookingService Bookings, RegisteredOwner Owner, Guid ServiceId, Guid StaffA, Guid StaffB, TestClock Clock);
 
-    private static async Task<Setup> SetupAsync(int cap = 2)
+    private static async Task<Setup> SetupAsync(int cap = 2, int perDay = 150)
     {
         var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
         var clock = new TestClock(BaseNow);
@@ -26,7 +26,7 @@ public class BookingAbuseServiceTests
         var staffA = await ctx.StaffMembers.Where(s => s.BusinessId == owner.BusinessId).Select(s => s.Id).SingleAsync();
         var second = await new CatalogAdminService(db, clock).SaveStaffAsync(owner.BusinessId, new StaffInput(null, "Dr B", true, 1, [service]));
         Assert.True(second.IsSuccess, second.Message);
-        return new Setup(db, new BookingService(db, clock, new BookingLimits(cap)), owner, service, staffA, second.Value!.Id);
+        return new Setup(db, new BookingService(db, clock, new BookingLimits(cap, perDay)), owner, service, staffA, second.Value!.Id, clock);
     }
 
     private static CreateBookingRequest Req(Setup s, Guid? staff, DateTime start, string phone, BookingActor? actor = null) =>
@@ -77,6 +77,35 @@ public class BookingAbuseServiceTests
         // Cancelling one frees a place for the first person.
         Assert.True((await s.Bookings.CancelByTokenAsync(first.Value!.Booking.ManageToken)).IsSuccess);
         Assert.True((await s.Bookings.CreateAsync(Req(s, s.StaffB, Manila(5, 15), "09171230003"))).IsSuccess);
+    }
+
+    [Fact]
+    public async Task A_shop_takes_only_so_many_online_bookings_in_24_hours_staff_are_not_counted_and_zero_turns_it_off()
+    {
+        var s = await SetupAsync(cap: 0, perDay: 3);
+        // Three different people (so the per-person cap is not what stops this): the fourth online booking is refused.
+        for (var i = 0; i < 3; i++)
+            Assert.True((await s.Bookings.CreateAsync(Req(s, s.StaffA, Manila(5, 10 + i), $"0917123010{i}"))).IsSuccess);
+        var fourth = await s.Bookings.CreateAsync(Req(s, s.StaffA, Manila(5, 14), "09171230109"));
+        Assert.Equal(FailureKind.Validation, fourth.Failure);
+        Assert.Equal(Text.OnlineBookingsFull, fourth.FieldErrors["phone"]);
+
+        // Staff walk-ins and phone-ins are not counted and not stopped.
+        var staff = BookingActor.Staff(s.Owner.AdminUserId, "Dr A");
+        Assert.True((await s.Bookings.CreateAsync(Req(s, s.StaffA, Manila(5, 15), "09171230110", staff))).IsSuccess);
+
+        // Another shop is not affected by this shop's count.
+        var other = await SetupAsync(cap: 0, perDay: 3);
+        Assert.True((await other.Bookings.CreateAsync(Req(other, other.StaffA, Manila(5, 10), "09171230111"))).IsSuccess);
+
+        // After 24 hours the count starts again.
+        s.Clock.Now = s.Clock.Now.AddHours(25);
+        Assert.True((await s.Bookings.CreateAsync(Req(s, s.StaffA, Manila(6, 14), "09171230109"))).IsSuccess);
+
+        // A limit of zero turns it off.
+        var open = await SetupAsync(cap: 0, perDay: 0);
+        for (var i = 0; i < 5; i++)
+            Assert.True((await open.Bookings.CreateAsync(Req(open, open.StaffA, Manila(5, 10 + i), $"0917123020{i}"))).IsSuccess);
     }
 
     [Fact]

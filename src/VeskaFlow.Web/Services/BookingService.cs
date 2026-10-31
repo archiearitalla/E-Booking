@@ -205,6 +205,19 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
 
                 if (caps.MaxActivePerCustomer > 0 && await active.CountAsync(b => b.EndsAtUtc > now, ct) >= caps.MaxActivePerCustomer)
                     return new InsertAttempt(InsertOutcome.CustomerLimit, null, string.Format(Text.TooManyActiveBookings, caps.MaxActivePerCustomer));
+
+                // A flood from many numbers or addresses: a shop only takes so many online bookings in any 24 hours. Counted under a
+                // per-shop lock so parallel requests cannot all slip under it. The shop's own staff are not counted and not stopped.
+                if (caps.MaxOnlinePerDay > 0)
+                {
+                    await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"online:" + business.Id}, 0))", ct);
+                    var since = now.AddHours(-24);
+                    var customerCode = request.Actor.TypeCode; // this branch is only for customers
+                    var madeOnline = await db.AuditLogs.CountAsync(a => a.BusinessId == business.Id && a.Action == "CREATED"
+                        && a.ActorType == customerCode && a.AtUtc > since, ct);
+                    if (madeOnline >= caps.MaxOnlinePerDay)
+                        return new InsertAttempt(InsertOutcome.CustomerLimit, null, Text.OnlineBookingsFull);
+                }
             }
 
             // A running promo takes its percentage off a service that is part of it, at the moment the booking is made: what the
@@ -625,10 +638,13 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var rangeStart = dayStart.AddDays(-1);
         var rangeEnd = dayEnd.AddDays(1);
 
+        // A sale recorded by hand is a completed visit; while its time is still running it holds that time like a booking.
+        var nowUtc = time.GetUtcNow().UtcDateTime;
         var occupied = await db.Bookings.AsNoTracking()
             .Where(b => b.BusinessId == business.Id && b.StaffId == staffId && b.Id != ignoreBookingId
                         && b.StartsAtUtc < rangeEnd && b.OccupiedUntilUtc > rangeStart
-                        && (b.Status == BookingStatus.Held || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
+                        && (b.Status == BookingStatus.Held || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed
+                            || (b.IsManualSale && b.Status == BookingStatus.Completed && b.OccupiedUntilUtc > nowUtc)))
             .Select(b => new TimeRange(b.StartsAtUtc, b.OccupiedUntilUtc))
             .ToListAsync(ct);
 

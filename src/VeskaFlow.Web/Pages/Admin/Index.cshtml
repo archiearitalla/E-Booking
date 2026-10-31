@@ -126,6 +126,7 @@ else
                 <div class="booking-head">
                     <strong>@DisplayFormat.Time(b.StartsAtUtc, view.TimeZone) &ndash; @DisplayFormat.Time(b.EndsAtUtc, view.TimeZone)</strong>
                     <span class="badge">@b.Status.Label()</span>
+                    @if (b.IsManualSale) { <span class="badge manual">@Text.ManualSaleBadge</span> }
                 </div>
                 <dl class="facts">
                     <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; <partial name="_PriceLine" model="new PriceLineModel(b.Price, b.RegularPrice, b.DiscountPercent)" />@if (b.ExtraLines.Count > 0) { <text> + @string.Join(", ", b.ExtraLines.Select(x => x.Name))</text> }@if (b.Status == BookingStatus.Completed && b.PaidAmount is { } paidTotal) { <text> &middot; @Text.AfterVisitPaidShort(DisplayFormat.Price(paidTotal))</text> }</dd>

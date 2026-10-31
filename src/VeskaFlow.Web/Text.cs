@@ -1053,6 +1053,10 @@ public static class Text
     public const string LabelAllowManualSales = "Allow recording a sale by hand";
     public const string HintAllowManualSales = "Adds a Record a sale page where a manager enters a service and what was paid, for your sales and customer records. A customer with no number is saved as a walk-in. Off by default.";
     public const string ManualSaleLink = "Record a sale";
+    public const string OnlineBookingsFull = "Online booking is full for now. Please call or message the shop.";
+    public const string ManualSaleTimeHint = "Starts as the time you are entering this. It must be inside the working hours, and while it is running that time cannot be booked.";
+    public const string ManualSaleBadge = "Manual input of sales";
+    public const string ManualSaleTimeOutside = "Pick a time inside the working hours of that day ({0}).";
     public const string ManualSaleTitle = "Record a sale";
     public const string ManualSaleIntro = "For a service that was done and paid without a booking in the system. It is saved as a completed visit, so it shows in the reports and in the customer's history. Nothing is sent to the customer.";
     public const string ManualSaleOff = "Recording a sale by hand is switched off in Settings.";

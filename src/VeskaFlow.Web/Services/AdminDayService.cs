@@ -12,7 +12,7 @@ public sealed record DayBooking(
     DateOnly? FollowUpOn = null, string? FollowUpNote = null, bool FollowUpDone = false, DateOnly? SuggestedFollowUp = null,
     string? CustomerEmail = null, string? FollowUpService = null, string? VisitNotes = null, Guid CustomerId = default,
     bool CanMove = false, decimal? RegularPrice = null, int? DiscountPercent = null, decimal? PaidAmount = null,
-    IReadOnlyList<ExtraLine>? Extras = null, decimal Deposit = 0m, bool DepositReceived = false)
+    IReadOnlyList<ExtraLine>? Extras = null, decimal Deposit = 0m, bool DepositReceived = false, bool IsManualSale = false)
 {
     /// <summary>The services done on top of the booked one (empty for most visits).</summary>
     public IReadOnlyList<ExtraLine> ExtraLines => Extras ?? [];
@@ -64,7 +64,7 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
                 b.FollowUpOn, b.FollowUpNote, b.FollowUpDone, ServiceFollowUpDays = b.Service.FollowUpDays,
                 CustomerEmail = b.Customer.Email, b.FollowUpService, b.VisitNotes, b.CustomerId,
                 b.RegularPriceSnapshot, b.DiscountPercentSnapshot, b.PaidAmount,
-                b.DepositSnapshot, DepositReceived = b.DepositReceivedAtUtc != null,
+                b.DepositSnapshot, DepositReceived = b.DepositReceivedAtUtc != null, b.IsManualSale,
             })
             .ToListAsync(ct);
 
@@ -86,7 +86,7 @@ public sealed class AdminDayService(IDbContextFactory<AppDbContext> dbFactory, T
             r.CustomerEmail, r.FollowUpService, r.VisitNotes, r.CustomerId,
             CanMove: r.Status == BookingStatus.Confirmed && r.StartsAtUtc > now,
             RegularPrice: r.RegularPriceSnapshot, DiscountPercent: r.DiscountPercentSnapshot, PaidAmount: r.PaidAmount,
-            Extras: extras.GetValueOrDefault(r.Id), Deposit: r.DepositSnapshot, DepositReceived: r.DepositReceived)).ToList();
+            Extras: extras.GetValueOrDefault(r.Id), Deposit: r.DepositSnapshot, DepositReceived: r.DepositReceived, IsManualSale: r.IsManualSale)).ToList();
 
         return new DayView(day, business.TimeZone, bookings, LocalTime.LocalDateOf(now, business.TimeZone));
     }

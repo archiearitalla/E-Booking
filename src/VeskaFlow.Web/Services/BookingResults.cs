@@ -33,8 +33,11 @@ public sealed class ServiceResult<T>
 }
 
 /// <summary>Who performs an action. Customers have no id; they are identified by the manage token.</summary>
-/// <summary>Abuse limits for the open online booking page (BUSINESS_RULES 8.6). 0 turns the per-customer cap off.</summary>
-public sealed record BookingLimits(int MaxActivePerCustomer = 2);
+/// <summary>
+/// Abuse limits for the open online booking page (BUSINESS_RULES 8.6). 0 turns a limit off. <c>MaxActivePerCustomer</c> is per person;
+/// <c>MaxOnlinePerDay</c> is how many bookings customers may make online in one shop in any 24 hours (staff bookings are not counted).
+/// </summary>
+public sealed record BookingLimits(int MaxActivePerCustomer = 2, int MaxOnlinePerDay = 150);
 
 public sealed record BookingActor(ActorKind Kind, Guid? Id, string Label)
 {
