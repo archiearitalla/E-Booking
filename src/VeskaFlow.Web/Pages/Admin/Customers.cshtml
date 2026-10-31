@@ -4,6 +4,7 @@
     ViewData["Title"] = Text.AdminNavCustomers;
 }
 <h1>@Text.AdminNavCustomers</h1>
+<partial name="_HelpLink" model="@("customers")" />
 <p class="hint">@Text.CustomersHint</p>
 
 <form method="get" class="card" role="search">

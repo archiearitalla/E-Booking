@@ -204,3 +204,16 @@ document.querySelectorAll('form[data-search-submit]').forEach(function (form) {
   if (!input) return;
   input.addEventListener('change', function () { if (typeof form.requestSubmit === 'function') form.requestSubmit(); else form.submit(); });
 });
+
+// Help page: a link to a topic (the index, or "How does this work?" on a page) opens that topic.
+(function () {
+  function openTopic() {
+    var id = decodeURIComponent((location.hash || '').slice(1));
+    if (!id) return;
+    var topic = document.getElementById(id);
+    var details = topic && topic.classList.contains('help-topic') ? topic.querySelector('details') : null;
+    if (details) { details.open = true; topic.scrollIntoView({ block: 'start' }); }
+  }
+  window.addEventListener('hashchange', openTopic);
+  openTopic();
+})();

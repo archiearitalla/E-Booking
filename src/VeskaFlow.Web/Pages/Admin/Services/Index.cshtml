@@ -4,6 +4,7 @@
     ViewData["Title"] = Text.AdminNavServices;
 }
 <h1>@Text.AdminNavServices</h1>
+<partial name="_HelpLink" model="@("services")" />
 <p><a class="button" href="/Admin/Services/Edit">@Text.ServiceAdd</a></p>
 <form method="post" asp-page-handler="Suggested" class="card">
     <p class="muted">@Text.ServicesSuggestedHint</p>

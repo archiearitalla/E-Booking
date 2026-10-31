@@ -342,6 +342,14 @@ public static class Text
     public const string InstallIphoneSteps = "tap Share, then Add to Home Screen.";
     public const string KpiLabel = "The day at a glance";
     public const string CancelOpen = "Cancel this booking...";
+    public const string HelpTitle = "Help and guide";
+    public const string HelpIntro = "Short steps for every feature. Tap a title to open it. Everything here is about what you can do with your login.";
+    public const string HelpSearch = "Search the guide, for example payment or promo";
+    public const string HelpNone = "Nothing found. Try another word, or clear the search.";
+    public const string HelpHow = "How to use it";
+    public const string HelpTip = "Tip:";
+    public const string HelpLink = "How does this work?";
+    public const string AdminNavHelp = "Help";
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
     public const string KpiHidden = "\u20B1 \u2022\u2022\u2022\u2022";

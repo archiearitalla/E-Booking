@@ -6,6 +6,7 @@
     var fuValue = (b.FollowUpOn ?? b.SuggestedFollowUp) is { } fuDate ? DisplayFormat.DateParam(fuDate) : "";
 }
 <h1>@Text.AfterVisitTitle</h1>
+<partial name="_HelpLink" model="@("done")" />
 
 <div class="card">
     <dl class="facts">

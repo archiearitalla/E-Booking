@@ -1,0 +1,6 @@
+@model string
+@* A small link under a page title that opens the guide at that feature. Shown only for a topic that exists. *@
+@if (VeskaFlow.Web.Services.HelpTopics.Find(Model) is { } topic)
+{
+    <p class="help-link"><a href="/Admin/Help?topic=@topic.Id#@topic.Id">@Text.HelpLink</a></p>
+}
