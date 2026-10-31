@@ -14,28 +14,6 @@
 @if (!Model.EmailConfigured) { <div class="notice" role="status">@Text.PlatformNoEmail</div> }
 @if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
 @if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
-<div class="card">
-    <h2>@Text.PayQrTitle</h2>
-    <p class="hint">@Text.PayQrHint</p>
-    @if (Model.PayQrVersion is { } payQrVersion)
-    {
-        <img class="pay-qr" src="/pay-qr?v=@payQrVersion" alt="@Text.PayQrAlt" width="256" height="256" />
-    }
-    <form method="post" asp-page-handler="PayQr" enctype="multipart/form-data">
-        <div class="field">
-            <label for="pay-qr-file">@Text.LogoChoose</label>
-            <input type="file" id="pay-qr-file" name="picture" accept="image/png,image/jpeg,image/webp" required />
-        </div>
-        <button type="submit" class="secondary" data-confirm="@Text.PayQrSaveAsk">@Text.PayQrSave</button>
-    </form>
-    @if (Model.PayQrVersion is not null)
-    {
-        <form method="post" asp-page-handler="RemovePayQr" class="actions">
-            <button type="submit" class="danger" data-confirm="@Text.PayQrRemoveAsk">@Text.PayQrRemove</button>
-        </form>
-    }
-</div>
-
 @if (!string.IsNullOrEmpty(Model.LinkToCopy))
 {
     <div class="card">
@@ -47,24 +25,19 @@
     </div>
 }
 
-<div class="card">
-    <h2>@Text.PlatformBackupTitle</h2>
-    <p class="hint">@Text.PlatformBackupHint</p>
-    @if (Model.BackupDaysSince is { } days)
-    {
-        <p class="@(Model.BackupOverdue ? "warn" : "muted")">@Text.PlatformBackupLast(Model.BackupCopySavedAtUtc!.Value.ToString("MMM d, yyyy", invariant), days)@(Model.BackupOverdue ? " " + Text.PlatformBackupOverdue : "")</p>
-    }
-    else
-    {
-        <p class="warn">@Text.PlatformBackupNever</p>
-    }
-    <div class="actions">
-        <a class="button secondary" href="@Model.BackupUrl" target="_blank" rel="noopener">@Text.PlatformBackupOpen</a>
-        <form method="post" asp-page-handler="BackupSaved">
-            <button type="submit" class="secondary" data-confirm="@Text.PlatformBackupAsk">@Text.PlatformBackupSaved</button>
-        </form>
+@if (Model.DueItems.Count > 0)
+{
+    <div class="notice" role="status">
+        <strong>@Text.ExpiryAlert(Model.DueItems.Select(i => i.BusinessId).Distinct().Count())</strong>
+        <ul class="expiry-list">
+            @foreach (var it in Model.DueItems)
+            {
+                <li class="@(it.DaysLeft < 0 ? "due" : "")"><a href="?q=@Uri.EscapeDataString(it.Slug)">@it.Shop</a> &middot; @Text.ExpiryLine(it.What, it.EndUtc.ToString("MMM d, yyyy", invariant), it.DaysLeft)</li>
+            }
+        </ul>
+        @if (Model.OnlyExpiring) { <a href="/Platform">@Text.ExpiryShowAll</a> } else { <a href="?expiring=true">@Text.ExpiryOnlyDue</a> }
     </div>
-</div>
+}
 
 <form method="get" class="inline-form shop-search" data-search-submit>
     <label for="q" class="sr-only">@Text.PlatformSearch</label>
@@ -96,57 +69,86 @@ else
                         @if (s.AiAddonUntilUtc is { } aiOn && aiOn > DateTime.UtcNow) { <span class="badge">@Text.PlatformAiAddon</span> }
                     </span>
                     <span class="shop-sub muted">@s.OwnerEmail &middot; /b/@s.Slug</span>
+                    @{ var dueNow = ShopExpiry.Due(s, Model.Now); }
+                    <span class="shop-exp @(dueNow.Count > 0 ? "due" : "muted")">
+                        @if (s.TrialEndsAtUtc is { } accessEnd) { @Text.ExpiryLine(Text.ExpiryWhatAccess, accessEnd.ToString("MMM d, yyyy", invariant), ShopExpiry.DaysLeft(accessEnd, Model.Now)) } else { @Text.ExpiryNoEnd }
+                        @foreach (var extra in ShopExpiry.All(s, Model.Now).Where(i => i.What != Text.ExpiryWhatAccess && i.DaysLeft >= -ShopExpiry.RecentDays)) { <text> &middot; @Text.ExpiryLine(extra.What, extra.EndUtc.ToString("MMM d, yyyy", invariant), extra.DaysLeft)</text> }
+                    </span>
                 </summary>
                 <div class="kpi-more">
                 <dl class="facts">
                     <dt>@Text.PlatformOwner</dt><dd>@s.OwnerName &middot; @s.OwnerEmail</dd>
                     <dt>@Text.SettingsAddress</dt><dd><a href="/b/@s.Slug">/b/@s.Slug</a> &middot; @s.Industry</dd>
-                    <dt>@Text.PlatformEmailAddon</dt><dd>@(s.EmailAddonUntilUtc is { } au && au > DateTime.UtcNow ? Text.PlatformEmailAddonUntil(au.ToString("MMM d, yyyy", invariant)) : Text.PlatformEmailAddonNone)</dd>
-                    <dt>@Text.PlatformAiAddon</dt><dd>@(s.AiAddonUntilUtc is { } ai && ai > DateTime.UtcNow ? Text.PlatformAiAddonUntil(ai.ToString("MMM d, yyyy", invariant)) : Text.PlatformAiAddonNone)</dd>
-                    <dt>@Text.PlatformSignedUp</dt><dd>@s.CreatedAtUtc.ToString("MMM d, yyyy", invariant)@(s.TrialEndsAtUtc is { } t ? " · " + string.Format(Text.PlatformTrialEnds, t.ToString("MMM d, yyyy", invariant)) : "")</dd>
+                    <dt>@Text.PlatformSignedUp</dt><dd>@s.CreatedAtUtc.ToString("MMM d, yyyy", invariant)</dd>
                 </dl>
-                <div class="actions">
-                    <form method="post" asp-page-handler="Enable">
+
+                <h3 class="sub-title">@Text.PlatformSubscription</h3>
+                <div class="sub-rows">
+                    @{
+                        string Status(DateTime? end, string none) => end is { } e && ShopExpiry.DaysLeft(e, Model.Now) >= 0
+                            ? Text.PlatformUntil(e.ToString("MMM d, yyyy", invariant), ShopExpiry.DaysLeft(e, Model.Now))
+                            : end is { } gone ? Text.PlatformEnded(gone.ToString("MMM d, yyyy", invariant)) : none;
+                        bool Warn(DateTime? end) => ShopExpiry.IsDue(end, Model.Now);
+                    }
+                    <div class="sub-row">
+                        <div class="sub-info"><strong>@Text.ExpiryWhatAccess</strong><span class="sub-status @(Warn(s.TrialEndsAtUtc) ? "due" : "muted")">@Status(s.TrialEndsAtUtc, Text.ExpiryNoEnd)</span></div>
+                        @if (s.TrialEndsAtUtc is not null)
+                        {
+                        <form method="post" asp-page-handler="Extend" class="sub-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <label for="extend-@s.BusinessId" class="sr-only">@Text.PlatformExtendDays @s.Name</label>
+                            <select id="extend-@s.BusinessId" name="days">
+                                @foreach (var d in AccountControlService.ExtendChoices) { <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option> }
+                            </select>
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformExtendAsk">@Text.PlatformAddDays<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                        }
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-info"><strong>@Text.PlatformAiAddon</strong><span class="sub-status @(Warn(s.AiAddonUntilUtc) ? "due" : "muted")">@Status(s.AiAddonUntilUtc, Text.PlatformAiAddonNone)</span></div>
+                        <form method="post" asp-page-handler="AiAddon" class="sub-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <label for="aiaddon-@s.BusinessId" class="sr-only">@Text.PlatformAiAddon @s.Name</label>
+                            <select id="aiaddon-@s.BusinessId" name="days">
+                                @foreach (var d in AccountControlService.ExtendChoices) { <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option> }
+                            </select>
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformAiAddonAsk">@Text.PlatformAddDays<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-info"><strong>@Text.PlatformEmailAddon</strong><span class="sub-status @(Warn(s.EmailAddonUntilUtc) ? "due" : "muted")">@Status(s.EmailAddonUntilUtc, Text.PlatformEmailAddonNone)</span></div>
+                        @if (s.TrialEndsAtUtc is not null)
+                        {
+                        <form method="post" asp-page-handler="EmailAddon" class="sub-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <label for="emailaddon-@s.BusinessId" class="sr-only">@Text.PlatformEmailAddon @s.Name</label>
+                            <select id="emailaddon-@s.BusinessId" name="days">
+                                @foreach (var d in AccountControlService.ExtendChoices) { <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option> }
+                            </select>
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformEmailAddonAsk">@Text.PlatformAddDays<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                        }
+                    </div>
+                </div>
+
+                <div class="shop-actions">
+                    @if (!s.EmailConfirmed)
+                    {
+                        <form method="post" asp-page-handler="ConfirmNow">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformConfirmNowAsk">@Text.PlatformConfirmNow<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                        <form method="post" asp-page-handler="SendLink">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformSendLinkAsk">@Text.PlatformSendLink<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                    }
+                    <form method="post" asp-page-handler="Enable" class="push-right">
                         <input type="hidden" name="id" value="@s.BusinessId" />
                         <input type="hidden" name="on" value="@((!s.Enabled).ToString().ToLowerInvariant())" />
                         <button type="submit" class="@(s.Enabled ? "danger" : "primary")" data-confirm="@(s.Enabled ? Text.PlatformConfirmOff : Text.PlatformConfirmOn)">@(s.Enabled ? Text.PlatformSwitchOff : Text.PlatformSwitchOn)<span class="sr-only"> @s.Name</span></button>
                     </form>
-                    <form method="post" asp-page-handler="AiAddon" class="inline-form">
-                        <input type="hidden" name="id" value="@s.BusinessId" />
-                        <label for="ai-@s.BusinessId" class="sr-only">@Text.PlatformAiAddon @s.Name</label>
-                        <select id="ai-@s.BusinessId" name="days">
-                            @foreach (var d in AccountControlService.ExtendChoices)
-                            {
-                                <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option>
-                            }
-                        </select>
-                        <button type="submit" class="secondary" data-confirm="@Text.PlatformAiAddonAsk">@Text.PlatformAiAddon<span class="sr-only"> @s.Name</span></button>
-                    </form>
-                    @if (s.TrialEndsAtUtc is not null)
-                    {
-                    <form method="post" asp-page-handler="EmailAddon" class="inline-form">
-                        <input type="hidden" name="id" value="@s.BusinessId" />
-                        <label for="addon-@s.BusinessId" class="sr-only">@Text.PlatformEmailAddon @s.Name</label>
-                        <select id="addon-@s.BusinessId" name="days">
-                            @foreach (var d in AccountControlService.ExtendChoices)
-                            {
-                                <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option>
-                            }
-                        </select>
-                        <button type="submit" class="secondary" data-confirm="@Text.PlatformEmailAddonAsk">@Text.PlatformEmailAddon<span class="sr-only"> @s.Name</span></button>
-                    </form>
-                        <form method="post" asp-page-handler="Extend" class="inline-form">
-                            <input type="hidden" name="id" value="@s.BusinessId" />
-                            <label for="days-@s.BusinessId" class="sr-only">@Text.PlatformExtendDays @s.Name</label>
-                            <select id="days-@s.BusinessId" name="days">
-                                @foreach (var d in AccountControlService.ExtendChoices)
-                                {
-                                    <option value="@d" selected="@(d == 30)">@Text.PlatformDaysLabel(d)</option>
-                                }
-                            </select>
-                            <button type="submit" class="secondary" data-confirm="@Text.PlatformExtendAsk">@Text.PlatformExtend<span class="sr-only"> @s.Name</span></button>
-                        </form>
-                    }
+                </div>
                     @if (s.BusinessId != Model.OwnBusinessId)
                     {
                         <details class="delete-shop">
@@ -162,21 +164,50 @@ else
                             </form>
                         </details>
                     }
-                    @if (!s.EmailConfirmed)
-                    {
-                        <form method="post" asp-page-handler="ConfirmNow">
-                            <input type="hidden" name="id" value="@s.BusinessId" />
-                            <button type="submit" class="secondary" data-confirm="@Text.PlatformConfirmNowAsk">@Text.PlatformConfirmNow<span class="sr-only"> @s.Name</span></button>
-                        </form>
-                        <form method="post" asp-page-handler="SendLink">
-                            <input type="hidden" name="id" value="@s.BusinessId" />
-                            <button type="submit" class="secondary" data-confirm="@Text.PlatformSendLinkAsk">@Text.PlatformSendLink<span class="sr-only"> @s.Name</span></button>
-                        </form>
-                    }
-                </div>
                 </div>
                 </details>
             </li>
         }
     </ul>
 }
+
+<div class="card">
+    <h2>@Text.PayQrTitle</h2>
+    <p class="hint">@Text.PayQrHint</p>
+    @if (Model.PayQrVersion is { } payQrVersion)
+    {
+        <img class="pay-qr" src="/pay-qr?v=@payQrVersion" alt="@Text.PayQrAlt" width="256" height="256" />
+    }
+    <form method="post" asp-page-handler="PayQr" enctype="multipart/form-data">
+        <div class="field">
+            <label for="pay-qr-file">@Text.LogoChoose</label>
+            <input type="file" id="pay-qr-file" name="picture" accept="image/png,image/jpeg,image/webp" required />
+        </div>
+        <button type="submit" class="secondary" data-confirm="@Text.PayQrSaveAsk">@Text.PayQrSave</button>
+    </form>
+    @if (Model.PayQrVersion is not null)
+    {
+        <form method="post" asp-page-handler="RemovePayQr" class="actions">
+            <button type="submit" class="danger" data-confirm="@Text.PayQrRemoveAsk">@Text.PayQrRemove</button>
+        </form>
+    }
+</div>
+
+<div class="card">
+    <h2>@Text.PlatformBackupTitle</h2>
+    <p class="hint">@Text.PlatformBackupHint</p>
+    @if (Model.BackupDaysSince is { } days)
+    {
+        <p class="@(Model.BackupOverdue ? "due" : "muted")">@Text.PlatformBackupLast(Model.BackupCopySavedAtUtc!.Value.ToString("MMM d, yyyy", invariant), days)@(Model.BackupOverdue ? " " + Text.PlatformBackupOverdue : "")</p>
+    }
+    else
+    {
+        <p class="warn">@Text.PlatformBackupNever</p>
+    }
+    <div class="actions">
+        <a class="button secondary" href="@Model.BackupUrl" target="_blank" rel="noopener">@Text.PlatformBackupOpen</a>
+        <form method="post" asp-page-handler="BackupSaved">
+            <button type="submit" class="secondary" data-confirm="@Text.PlatformBackupAsk">@Text.PlatformBackupSaved</button>
+        </form>
+    </div>
+</div>

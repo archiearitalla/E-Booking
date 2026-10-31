@@ -997,6 +997,20 @@ public static class Text
     public const string AiLimitsSaved = "Limits saved.";
     public const string AiLimitInvalid = "Enter a whole number, or leave it blank for the default.";
     public const string PlatformAiLink = "AI usage and cost";
+    public const string ExpiryWhatAccess = "Access";
+    public static string ExpiryWhen(int days) => days switch { < -1 => $"ended {-days} days ago", -1 => "ended yesterday", 0 => "ends today", 1 => "ends tomorrow", _ => $"ends in {days} days" };
+    public static string ExpiryLine(string what, string date, int days) => $"{what} {ExpiryWhen(days)} ({date})";
+    public const string ExpiryNoEnd = "Access has no end date";
+    public static string ExpiryAlert(int shops) => shops == 1
+        ? "1 client's subscription is ending soon or has just ended."
+        : $"{shops} clients' subscriptions are ending soon or have just ended.";
+    public const string ExpiryAlertView = "See which";
+    public const string ExpiryOnlyDue = "Showing only the clients that need attention.";
+    public const string ExpiryShowAll = "Show all clients";
+    public const string PlatformSubscription = "Subscription";
+    public const string PlatformAddDays = "Add days";
+    public static string PlatformUntil(string date, int days) => $"until {date} ({ExpiryWhen(days).Replace("ends ", "")})";
+    public static string PlatformEnded(string date) => $"ended {date}";
     public const string PlatformSearch = "Search by shop, address, owner or email";
     public static string PlatformCount(int n) => n == 1 ? "1 shop" : $"{n} shops";
     public const string PlatformAiAddon = "AI add-on";

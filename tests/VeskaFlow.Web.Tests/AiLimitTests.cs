@@ -162,6 +162,57 @@ public class AiLimitTests
         Assert.Contains(Text.PlatformEmpty, WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform?q=no-such-shop-zzz")));
     }
 
+    [Fact]
+    public void Something_is_due_a_week_before_its_end_until_two_weeks_after_it()
+    {
+        var now = new DateTime(2030, 3, 4, 8, 0, 0, DateTimeKind.Utc);
+        Assert.False(ShopExpiry.IsDue(null, now));                                                  // no end date: never
+        Assert.False(ShopExpiry.IsDue(now.AddDays(9), now));                                        // too early
+        Assert.True(ShopExpiry.IsDue(now.AddDays(7.5), now));                                       // 7 whole days left
+        Assert.True(ShopExpiry.IsDue(now.AddHours(2), now));                                        // ends today
+        Assert.True(ShopExpiry.IsDue(now.AddDays(-3), now));                                        // just ended
+        Assert.False(ShopExpiry.IsDue(now.AddDays(-20), now));                                      // long gone
+        Assert.Equal(0, ShopExpiry.DaysLeft(now.AddHours(2), now));
+        Assert.Equal(-1, ShopExpiry.DaysLeft(now.AddHours(-2), now));
+        Assert.Equal("ends in 3 days", Text.ExpiryWhen(3));
+        Assert.Equal("ends tomorrow", Text.ExpiryWhen(1));
+        Assert.Equal("ended 5 days ago", Text.ExpiryWhen(-5));
+    }
+
+    [Fact]
+    public async Task The_platform_owner_sees_when_each_client_ends_and_is_told_about_the_ones_ending_soon()
+    {
+        var bossEmail = $"boss{Guid.NewGuid():N}@example.com";
+        var (factory, _) = await HttpApp.StartAsync(platformAdminEmails: bossEmail);
+        using var _f = factory;
+        var boss = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(boss, "/Register", Form(bossEmail, "Boss Shop"));
+        var tenant = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(tenant, "/Register", Form($"shop{Guid.NewGuid():N}@example.com", "Ending Soon Salon"));
+        var tenantId = await ShopIdAsync(factory, "Ending Soon Salon");
+
+        var calm = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform"));
+        Assert.Contains("Access ends in", calm);                                                    // every line says when
+        Assert.DoesNotContain(Text.ExpiryAlert(1), calm);                                           // nothing is ending yet
+        Assert.DoesNotContain("class=\"shop-name\">Ending Soon Salon", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform?expiring=true")));
+
+        await using (var ctx = new TestDbFactory(await TestDb.ConnectionStringAsync()).CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == tenantId).ExecuteUpdateAsync(u => u.SetProperty(b => b.TrialEndsAtUtc, DateTime.UtcNow.AddDays(3).AddHours(2)));
+
+        var soon = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform"));
+        Assert.Contains(Text.ExpiryAlert(1), soon);
+        Assert.Contains("Access ends in 3 days", soon);
+        Assert.Contains("class=\"shop-name\">Ending Soon Salon", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform?expiring=true")));
+        Assert.DoesNotContain("class=\"shop-name\">Boss Shop", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform?expiring=true")));
+
+        var onAdmin = WebUtility.HtmlDecode(await boss.GetStringAsync("/Admin"));                   // told on every back-office page
+        Assert.Contains(Text.ExpiryAlert(1), onAdmin);
+        Assert.DoesNotContain(Text.ExpiryAlert(1), WebUtility.HtmlDecode(await tenant.GetStringAsync("/Admin")));   // a shop owner is not
+
+        Assert.True(soon.IndexOf("shop-list", StringComparison.Ordinal) < soon.IndexOf(Text.PayQrTitle, StringComparison.Ordinal));          // GCash QR and the
+        Assert.True(soon.IndexOf("shop-list", StringComparison.Ordinal) < soon.IndexOf(Text.PlatformBackupTitle, StringComparison.Ordinal));  // database card are at the bottom
+    }
+
     private static async Task<Guid> ShopIdAsync(AppFactory factory, string name)
     {
         await using var ctx = new TestDbFactory(await TestDb.ConnectionStringAsync()).CreateDbContext();
