@@ -5,6 +5,7 @@
     // would add extra recipients or text, so anything unusual is shown as text only.
     var hasEmail = !string.IsNullOrWhiteSpace(Model.Email)
         && System.Text.RegularExpressions.Regex.IsMatch(Model.Email!, @"^[A-Za-z0-9._+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+$");
+    var intl = VeskaFlow.Web.Services.DisplayFormat.InternationalDigits(Model.Phone);
 }
 <div class="field">
     <label for="msg-@Model.Id">@Text.FollowUpReadyMessage</label>
@@ -20,10 +21,21 @@
     {
         <a class="button" href="mailto:@Model.Email?subject=@Uri.EscapeDataString(Model.Subject)&body=@Uri.EscapeDataString(Model.Message)">@Text.SendByEmail</a>
     }
-    <button type="button" class="secondary" data-share="msg-@Model.Id" hidden>@Text.SendShare</button>
     @if (hasPhone || hasEmail)
     {
         <a class="button secondary" href="@Model.ContactUrl">@Text.SaveContact</a>
     }
+</div>
+@* The same message in other apps. WhatsApp opens this customer's chat with the message typed in; Viber and Telegram open their share screen with the
+   message typed in, and staff choose the customer; the share button (phones that support it) lists every app on the phone, such as Messenger. *@
+<div class="actions send-actions send-apps">
+    <span class="muted send-apps-label">@Text.SendInApps</span>
+    @if (intl is not null)
+    {
+        <a class="button secondary" href="https://wa.me/@intl?text=@Uri.EscapeDataString(Model.Message)" target="_blank" rel="noopener">@Text.SendWhatsApp</a>
+    }
+    <a class="button secondary" href="viber://forward?text=@Uri.EscapeDataString(Model.Message)">@Text.SendViber</a>
+    <a class="button secondary" href="https://t.me/share/url?url=%20&text=@Uri.EscapeDataString(Model.Message)" target="_blank" rel="noopener">@Text.SendTelegram</a>
+    <button type="button" class="secondary" data-share="msg-@Model.Id" hidden>@Text.SendShare</button>
 </div>
 @if (!hasPhone && !hasEmail) { <p class="hint">@Text.WalkInNoPhone</p> }

@@ -104,6 +104,19 @@ public class PromoMessageTests
         Assert.Equal(new[] { "PROMO_CONSENT_ON", "PROMO_CONSENT_OFF" }, actions);
     }
 
+    [Theory]
+    [InlineData("09175550101", "639175550101")]
+    [InlineData("0917 555 0101", "639175550101")]
+    [InlineData("+639175550101", "639175550101")]
+    [InlineData("639175550101", "639175550101")]
+    [InlineData("+14155550123", "14155550123")]
+    [InlineData("12345", null)]
+    [InlineData("walkin-abc", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void A_number_becomes_the_digits_that_WhatsApp_and_Viber_expect(string? phone, string? expected) =>
+        Assert.Equal(expected, DisplayFormat.InternationalDigits(phone));
+
     [Fact]
     public void The_message_has_the_name_the_promo_the_last_day_the_link_and_a_way_to_stop()
     {
@@ -152,6 +165,10 @@ public class PromoMessageTests
         Assert.Contains("Hi Pia! Promo Shop has a promo: Haircut week.", page);
         Assert.Contains("Reply STOP", page);
         Assert.Contains("sms:09175550101", page);
+        Assert.Contains("https://wa.me/639175550101?text=Hi%20Pia", page);                         // WhatsApp: this customer's chat, message typed in
+        Assert.Contains("viber://forward?text=Hi%20Pia", page);                                     // Viber and Telegram: share screen, message typed in
+        Assert.Contains("https://t.me/share/url?url=%20&text=Hi%20Pia", page);
+        Assert.Contains("data-share=", page);                                                       // the phone's own share list (Messenger and others)
 
         var marked = await HttpApp.PostFormAsync(owner, "/Admin/PromoSend?handler=Mark", new() { ["id"] = yesId.ToString(), ["sent"] = "true" }, tokenPage: "/Admin/PromoSend");
         Assert.Equal(HttpStatusCode.Redirect, marked.StatusCode);

@@ -138,7 +138,7 @@ public static class HelpTopics
                 "Make and switch on your promo in the Promo Creator first.",
                 "Open Send a promo to customers (a button on the Promo page). You see how many customers can be reached.",
                 "Tap a customer. You see the ready message with their name, your promo, the last day and your booking link.",
-                "Press Send as text or Email to send it from your own phone, or Copy to paste it in Messenger or another app.",
+                "Press Send as text or Email to send it from your own phone. Or send it in an app: WhatsApp opens the customer's chat with the message ready; Viber and Telegram open with the message ready and you choose the customer; More apps lists every app on your phone, such as Messenger. Copy also works for any other app.",
                 "Press Mark as sent so you do not send the same promo twice. When you start a new promo, press Clear all sent marks.",
                 "Only customers who said yes are listed. New customers tick a box when they book; for walk-ins, ask first and tick the box. If someone says STOP, open their history and press They asked to stop.",
             ],
