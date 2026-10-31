@@ -454,7 +454,7 @@ On the sign-in page, "Forgot your password?" asks for the email and sends a link
 
 ### 6.y10 Sign-up bot check
 
-When Turnstile:SiteKey and Turnstile:SecretKey are both configured, sign-up and forgot password require a passed Cloudflare Turnstile check, verified on the server; a missing, failed or unreachable check refuses the request. The content policy allows challenges.cloudflare.com only while the keys are set. With no keys there is no check and nothing changes.
+When Turnstile:SiteKey and Turnstile:SecretKey are both configured, sign-up, forgot password and the customer booking form (the confirm step, where the name and number are typed) require a passed Cloudflare Turnstile check, verified on the server; a missing, failed or unreachable check refuses the request. The content policy allows challenges.cloudflare.com only while the keys are set. With no keys there is no check and nothing changes.
 
 ### 6.y11 Backup reminder
 

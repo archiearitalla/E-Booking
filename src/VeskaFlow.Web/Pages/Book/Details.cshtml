@@ -68,6 +68,8 @@
         @if (Model.ErrorFor("idempotencyKey") is { } e4) { <p class="error">@e4</p> }
 
         <p class="hint">@Text.BookPrivacy <a href="/Privacy" target="_blank" rel="noopener">@Text.PrivacyLink</a></p>
+        <partial name="_Captcha" />
+        @if (Model.ErrorFor("captcha") is { } captchaError) { <p class="error">@captchaError</p> }
         <div class="hp" aria-hidden="true"><label for="Website">Website</label><input type="text" id="Website" name="Input.Website" tabindex="-1" autocomplete="off" /></div>
         <button type="submit" class="primary once" data-confirm="@Text.ConfirmBooking">@Text.BookConfirm</button>
     </form>

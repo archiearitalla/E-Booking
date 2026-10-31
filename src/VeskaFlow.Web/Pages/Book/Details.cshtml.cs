@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace VeskaFlow.Web.Pages.Book;
 
 [EnableRateLimiting(RateLimitPolicies.Booking)]
-public class DetailsModel(ShopCatalogService catalog, BookingService booking, CustomerMailer mailer, IConfiguration config, ILogger<DetailsModel> log) : FormPageModel
+public class DetailsModel(ShopCatalogService catalog, BookingService booking, CustomerMailer mailer, IConfiguration config, ILogger<DetailsModel> log, ICaptcha captcha) : FormPageModel
 {
     [BindProperty] public DetailsInput Input { get; set; } = new();
 
@@ -49,6 +49,13 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking, Cu
 
         // A bot filled the hidden field: answer as if nothing happened and create nothing.
         if (!string.IsNullOrWhiteSpace(Input.Website)) return RedirectToPage("/Book/Index", new { slug = Shop!.Slug });
+
+        // "Are you a person" (Cloudflare Turnstile) when the keys are set; the form is shown again with a fresh check if it fails.
+        if (!await captcha.VerifyAsync(Request.Form["cf-turnstile-response"], HttpContext.Connection.RemoteIpAddress?.ToString(), ct))
+        {
+            Errors = new Dictionary<string, string> { ["captcha"] = Text.CaptchaFailed };
+            return Page();
+        }
 
         // The business comes from the slug, never from the form. Price, duration and staff are derived by the server.
         var result = await booking.CreateAsync(new CreateBookingRequest(

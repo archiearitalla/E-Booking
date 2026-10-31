@@ -44,7 +44,7 @@ requirement for a contract between a controller and a processor?
 | Render | application hosting | everything in transit and in memory | **(confirm region)** |
 | Neon | PostgreSQL database | all stored data | Singapore (AWS ap-southeast-1) |
 | Brevo | transactional email: to shop owners (sign-up confirmation, password reset, notice before access ends) and, when a shop has it on, to its customers who gave an email (booking confirmation, reminder) | recipient email, first name, message with booking details | **(confirm: EU)** |
-| Cloudflare | domain name; bot check (Turnstile) on sign-up and forgot-password when switched on | request data sent by the browser | global |
+| Cloudflare | domain name; bot check (Turnstile) on sign-up, forgot-password and the customer booking form when switched on | request data sent by the browser | global |
 | GitHub | nightly encrypted database backup, kept 14 days | the whole database, **encrypted** (AES-256) before it leaves the runner; only the operator holds the passphrase | US **(confirm)** |
 | UptimeRobot | checks that the site is up | only the site address (no personal data) | **(confirm)** |
 
