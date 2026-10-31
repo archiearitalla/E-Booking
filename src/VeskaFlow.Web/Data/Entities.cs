@@ -314,6 +314,30 @@ public class AiUsageDay
     public int Conversations { get; set; }
 }
 
+/// <summary>
+/// What a client paid for its plan or an add-on (migration 031). <c>Kind</c> is PRO (the access to the system), AI or EMAIL (the add-ons); <c>Period</c> is
+/// MONTH (30 days) or YEAR (365 days). PENDING until the platform owner confirms it (then <c>ReceiptNo</c> is set) or rejects it.
+/// </summary>
+public class Payment
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public string Kind { get; set; } = "";
+    public string Period { get; set; } = "";
+    public int Days { get; set; }
+    public decimal Amount { get; set; }
+    public string Reference { get; set; } = "";
+    public string? Note { get; set; }
+    public string Status { get; set; } = "PENDING";
+    public bool ByHand { get; set; }
+    public DateTime SubmittedAtUtc { get; set; } = DateTime.UtcNow;
+    public string SubmittedBy { get; set; } = "";
+    public DateTime? DecidedAtUtc { get; set; }
+    public string? DecidedBy { get; set; }
+    public string? RejectReason { get; set; }
+    public string? ReceiptNo { get; set; }
+}
+
 /// <summary>One customer conversation with the AI receptionist (migration 021). The transcript is JSON text of what was said, nothing else.</summary>
 public class AiChat
 {

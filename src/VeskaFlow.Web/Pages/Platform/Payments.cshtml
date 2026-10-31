@@ -1,0 +1,123 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.PaymentsModel
+@{
+    ViewData["Title"] = Text.PaymentsTitle;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Peso(decimal v) => "₱" + v.ToString("N2", inv);
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<h1>@Text.PaymentsTitle</h1>
+<p><a href="/Platform">&laquo; @Text.PlatformTitle</a></p>
+@if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
+@if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
+
+<section class="kpis" aria-label="@Text.PaymentsMonthTotal">
+    <div class="kpi"><span class="kpi-value">@Peso(Model.Totals.Total)</span><span class="kpi-label">@Text.PaymentsMonthTotal</span></div>
+    <div class="kpi"><span class="kpi-value">@Model.Totals.Count</span><span class="kpi-label">@Text.PaymentsLedger</span></div>
+    <div class="kpi"><span class="kpi-value">@Model.Pending.Count</span><span class="kpi-label">@Text.PaymentsPending</span></div>
+</section>
+
+<h2>@Text.PaymentsPending</h2>
+@if (Model.Pending.Count == 0)
+{
+    <div class="card empty"><p>@Text.PaymentsNonePending</p></div>
+}
+else
+{
+    <ul class="kpi-list ai-list">
+        @foreach (var p in Model.Pending)
+        {
+            <li class="card">
+                <details open>
+                    <summary>
+                        <span class="kpi-time"><span class="badge off">@p.Kind</span></span>
+                        <span class="kpi-who">@p.Shop</span>
+                        <span class="kpi-price">@Peso(p.Amount)</span>
+                        <span class="kpi-what muted">@PaymentKinds.Label(p.Kind) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month") · ref @p.Reference</span>
+                    </summary>
+                    <div class="kpi-more">
+                        <dl class="facts">
+                            <dt>@Text.ReceiptRef</dt><dd><strong>@p.Reference</strong></dd>
+                            <dt>@Text.ReceiptAmount</dt><dd><strong>@Peso(p.Amount)</strong></dd>
+                            <dt>@Text.ReceiptDate</dt><dd>@p.SubmittedAtUtc.ToString("MMM d, yyyy h:mm tt", inv) UTC</dd>
+                            @if (!string.IsNullOrEmpty(p.Note)) { <dt>@Text.BillingNote</dt><dd>@p.Note</dd> }
+                        </dl>
+                        <div class="shop-actions">
+                            <form method="post" asp-page-handler="Reject" class="sub-form">
+                                <input type="hidden" name="id" value="@p.Id" />
+                                <label for="why-@p.Id" class="sr-only">@Text.PaymentsRejectReason</label>
+                                <input type="text" id="why-@p.Id" name="reason" maxlength="200" placeholder="@Text.PaymentsRejectReason" />
+                                <button type="submit" class="secondary" data-confirm="@Text.PaymentsRejectAsk">@Text.PaymentsReject</button>
+                            </form>
+                            <form method="post" asp-page-handler="Confirm" class="push-right">
+                                <input type="hidden" name="id" value="@p.Id" />
+                                <button type="submit" class="primary" data-confirm="@Text.PaymentsConfirmAsk">@Text.PaymentsConfirm</button>
+                            </form>
+                        </div>
+                    </div>
+                </details>
+            </li>
+        }
+    </ul>
+}
+
+<div class="card">
+    <h2>@Text.PaymentsByHand</h2>
+    <p class="hint">@Text.PaymentsByHandHint</p>
+    <form method="post" asp-page-handler="ByHand">
+        <div class="field">
+            <label for="bh-shop">@Text.PaymentsShop</label>
+            <select id="bh-shop" name="shopId" required>
+                @foreach (var s in Model.Shops) { <option value="@s.BusinessId">@s.Name · /b/@s.Slug</option> }
+            </select>
+        </div>
+        <div class="field">
+            <label for="bh-option">@Text.BillingChoose</label>
+            <select id="bh-option" name="option">
+                @foreach (var o in Model.Pricing.Options) { <option value="@o.Key">@PaymentKinds.Label(o.Kind) · ₱@o.Price.ToString("N0", inv) @(o.Period == PaymentKinds.Year ? Text.BillingPerYear : Text.BillingPerMonth)</option> }
+            </select>
+        </div>
+        <div class="field">
+            <label for="bh-amount">@Text.PaymentsAmount</label>
+            <input type="text" id="bh-amount" name="amount" inputmode="decimal" maxlength="12" />
+        </div>
+        <div class="field">
+            <label for="bh-ref">@Text.BillingNote</label>
+            <input type="text" id="bh-ref" name="reference" maxlength="60" />
+        </div>
+        <button type="submit" class="primary" data-confirm="@Text.PaymentsConfirmAsk">@Text.PaymentsRecord</button>
+    </form>
+</div>
+
+<h2>@Text.PaymentsLedger</h2>
+@if (Model.Confirmed.Count == 0)
+{
+    <div class="card empty"><p>@Text.BillingNoPayments</p></div>
+}
+else
+{
+    <ul class="kpi-list ai-list">
+        @foreach (var p in Model.Confirmed)
+        {
+            <li class="card">
+                <details>
+                    <summary>
+                        <span class="kpi-time"><span class="badge">@(p.ByHand ? "by hand" : "GCash")</span></span>
+                        <span class="kpi-who">@p.Shop</span>
+                        <span class="kpi-price">@Peso(p.Amount)</span>
+                        <span class="kpi-what muted">@PaymentKinds.Label(p.Kind) · @p.ReceiptNo</span>
+                    </summary>
+                    <div class="kpi-more">
+                        <dl class="facts">
+                            <dt>@Text.ReceiptRef</dt><dd>@p.Reference</dd>
+                            <dt>@Text.ReceiptDate</dt><dd>@p.DecidedAtUtc?.ToString("MMM d, yyyy", inv)</dd>
+                            <dt>@Text.ReceiptFor</dt><dd>@PaymentKinds.Label(p.Kind) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month")</dd>
+                        </dl>
+                    </div>
+                </details>
+            </li>
+        }
+    </ul>
+}

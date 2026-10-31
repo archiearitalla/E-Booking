@@ -187,6 +187,17 @@ public static class HelpTopics
             ],
             "It can not cancel or move a booking; it gives the customer their manage link instead.", "/Admin/Settings", "Open Settings", AdminLevel.Owner),
 
+        new("billing", "Plan and billing: paying for your access",
+            "See your plan, the prices, and pay for Pro or an add-on with GCash.",
+            [
+                "Open Plan and billing. At the top you see your plan and the date your access ends.",
+                "Send the exact amount with GCash: scan the QR code, or use the number shown.",
+                "Choose what you paid for (Pro for a month or a year, the AI add-on or the Email add-on) and type the reference number from your GCash receipt.",
+                "Press I paid. Your payment shows as waiting until it is confirmed, usually within a day.",
+                "When it is confirmed, your access is extended and a receipt appears under Your payments. Open it to print it.",
+            ],
+            "Paying for a year costs less than twelve months. If your access has ended, you can still open this page to pay and your data is kept.", "/Admin/Billing", "Open Plan and billing", AdminLevel.Owner),
+
         new("team", "Team: who can sign in",
             "Give your staff their own login with the right level of access.",
             [

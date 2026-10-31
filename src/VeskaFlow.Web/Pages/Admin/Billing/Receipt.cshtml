@@ -1,0 +1,21 @@
+@page "/Admin/Billing/Receipt/{id:guid}"
+@model VeskaFlow.Web.Pages.Admin.Billing.ReceiptModel
+@{
+    ViewData["Title"] = Text.ReceiptTitle;
+    var p = Model.Payment!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<div class="card receipt">
+    <h1>@Text.ReceiptTitle</h1>
+    <p class="muted">@Model.Seller</p>
+    <dl class="facts">
+        <dt>@Text.ReceiptNo</dt><dd><strong>@p.ReceiptNo</strong></dd>
+        <dt>@Text.ReceiptDate</dt><dd>@DisplayFormat.Date(p.DecidedAtUtc ?? p.SubmittedAtUtc, Model.TimeZone)</dd>
+        <dt>@Text.ReceiptShop</dt><dd>@p.Shop</dd>
+        <dt>@Text.ReceiptFor</dt><dd>@PaymentKinds.Label(p.Kind) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month")</dd>
+        <dt>@Text.ReceiptAmount</dt><dd><strong>₱@p.Amount.ToString("N2", inv)</strong></dd>
+        <dt>@Text.ReceiptRef</dt><dd>@p.Reference</dd>
+    </dl>
+    <p class="hint">@Text.ReceiptNotOfficial</p>
+    <p class="actions"><button type="button" class="secondary" onclick="window.print()">@Text.ReceiptPrint</button> <a class="button secondary" href="/Admin/Billing">@Text.BillingPageTitle</a></p>
+</div>

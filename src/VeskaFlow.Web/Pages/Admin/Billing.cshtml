@@ -1,0 +1,93 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.BillingModel
+@{
+    ViewData["Title"] = Text.BillingPageTitle;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Peso(decimal v) => "₱" + v.ToString("N0", inv);
+    string StatusText(string s) => s switch { "CONFIRMED" => Text.BillingStatusConfirmed, "REJECTED" => Text.BillingStatusRejected, _ => Text.BillingStatusPending };
+}
+<h1>@Text.BillingPageTitle</h1>
+<partial name="_HelpLink" model="@("billing")" />
+
+<div class="card">
+    <h2>@Text.BillingPlanCard</h2>
+    <p class="@(Model.Ended ? "warn" : "")">@Model.StatusLine()</p>
+</div>
+
+<div class="card">
+    <h2>@Text.BillingPrices</h2>
+    <dl class="facts">
+        @foreach (var o in Model.Pricing.Options)
+        {
+            <dt>@PaymentKinds.Label(o.Kind)</dt><dd><strong>@Peso(o.Price)</strong> <span class="muted">@(o.Period == PaymentKinds.Year ? Text.BillingPerYear : Text.BillingPerMonth)</span></dd>
+        }
+    </dl>
+    @if (Model.Pricing.YearlySaving > 0 && Model.Pricing.Options.Any(o => o.Kind == PaymentKinds.Pro && o.Period == PaymentKinds.Year)) { <p class="hint">@Text.BillingYearSaving(Peso(Model.Pricing.YearlySaving))</p> }
+</div>
+
+<div class="card">
+    <h2>@Text.BillingHowTitle</h2>
+    <ol class="help-steps">
+        <li>@Text.BillingStep1</li>
+        <li>@Text.BillingStep2</li>
+        <li>@Text.BillingStep3</li>
+    </ol>
+    @if (Model.PayQrVersion is { } qrVersion) { <partial name="_PayQr" model="qrVersion" /> }
+    @if (Model.Billing.PayTo.Length > 0) { <p><strong>@Text.BillingPayToLabel:</strong> @Model.Billing.PayTo</p> }
+
+    <form method="post">
+        <div class="field">
+            <label for="option">@Text.BillingChoose</label>
+            <select id="option" name="Input.Option" required>
+                @foreach (var o in Model.Pricing.Options)
+                {
+                    <option value="@o.Key" selected="@(Model.Input.Option == o.Key)">@PaymentKinds.Label(o.Kind) · @Peso(o.Price) @(o.Period == PaymentKinds.Year ? Text.BillingPerYear : Text.BillingPerMonth)</option>
+                }
+            </select>
+            @if (Model.ErrorFor("option") is { } eO) { <p class="error">@eO</p> }
+        </div>
+        <div class="field">
+            <label for="reference">@Text.BillingReference</label>
+            <input type="text" id="reference" name="Input.Reference" value="@Model.Input.Reference" maxlength="60" required autocomplete="off" />
+            @if (Model.ErrorFor("reference") is { } eR) { <p class="error">@eR</p> }
+        </div>
+        <div class="field">
+            <label for="note">@Text.BillingNote</label>
+            <input type="text" id="note" name="Input.Note" value="@Model.Input.Note" maxlength="200" />
+            @if (Model.ErrorFor("note") is { } eN) { <p class="error">@eN</p> }
+        </div>
+        @if (Model.ErrorFor("limit") is { } eL) { <p class="error">@eL</p> }
+        <button type="submit" class="primary once" data-confirm="@Text.BillingPaidAsk">@Text.BillingPaid</button>
+    </form>
+    @if (Model.Billing.ContactUrl.Length > 0) { <p><a class="button secondary" href="@Model.Billing.ContactUrl" target="_blank" rel="noopener">@Text.BillingSendProof</a></p> }
+</div>
+
+<div class="card">
+    <h2>@Text.BillingHistory</h2>
+    @if (Model.History.Count == 0)
+    {
+        <p class="muted">@Text.BillingNoPayments</p>
+    }
+    else
+    {
+        <ul class="kpi-list">
+            @foreach (var p in Model.History)
+            {
+                <li>
+                    <details>
+                        <summary>
+                            <span class="kpi-time"><span class="badge @(p.Status == "CONFIRMED" ? "" : "off")">@StatusText(p.Status)</span></span>
+                            <span class="kpi-who">@PaymentKinds.Label(p.Kind)</span>
+                            <span class="kpi-price">@Peso(p.Amount)</span>
+                            <span class="kpi-what muted">@DisplayFormat.Date(p.SubmittedAtUtc, Model.TimeZone) · @p.Reference</span>
+                        </summary>
+                        <div class="kpi-more">
+                            @if (p.Status == "REJECTED" && !string.IsNullOrEmpty(p.RejectReason)) { <p class="muted">@p.RejectReason</p> }
+                            @if (p.Status == "CONFIRMED") { <p><a class="button secondary" href="/Admin/Billing/Receipt/@p.Id">@Text.BillingReceiptLink @p.ReceiptNo</a></p> }
+                        </div>
+                    </details>
+                </li>
+            }
+        </ul>
+    }
+</div>
