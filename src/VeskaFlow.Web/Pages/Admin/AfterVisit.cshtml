@@ -60,19 +60,39 @@
 </div>
 
 <div class="card">
-    <form method="post" asp-page-handler="Payment" asp-route-id="@b.Id">
+    @if (Model.AllowManualTotal)
+    {
+        <form method="post" asp-page-handler="Payment" asp-route-id="@b.Id">
+            <h2>@Text.AfterVisitPaymentTitle</h2>
+            <p class="hint">@Text.AfterVisitPaymentHint</p>
+            <dl class="facts">
+                <dt>@Text.AfterVisitPaymentQuoted</dt><dd>@DisplayFormat.Price(b.ItemsTotal)</dd>
+            </dl>
+            <div class="field">
+                <label for="paidAmount">@Text.AfterVisitPaymentLabel</label>
+                <input type="text" id="paidAmount" name="paidAmount" inputmode="decimal" maxlength="14"
+                       value="@b.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
+            </div>
+            <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveRecord">@Text.AfterVisitPaymentSave</button>
+        </form>
+    }
+    else
+    {
+        @* The shop does not allow a typed total: it is the price of the services, shown and not editable. *@
         <h2>@Text.AfterVisitPaymentTitle</h2>
-        <p class="hint">@Text.AfterVisitPaymentHint</p>
+        <p class="hint">@Text.PaymentFixedHint</p>
         <dl class="facts">
-            <dt>@Text.AfterVisitPaymentQuoted</dt><dd>@DisplayFormat.Price(b.ItemsTotal)</dd>
+            <dt>@Text.AfterVisitPaymentTitle</dt><dd><strong id="paymentFixed">@DisplayFormat.Price(b.Amount)</strong></dd>
         </dl>
-        <div class="field">
-            <label for="paidAmount">@Text.AfterVisitPaymentLabel</label>
-            <input type="text" id="paidAmount" name="paidAmount" inputmode="decimal" maxlength="14"
-                   value="@b.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
-        </div>
-        <button type="submit" class="primary" data-save data-confirm="@Text.ConfirmSaveRecord">@Text.AfterVisitPaymentSave</button>
-    </form>
+        @if (b.PaidAmount is not null)
+        {
+            <form method="post" asp-page-handler="Payment" asp-route-id="@b.Id">
+                <p class="hint">@Text.PaymentEnteredBefore</p>
+                <input type="hidden" name="paidAmount" value="" />
+                <button type="submit" class="secondary" data-confirm="@Text.ConfirmSaveRecord">@Text.PaymentBackToItems</button>
+            </form>
+        }
+    }
 </div>
 
 <div class="card">

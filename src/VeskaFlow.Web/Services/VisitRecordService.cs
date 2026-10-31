@@ -61,6 +61,9 @@ public sealed class VisitRecordService(IDbContextFactory<AppDbContext> dbFactory
         if (booking is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
         if (booking.Status != BookingStatus.Completed)
             return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.AfterVisitPaymentOnlyCompleted);
+        // A shop that does not allow a typed total still lets staff put the services price back (clear a total typed earlier).
+        if (amount is not null && !await db.Businesses.AsNoTracking().Where(b => b.Id == businessId).Select(b => b.AllowManualTotal).FirstAsync(ct))
+            return ServiceResult<bool>.Fail(FailureKind.PolicyViolation, Text.PaymentManualOff);
 
         var before = booking.PaidAmount;
         booking.PaidAmount = amount is { } value ? Math.Round(value, 2, MidpointRounding.AwayFromZero) : null;

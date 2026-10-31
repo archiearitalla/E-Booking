@@ -415,6 +415,86 @@ public class PromoPricingTests
         Assert.Contains("₱120.00", day);                                                                                          // the day view quotes it
     }
 
+    // ---------------------------------------------------------------- the "set the total by hand" switch
+
+    [Fact]
+    public async Task With_manual_totals_switched_off_the_service_refuses_a_typed_total_but_still_allows_clearing_it()
+    {
+        var c = await SetupAsync();
+        var records = new VisitRecordService(c.Db);
+        var settings = new ShopSettingsService(c.Db, TimeProvider.System);
+        var done = await CompletedAsync(c);
+
+        Assert.True((await settings.GetSettingsAsync(c.Shop.BusinessId))!.AllowManualTotal);                                     // on by default
+        Assert.True((await records.SetPaidAmountAsync(c.Shop.BusinessId, done.Id, 175m)).IsSuccess);
+
+        var current = (await settings.GetSettingsAsync(c.Shop.BusinessId))!;
+        var off = await settings.SaveSettingsAsync(c.Shop.BusinessId, new SettingsInput(current.Name, current.TimeZone, current.SlotMinutes, current.LeadTimeMinutes, current.HorizonDays, current.CancelCutoffHours, AllowManualTotal: false));
+        Assert.True(off.IsSuccess);
+        Assert.False((await settings.GetSettingsAsync(c.Shop.BusinessId))!.AllowManualTotal);
+
+        var refused = await records.SetPaidAmountAsync(c.Shop.BusinessId, done.Id, 999m);
+        Assert.Equal(FailureKind.PolicyViolation, refused.Failure);
+        Assert.Equal(Text.PaymentManualOff, refused.Message);
+        Assert.Equal(175m, (await c.Booking.LoadSummaryAsync(c.Shop.BusinessId, done.Id))!.PaidAmount);                          // untouched
+
+        Assert.True((await records.SetPaidAmountAsync(c.Shop.BusinessId, done.Id, null)).IsSuccess);                              // back to the price of the services
+        Assert.Null((await c.Booking.LoadSummaryAsync(c.Shop.BusinessId, done.Id))!.PaidAmount);
+
+        // A save that does not mention the switch leaves it as it was; another shop's switch is its own.
+        var other = await Seed.CreateShopAsync();
+        Assert.True((await settings.SaveSettingsAsync(c.Shop.BusinessId, new SettingsInput(current.Name, current.TimeZone, current.SlotMinutes, current.LeadTimeMinutes, current.HorizonDays, current.CancelCutoffHours))).IsSuccess);
+        Assert.False((await settings.GetSettingsAsync(c.Shop.BusinessId))!.AllowManualTotal);
+        Assert.True((await settings.GetSettingsAsync(other.BusinessId))!.AllowManualTotal);
+        var otherDone = await CompletedAsync(c, 6, 10, other);
+        Assert.True((await records.SetPaidAmountAsync(other.BusinessId, otherDone.Id, 300m)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task The_Settings_checkbox_turns_manual_totals_off_and_on_and_the_Done_page_follows_it()
+    {
+        var (factory, _) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var owner = await RegisterOwnerAsync(factory);
+        var bookings = new BookingService(owner.Db, TimeProvider.System);
+        var start = LocalTime.ToUtc(Seed.NextOpenDay().ToDateTime(new TimeOnly(10, 0)), LocalTime.Zone("Asia/Manila"));
+        var made = (await bookings.CreateAsync(new CreateBookingRequest(owner.BusinessId, owner.ServiceId, null, start, "Juan", "09175550125", null,
+            Guid.NewGuid().ToString("N"), BookingActor.Customer("Juan")))).Value!.Booking;
+        await using (var ctx = owner.Db.CreateDbContext())
+            await ctx.Bookings.Where(b => b.Id == made.Id).ExecuteUpdateAsync(u => u.SetProperty(b => b.Status, BookingStatus.Completed));
+        var url = $"/Admin/AfterVisit/{made.Id}";
+
+        var settingsPage = WebUtility.HtmlDecode(await owner.Client.GetStringAsync("/Admin/Settings"));
+        Assert.Contains(Text.LabelAllowManualTotal, settingsPage);
+        Assert.Matches("name=\"Input.AllowManualTotal\"[^>]*checked", settingsPage);                                              // on by default
+        Assert.Contains("name=\"paidAmount\"", WebUtility.HtmlDecode(await owner.Client.GetStringAsync(url)));
+
+        async Task<HttpResponseMessage> SaveSettings(bool ticked)
+        {
+            var fields = new Dictionary<string, string>
+            {
+                ["Input.Name"] = "Shop", ["Input.TimeZone"] = "Asia/Manila", ["Input.SlotMinutes"] = "15", ["Input.LeadTimeMinutes"] = "30",
+                ["Input.HorizonDays"] = "45", ["Input.CancelCutoffHours"] = "6", ["Input.AllowManualTotal"] = ticked ? "true" : "false",
+            };
+            return await HttpApp.PostFormAsync(owner.Client, "/Admin/Settings", fields, "/Admin/Settings");
+        }
+
+        Assert.Equal(HttpStatusCode.Redirect, (await SaveSettings(false)).StatusCode);                                            // what a browser sends for an unticked box
+        var off = WebUtility.HtmlDecode(await owner.Client.GetStringAsync(url));
+        Assert.DoesNotContain("name=\"paidAmount\"", off.Replace("<input type=\"hidden\" name=\"paidAmount\" value=\"\" />", ""));
+        Assert.Contains("id=\"paymentFixed\"", off);
+        Assert.Contains(Text.PaymentFixedHint, off);
+
+        // A forged post cannot type a total either.
+        await HttpApp.PostFormAsync(owner.Client, $"{url}?handler=Payment", new() { ["paidAmount"] = "5000" }, url);
+        Assert.Null((await bookings.LoadSummaryAsync(owner.BusinessId, made.Id))!.PaidAmount);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await SaveSettings(true)).StatusCode);
+        Assert.Contains("name=\"paidAmount\"", WebUtility.HtmlDecode(await owner.Client.GetStringAsync(url)));
+        await HttpApp.PostFormAsync(owner.Client, $"{url}?handler=Payment", new() { ["paidAmount"] = "5000" }, url);
+        Assert.Equal(5000m, (await bookings.LoadSummaryAsync(owner.BusinessId, made.Id))!.PaidAmount);
+    }
+
     // ---------------------------------------------------------------- unticked boxes
 
     [Fact]
