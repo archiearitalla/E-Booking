@@ -55,6 +55,11 @@
             @if (Model.ErrorFor("email") is { } e3) { <p class="error" id="Email-error">@e3</p> }
         </div>
 
+        <label class="choice">
+            <input type="checkbox" name="Input.MarketingOk" value="true" checked="@Model.Input.MarketingOk" />
+            <span>@Text.PromoConsentLabel(Model.Shop!.Name) <span class="muted">@Text.PromoConsentHint</span></span>
+        </label>
+
         @if (Model.ErrorFor("idempotencyKey") is { } e4) { <p class="error">@e4</p> }
 
         <p class="hint">@Text.BookPrivacy <a href="/Privacy" target="_blank" rel="noopener">@Text.PrivacyLink</a></p>

@@ -169,6 +169,32 @@ public class PublicBookingTests
     }
 
     [Fact]
+    public async Task The_booking_form_asks_for_promo_consent_and_an_empty_box_means_no()
+    {
+        var (factory, client) = await StartAsync();
+        using var _ = factory;
+        var shop = await NewShopAsync();
+        var (url, _) = await FindSlotAsync(client, shop);
+        var form = await client.GetStringAsync(url);
+        Assert.Contains("name=\"Input.MarketingOk\"", form);
+        Assert.DoesNotMatch("name=\"Input.MarketingOk\"[^>]*checked", form);                    // never ticked for the customer
+
+        await client.PostAsync(url, new FormUrlEncodedContent(Customer(HiddenFields(form), "No Promo", "09175550001")));
+        var (url2, _) = await FindSlotAsync(client, shop, 1);
+        var form2 = await client.GetStringAsync(url2);
+        var ticked = Customer(HiddenFields(form2), "Yes Promo", "09175550002");
+        ticked["Input.MarketingOk"] = "true";
+        await client.PostAsync(url2, new FormUrlEncodedContent(ticked));
+
+        await using var ctx = shop.Db.CreateDbContext();
+        var customers = await ctx.Customers.Where(c => c.BusinessId == shop.BusinessId).ToListAsync();
+        Assert.False(customers.Single(c => c.Name == "No Promo").MarketingOk);
+        var yes = customers.Single(c => c.Name == "Yes Promo");
+        Assert.True(yes.MarketingOk);
+        Assert.NotNull(yes.MarketingOkAtUtc);
+    }
+
+    [Fact]
     public async Task Double_clicking_confirm_creates_one_booking_and_both_clicks_land_on_the_same_page()
     {
         var (factory, client) = await StartAsync();

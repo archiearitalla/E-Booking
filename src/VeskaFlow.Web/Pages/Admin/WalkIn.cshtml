@@ -88,6 +88,10 @@
                     <p class="hint" id="Phone-hint">@Text.WalkInPhoneHint</p>
                     @if (Model.ErrorFor("phone") is { } eP) { <p class="error">@eP</p> }
                 </div>
+                <label class="choice">
+                    <input type="checkbox" name="Input.MarketingOk" value="true" checked="@Model.Input.MarketingOk" />
+                    <span>@Text.PromoConsentStaff</span>
+                </label>
                 <p class="hint">@Text.WalkInNoMedical</p>
                 <button type="submit" class="primary once" data-save data-confirm="@Text.ConfirmSaveWalkIn">@Text.WalkInSave</button>
             </form>

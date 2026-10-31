@@ -66,7 +66,7 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
         // The business comes from the signed-in user; the server re-derives availability for the chosen time.
         var result = await booking.CreateAsync(new CreateBookingRequest(
             BusinessId, ServiceId.Value, StaffId, start, Input.Name ?? "", Input.Phone ?? "", null,
-            Input.IdempotencyKey ?? "", StaffActor, ServiceNote?.Trim()), ct);
+            Input.IdempotencyKey ?? "", StaffActor, ServiceNote?.Trim(), Input.MarketingOk), ct);
 
         if (result.IsSuccess)
         {
@@ -109,5 +109,8 @@ public class WalkInModel(BookingService booking, CatalogAdminService catalog, Sh
         public string? Phone { get; set; }
         public string? Start { get; set; }
         public string? IdempotencyKey { get; set; }
+
+        /// <summary>The customer said yes to promo messages. Unticked sends nothing, which is "no".</summary>
+        public bool MarketingOk { get; set; }
     }
 }

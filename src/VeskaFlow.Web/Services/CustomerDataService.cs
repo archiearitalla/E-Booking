@@ -73,7 +73,7 @@ public sealed class CustomerDataService(IDbContextFactory<AppDbContext> dbFactor
         return JsonSerializer.Serialize(new
         {
             exportedAtUtc = DateTime.UtcNow,
-            customer = new { customer.Name, customer.Phone, customer.Email, customer.CreatedAtUtc },
+            customer = new { customer.Name, customer.Phone, customer.Email, customer.CreatedAtUtc, promoMessagesAllowed = customer.MarketingOk, promoMessagesAllowedAtUtc = customer.MarketingOkAtUtc, promoLastSentAtUtc = customer.PromoSentAtUtc },
             bookings,
             servicesDoneOnTop = extras,
             auditTrail = audit,

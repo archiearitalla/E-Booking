@@ -162,6 +162,11 @@ public class Customer
     public string Phone { get; set; } = "";
     public string? Email { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    /// <summary>The customer agreed to receive promo messages (migration 029). Never set by the shop on its own; only by the customer's tick or a recorded request.</summary>
+    public bool MarketingOk { get; set; }
+    public DateTime? MarketingOkAtUtc { get; set; }
+    /// <summary>When staff last marked the current promo as sent to this customer; null when not yet.</summary>
+    public DateTime? PromoSentAtUtc { get; set; }
 }
 
 public class Booking

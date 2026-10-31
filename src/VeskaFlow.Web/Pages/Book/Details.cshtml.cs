@@ -54,7 +54,7 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking, Cu
         var result = await booking.CreateAsync(new CreateBookingRequest(
             Shop!.Id, Service!.Id, Staff?.Id, StartUtc,
             Input.Name ?? "", Input.Phone ?? "", Input.Email, Input.IdempotencyKey ?? "",
-            BookingActor.Customer((Input.Name ?? "Customer").Trim()), Input.ServiceNote), ct);
+            BookingActor.Customer((Input.Name ?? "Customer").Trim()), Input.ServiceNote, Input.MarketingOk), ct);
 
         if (result.IsSuccess)
         {
@@ -122,6 +122,9 @@ public class DetailsModel(ShopCatalogService catalog, BookingService booking, Cu
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public string? IdempotencyKey { get; set; }
+
+        /// <summary>The customer ticked "send me promos". Unticked sends nothing, which is "no".</summary>
+        public bool MarketingOk { get; set; }
 
         /// <summary>What the customer needs, for the "Other" service.</summary>
         public string? ServiceNote { get; set; }

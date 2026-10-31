@@ -178,10 +178,12 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
 
             // Customers are per business, matched by phone. A repeat booking updates name and email on file.
             var customerRows = await db.Database.SqlQuery<Guid>($"""
-                INSERT INTO customer (id, business_id, name, phone, email)
-                VALUES ({Guid.NewGuid()}, {business.Id}, {name}, {phone}, {email})
+                INSERT INTO customer (id, business_id, name, phone, email, marketing_ok, marketing_ok_at_utc)
+                VALUES ({Guid.NewGuid()}, {business.Id}, {name}, {phone}, {email}, {request.MarketingOk}, {(request.MarketingOk ? now : (DateTime?)null)})
                 ON CONFLICT (business_id, phone)
-                DO UPDATE SET name = EXCLUDED.name, email = COALESCE(EXCLUDED.email, customer.email)
+                DO UPDATE SET name = EXCLUDED.name, email = COALESCE(EXCLUDED.email, customer.email),
+                    marketing_ok_at_utc = CASE WHEN EXCLUDED.marketing_ok AND NOT customer.marketing_ok THEN EXCLUDED.marketing_ok_at_utc ELSE customer.marketing_ok_at_utc END,
+                    marketing_ok = customer.marketing_ok OR EXCLUDED.marketing_ok
                 RETURNING id AS "Value"
                 """).ToListAsync(ct);
             var customerId = customerRows.Single();

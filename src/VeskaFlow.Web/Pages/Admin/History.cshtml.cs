@@ -4,15 +4,28 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin;
 
 /// <summary>A customer's completed visits with their optional medical records, and the tools to export or erase their data. Staff only.</summary>
-public class HistoryModel(VisitRecordService records, CustomerDataService customerData, AdminDayService days) : AdminPageModel
+public class HistoryModel(VisitRecordService records, CustomerDataService customerData, AdminDayService days, PromoMessageService promoMessages) : AdminPageModel
 {
+    /// <summary>Did the customer agree to promo messages?</summary>
+    public bool PromoAllowed { get; private set; }
     public CustomerHistory? History { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         if (!await days.CustomerInScopeAsync(BusinessId, id, ScopeStaffId, ct)) return NotFound(); // only customers this person has served
         History = await records.GetHistoryAsync(BusinessId, id, ct, ScopeStaffId);
+        PromoAllowed = (await promoMessages.GetConsentAsync(BusinessId, id, ct))?.Allowed == true;
         return History is null ? NotFound() : Page(); // unknown id and another business's customer look the same
+    }
+
+    /// <summary>Records that the customer agreed to promo messages, or asked to stop. Any signed-in person who may see this customer can do it.</summary>
+    public async Task<IActionResult> OnPostPromoConsentAsync(Guid id, bool allow, CancellationToken ct)
+    {
+        if (!await days.CustomerInScopeAsync(BusinessId, id, ScopeStaffId, ct)) return NotFound();
+        var result = await promoMessages.SetConsentAsync(BusinessId, id, allow, StaffActor, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        Success = Text.PromoConsentSaved;
+        return RedirectToPage(new { id });
     }
 
     /// <summary>Everything the shop keeps about this customer, as a JSON file.</summary>

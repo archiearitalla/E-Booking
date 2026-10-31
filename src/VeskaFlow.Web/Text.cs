@@ -350,6 +350,48 @@ public static class Text
     public const string HelpTip = "Tip:";
     public const string HelpLink = "How does this work?";
     public const string AdminNavHelp = "Help";
+    public static string PromoConsentLabel(string shop) => $"Send me promos and offers from {shop} by text or email.";
+    public const string PromoConsentHint = "Optional. You can say STOP any time.";
+    public const string PromoConsentStaff = "The customer agrees to get promos and offers by text or email (ask first; leave it empty if not sure).";
+    public const string PromoSendTitle = "Send a promo to customers";
+    public const string PromoSendIntro = "Your promo, ready to send to customers who said yes to promo messages. Nothing is sent by the system: open a customer, send the message from your phone, then mark it sent.";
+    public const string PromoSendNoPromo = "You have no promo showing right now. Make one, or switch yours on.";
+    public const string PromoSendMakeOne = "Open the Promo Creator";
+    public const string PromoSendCanReach = "Can be reached";
+    public const string PromoSendSent = "Sent";
+    public const string PromoSendToGo = "Still to send";
+    public const string PromoSendPreview = "Your promo";
+    public const string PromoSendConsentNote = "Only customers who agreed to promo messages are listed. If someone says STOP, open their history and turn promo messages off.";
+    public const string PromoSendSearch = "Search by name, phone or email";
+    public const string PromoSendNobody = "Nobody has said yes to promo messages yet. New customers can tick the box when they book, and you can record a yes in a customer's history.";
+    public static string PromoSendShowing(int shown, int total) => $"Showing {shown} of {total}. Search to find the others.";
+    public const string PromoSendNotYet = "not sent";
+    public const string PromoSendDone = "sent";
+    public const string PromoSendMarkSent = "Mark as sent";
+    public const string PromoSendUnmark = "Mark as not sent";
+    public const string PromoSendReset = "Clear all sent marks (for a new promo)";
+    public const string PromoSendResetAsk = "Clear the sent marks of everyone? Do this when you start a new promo.";
+    public const string PromoSendResetDone = "All sent marks cleared.";
+    public static string PromoSendSubject(string shop) => $"{shop}: a promo for you";
+    public const string PromoSendLink = "Send this promo to customers";
+    public const string PromoConsentTitle = "Promo messages";
+    public const string PromoConsentAllowed = "This customer agreed to get promo messages.";
+    public const string PromoConsentNotAllowed = "This customer has not agreed to promo messages.";
+    public const string PromoConsentTurnOn = "Record a yes";
+    public const string PromoConsentTurnOff = "They asked to stop";
+    public const string PromoConsentTurnOnAsk = "Record that this customer agreed to get promo messages?";
+    public const string PromoConsentTurnOffAsk = "Stop promo messages for this customer?";
+    public const string PromoConsentSaved = "Saved.";
+    public static string PromoMessage(string firstName, string shop, string headline, string? details, int? percent, DateOnly? endsOn, string bookingUrl)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"Hi {firstName}! {shop} has a promo: {headline}.");
+        if (!string.IsNullOrWhiteSpace(details)) sb.Append($" {details.Trim().TrimEnd('.')}.");
+        if (percent is { } p) sb.Append($" {p}% off.");
+        if (endsOn is { } d) sb.Append($" Until {d.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture)}.");
+        sb.Append($" Book here: {bookingUrl} . Reply STOP if you do not want promo messages.");
+        return sb.ToString();
+    }
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
     public const string KpiHidden = "\u20B1 \u2022\u2022\u2022\u2022";

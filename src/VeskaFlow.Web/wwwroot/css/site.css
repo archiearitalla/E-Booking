@@ -134,7 +134,7 @@ fieldset { border: 0; padding: 0; margin: 0 0 1.125rem; min-width: 0; }
 legend { font-weight: 600; padding: 0; margin-bottom: 0.5rem; }
 
 input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="search"],
-input[type="date"], input[type="number"], input[type="time"], select {
+input[type="date"], input[type="number"], input[type="time"], select, textarea {
   display: block;
   width: 100%;
   min-height: var(--tap);
@@ -147,7 +147,7 @@ input[type="date"], input[type="number"], input[type="time"], select {
   border-radius: var(--radius-sm);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-input:hover, select:hover { border-color: var(--muted); }
+input:hover, select:hover, textarea:hover { border-color: var(--muted); }
 input:focus, select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
 input:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
 input[aria-invalid="true"] { border-color: var(--danger); }

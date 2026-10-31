@@ -62,6 +62,7 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.VisitRecordService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.BookingExtraService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ManualSaleService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AiAdminService>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.PromoMessageService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerDataService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.ReminderService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.CustomerListService>();

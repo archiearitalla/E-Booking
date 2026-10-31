@@ -15,6 +15,15 @@
     </dl>
 </div>
 
+<div class="card">
+    <h2>@Text.PromoConsentTitle</h2>
+    <p class="hint">@(Model.PromoAllowed ? Text.PromoConsentAllowed : Text.PromoConsentNotAllowed)</p>
+    <form method="post" asp-page-handler="PromoConsent" asp-route-id="@h.CustomerId">
+        <input type="hidden" name="allow" value="@((!Model.PromoAllowed).ToString().ToLowerInvariant())" />
+        <button type="submit" class="@(Model.PromoAllowed ? "secondary" : "primary")" data-confirm="@(Model.PromoAllowed ? Text.PromoConsentTurnOffAsk : Text.PromoConsentTurnOnAsk)">@(Model.PromoAllowed ? Text.PromoConsentTurnOff : Text.PromoConsentTurnOn)</button>
+    </form>
+</div>
+
 @if (Model.Level == AdminLevel.Owner)
 {
 <div class="card">
