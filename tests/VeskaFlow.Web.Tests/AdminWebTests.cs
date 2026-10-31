@@ -711,7 +711,9 @@ public class AdminWebTests
 
         var plain = Dec(await a.Client.GetStringAsync(day));
         Assert.DoesNotContain("id=\"kpi-details\"", plain);                                       // closed until a card is clicked
-        Assert.Contains($"kpi=todo", plain);                                                      // the card is a link
+        Assert.Contains($"kpi=todo", plain);
+        Assert.Contains(Text.KpiHidden, plain);                                                   // the Earned amount stays hidden until its card is clicked
+        Assert.Contains(Text.KpiEarnedTotal, Dec(await a.Client.GetStringAsync(day + "&kpi=earned")));                                                      // the card is a link
 
         var todo = Dec(await a.Client.GetStringAsync(day + "&kpi=todo"));
         Assert.Contains("id=\"kpi-details\"", todo);

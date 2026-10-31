@@ -40,7 +40,7 @@
     {
         ("todo", dayBookings.Count(x => x.Status == BookingStatus.Confirmed).ToString(), Text.KpiToDo),
         ("done", dayBookings.Count(x => x.Status == BookingStatus.Completed).ToString(), Text.KpiDone),
-        ("earned", DisplayFormat.Price(kpiRevenue), Text.KpiRevenue),
+        ("earned", Model.OpenKpi == "earned" ? DisplayFormat.Price(kpiRevenue) : Text.KpiHidden, Text.KpiRevenue),
         ("noshow", dayBookings.Count(x => x.Status == BookingStatus.NoShow).ToString(), Text.KpiNoShows),
         ("cancelled", dayBookings.Count(x => x.Status == BookingStatus.Cancelled).ToString(), Text.KpiCancelled),
     };
@@ -58,6 +58,7 @@
     var detailRows = Model.KpiBookings;
     <section class="card kpi-details" id="kpi-details" tabindex="-1" aria-label="@Text.KpiDetailsTitle">
         <h2>@kpiCards.First(k => k.Key == openKpi).Label &middot; @dateText</h2>
+        @if (openKpi == "earned") { <p><strong>@Text.KpiEarnedTotal:</strong> @DisplayFormat.Price(kpiRevenue)</p> }
         @if (detailRows.Count == 0)
         {
             <p class="muted">@Text.KpiDetailsNone</p>
