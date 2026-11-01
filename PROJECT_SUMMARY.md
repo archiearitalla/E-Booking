@@ -48,7 +48,7 @@ Rules for code: business logic lives in services (never in pages); Core has no N
 
 **AI receptionist** (paid add-on, Anthropic API behind `IAiModel`, default model `claude-haiku-5-5`): chat on the booking page that checks slots and books through the same rules as the form. Limits per shop (per day, per month, tokens) and a cost monitor at `/Platform/Ai`. The live API was never called in tests.
 
-**Billing (manual, no gateway):** prices from settings (Pro 499 per month or 4,990 per year; AI 1,500 and Email 199 per month are placeholders). Owner page "Plan and billing" with GCash QR, "I paid" with the reference number, history and a printable confirmation (says it is not a BIR receipt). Platform owner confirms, rejects or records by hand; confirming extends the access or add-on and gives a receipt number `VF-year-number`. Trial of 30 days with everything included, then the back office locks until paid (the Billing page stays open).
+**Billing (manual, no gateway):** prices from settings (Pro 999 per month or 9,990 per year; AI 1,500 and Email 199 per month are placeholders). Owner page "Plan and billing" with GCash QR, "I paid" with the reference number, history and a printable confirmation (says it is not a BIR receipt). Platform owner confirms, rejects or records by hand; confirming extends the access or add-on and gives a receipt number `VF-year-number`. Trial of 30 days with everything included, then the back office locks until paid (the Billing page stays open).
 
 **Platform tools:** shop list as summary lines with search, expiry dates and a heads-up when a client's access ends soon, subscription table per shop, payments, AI usage.
 

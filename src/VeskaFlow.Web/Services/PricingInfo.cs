@@ -21,14 +21,14 @@ public sealed record PriceOption(string Kind, string Period, decimal Price)
 }
 
 /// <summary>
-/// The prices, from settings (never in the code, so they can change without a release): <c>Pricing:ProMonthly</c> (default 499) and <c>Pricing:ProYearly</c>
-/// (default 4990, two months free), and the add-ons <c>Pricing:AiMonthly</c> and <c>Pricing:EmailMonthly</c>. The AI and email prices are placeholders until the
+/// The prices, from settings (never in the code, so they can change without a release): <c>Pricing:ProMonthly</c> (default 999) and <c>Pricing:ProYearly</c>
+/// (default 9990, two months free), and the add-ons <c>Pricing:AiMonthly</c> and <c>Pricing:EmailMonthly</c>. The AI and email prices are placeholders until the
 /// real cost is known. A price of 0 or less means "not for sale".
 /// </summary>
 public sealed class PricingInfo(IConfiguration config)
 {
-    public decimal ProMonthly => config.GetValue("Pricing:ProMonthly", 499m);
-    public decimal ProYearly => config.GetValue("Pricing:ProYearly", 4990m);
+    public decimal ProMonthly => config.GetValue("Pricing:ProMonthly", 999m);
+    public decimal ProYearly => config.GetValue("Pricing:ProYearly", 9990m);
     public decimal AiMonthly => config.GetValue("Pricing:AiMonthly", 1500m);
     public decimal EmailMonthly => config.GetValue("Pricing:EmailMonthly", 199m);
 

@@ -138,7 +138,7 @@ To switch it off, remove the two variables. With the keys set, a failed or unrea
 
 When access ends, the owner sees a "trial ended" page; before that, the owner gets an email 7, 3 and 1 days ahead (needs the email service from above). Both tell the client how to pay. Put the details in Render, Environment (they are shown to clients, so they are not secrets, but they are not in the code either):
 
-- `Billing__Price`: for example `PHP 499 per month`.
+- `Billing__Price`: for example `PHP 999 per month`.
 - `Billing__PayTo`: for example `GCash 09XX XXX XXXX (Your Name)`.
 - `Billing__Note` (optional): replaces the default line "send a screenshot of the payment with your shop name and email".
 - `Trial__ContactUrl`: where the client contacts you (for example a Messenger link).

@@ -40,8 +40,8 @@ public class PaymentTests
         var p = Pricing();
         Assert.Equal(new[] { "PRO-MONTH", "PRO-YEAR", "AI-MONTH", "EMAIL-MONTH", "STAFF-MONTH" }, p.Options.Select(o => o.Key));
         Assert.Equal(199m, p.ExtraStaffMonthly); // one extra staff member, per month
-        Assert.Equal((499m, 4990m), (p.ProMonthly, p.ProYearly));
-        Assert.Equal(998m, p.YearlySaving);
+        Assert.Equal((999m, 9990m), (p.ProMonthly, p.ProYearly));
+        Assert.Equal(1998m, p.YearlySaving);
         Assert.Equal(365, p.Find("PRO", "YEAR")!.Days);
         Assert.Equal(30, p.Find("PRO", "MONTH")!.Days);
         Assert.Null(p.Find("AI", "YEAR"));
@@ -66,7 +66,7 @@ public class PaymentTests
         var made = await c.Payments.SubmitAsync(id, "PRO-YEAR", reference, " paid by Ana ", "Owner");
         Assert.True(made.IsSuccess);
         var row = (await c.Payments.ListForShopAsync(id)).Single();
-        Assert.Equal(("PENDING", 4990m, 365, "paid by Ana"), (row.Status, row.Amount, row.Days, row.Note));                 // the price is the shop's, nothing the client typed
+        Assert.Equal(("PENDING", 9990m, 365, "paid by Ana"), (row.Status, row.Amount, row.Days, row.Note));                 // the price is the shop's, nothing the client typed
 
         Assert.Contains("reference", (await c.Payments.SubmitAsync(id, "PRO-MONTH", reference.ToLowerInvariant(), null, "Owner")).FieldErrors.Keys);   // the same reference again, any capitals
         var other = await Seed.CreateShopAsync();
@@ -158,8 +158,8 @@ public class PaymentTests
         await c.Payments.ConfirmAsync(a, "Boss");
         var totals = await c.Payments.TotalsAsync(new DateOnly(2030, 3, 1));                                                          // the test database is shared: look at what this shop added
         var mine = (await c.Payments.ListAsync("CONFIRMED", 500)).Where(p => p.BusinessId == c.Shop.BusinessId).ToList();
-        Assert.Equal((499m, 1), (mine.Sum(p => p.Amount), mine.Count));
-        Assert.True(totals.Total >= 499m && totals.Count >= 1 && totals.ByKind["PRO"] >= 499m);
+        Assert.Equal((999m, 1), (mine.Sum(p => p.Amount), mine.Count));
+        Assert.True(totals.Total >= 999m && totals.Count >= 1 && totals.ByKind["PRO"] >= 999m);
         Assert.Equal(0m, (await c.Payments.TotalsAsync(new DateOnly(2030, 2, 1))).Total);
 
         Assert.NotNull(await c.Payments.GetReceiptAsync(c.Shop.BusinessId, a));
@@ -197,9 +197,9 @@ public class PaymentTests
 
         var page = WebUtility.HtmlDecode(await tenant.GetStringAsync("/Admin/Billing"));
         Assert.Contains(Text.BillingPageTitle, page);
-        Assert.Contains("₱499", page);
-        Assert.Contains("₱4,990", page);
-        Assert.Contains(Text.BillingYearSaving("₱998"), page);
+        Assert.Contains("₱999", page);
+        Assert.Contains("₱9,990", page);
+        Assert.Contains(Text.BillingYearSaving("₱1,998"), page);
 
         var reference = Ref();
         var bad = await HttpApp.PostFormAsync(tenant, "/Admin/Billing", new() { ["Input.Option"] = "PRO-MONTH", ["Input.Reference"] = "x" }, tokenPage: "/Admin/Billing");
@@ -255,7 +255,7 @@ public class PaymentTests
         foreach (int? bad in new int?[] { null, 0, -1, 101 })
             Assert.Contains("quantity", (await c.Payments.SubmitAsync(id, "STAFF-MONTH", Ref(), null, "Owner", bad)).FieldErrors.Keys);
         var pro = await c.Payments.SubmitAsync(id, "PRO-MONTH", Ref(), null, "Owner", 50);
-        Assert.Equal((499m, 1), await AmountAsync(c, pro.Value));
+        Assert.Equal((999m, 1), await AmountAsync(c, pro.Value));
 
         var staff = await c.Payments.SubmitAsync(id, "STAFF-MONTH", Ref(), null, "Owner", 3);
         Assert.True(staff.IsSuccess);
