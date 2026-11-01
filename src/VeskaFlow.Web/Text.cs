@@ -1186,7 +1186,7 @@ public static class Text
     public const string PromoEndsFar = "Choose a last day within the next year.";
     public const string AiChatNotice = "This is an automated assistant and can make mistakes. Your messages are processed by an AI service and kept for 30 days.";
     public const string AiChatNoticeLink = "Privacy Notice";
-    public const string AiChatManageLink = "To see or cancel your booking, use this link:";
+    public const string AiChatManageLink = "To see or cancel your booking / Para makita o makansela ang booking:";
     public const string AiChatIntro = "Ask about services, prices and free times, or book right here. You can also use the form above.";
     public const string AiChatGreeting = "Hi! I can check free times and book you in. What service would you like?";
     public const string AiChatPlaceholder = "Type your message";

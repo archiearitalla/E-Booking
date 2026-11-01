@@ -144,6 +144,7 @@ public class AiReceptionistTests
         Assert.Contains("Haircut", model.Systems[0]);
         Assert.Contains(s.ServiceId.ToString(), model.Systems[0]);
         Assert.Contains("Monday, March 4, 2030", model.Systems[0]);
+        Assert.Contains("never a word-for-word translation", model.Systems[0]);                                      // natural Tagalog guidance
 
         await using var db = c.Db.CreateDbContext();
         var usage = await db.AiUsages.SingleAsync(u => u.BusinessId == s.BusinessId);
