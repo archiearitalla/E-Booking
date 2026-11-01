@@ -28,6 +28,8 @@ public sealed class MessengerOptions(IConfiguration config)
     public string TokenKey => Clean("Messenger:TokenKey");
     /// <summary>The Configuration ID of Facebook Login for Business (which permissions to ask for). When empty the classic <c>scope</c> list is used.</summary>
     public string ConfigId => Clean("Messenger:ConfigId");
+    /// <summary>Set <c>Messenger:Approved</c> to <c>true</c> once Meta has approved the app for the public; until then shop owners are told that only testers can chat.</summary>
+    public bool Approved => string.Equals(Clean("Messenger:Approved"), "true", StringComparison.OrdinalIgnoreCase);
     public string GraphVersion => Clean("Messenger:GraphVersion") is { Length: > 0 } v ? v : "v21.0";
 
     /// <summary>A Page set in the settings answers as one shop.</summary>

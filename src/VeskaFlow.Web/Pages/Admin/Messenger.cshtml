@@ -5,6 +5,10 @@
 }
 <h1>@Text.MessengerTitle</h1>
 <p class="hint">@Text.MessengerIntro</p>
+@if (Model.Available && Model.ShowReviewNote)
+{
+    <div class="notice" role="note">@Text.MessengerReviewNote</div>
+}
 
 @if (!Model.Available)
 {

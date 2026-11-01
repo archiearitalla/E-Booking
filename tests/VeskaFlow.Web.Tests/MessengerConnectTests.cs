@@ -107,7 +107,22 @@ public class MessengerConnectTests
         finally { ClearSettings(); }
     }
 
-    private static readonly string[] SettingNames = ["Messenger__ConfigId", "Messenger__VerifyToken", "Messenger__AppSecret", "Messenger__AppId", "Messenger__TokenKey", "Messenger__PageAccessToken", "Messenger__ShopSlug"];
+    [Fact]
+    public void The_approved_setting_is_off_unless_it_is_true()
+    {
+        try
+        {
+            Environment.SetEnvironmentVariable("Messenger__Approved", null);
+            Assert.False(new MessengerOptions(Config()).Approved);
+            Environment.SetEnvironmentVariable("Messenger__Approved", "yes please");
+            Assert.False(new MessengerOptions(Config()).Approved);
+            Environment.SetEnvironmentVariable("Messenger__Approved", "TRUE");
+            Assert.True(new MessengerOptions(Config()).Approved);
+        }
+        finally { Environment.SetEnvironmentVariable("Messenger__Approved", null); }
+    }
+
+    private static readonly string[] SettingNames = ["Messenger__Approved", "Messenger__ConfigId", "Messenger__VerifyToken", "Messenger__AppSecret", "Messenger__AppId", "Messenger__TokenKey", "Messenger__PageAccessToken", "Messenger__ShopSlug"];
 
     private static void SetConnectSettings()
     {
@@ -226,6 +241,7 @@ public class MessengerConnectTests
             // Connect is a link, not a form: the site's policy lets a form post only to its own address, so a form that ends at facebook.com would be stopped by the browser.
             var startPage = WebUtility.HtmlDecode(await owner.GetStringAsync("/Admin/Messenger"));
             Assert.Contains("href=\"/Admin/Messenger?handler=Start\"", startPage);
+            Assert.Contains(Text.MessengerReviewNote, startPage);                                                          // shops are told it only answers testers until Meta approves
             Assert.DoesNotContain("handler=Connect", startPage);
 
             // Coming back with the wrong state, or the wrong code, connects nothing.

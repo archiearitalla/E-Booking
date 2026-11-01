@@ -17,6 +17,8 @@ public class MessengerModel(MessengerConnectService connect, MessengerOptions op
     private static readonly TimeSpan StateLife = TimeSpan.FromMinutes(10), PickLife = TimeSpan.FromMinutes(15);
 
     public bool Available => options.ConnectEnabled;
+    /// <summary>True until the platform owner sets <c>Messenger:Approved</c>: shops are told the assistant only answers testers for now.</summary>
+    public bool ShowReviewNote => !options.Approved;
     public bool AiActive { get; private set; }
     public IReadOnlyList<MessengerPage> Pages { get; private set; } = [];
     /// <summary>Pages Facebook just showed this person, waiting for them to choose one (names only, never tokens).</summary>

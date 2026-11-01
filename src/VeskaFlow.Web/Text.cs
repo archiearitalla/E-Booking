@@ -1214,6 +1214,7 @@ public static class Text
     public const string MessengerConnectAnother = "Connect another Page";
     public const string MessengerConnected = "Connected Pages";
     public const string MessengerNone = "No Page is connected yet.";
+    public const string MessengerReviewNote = "Until Meta approves VeskaFlow for the public, only people we have added as testers can message the assistant on Facebook. Your customers will not get an answer from it yet. To try it, ask us to add your own Facebook account as a tester.";
     public const string MessengerDisconnect = "Disconnect";
     public const string MessengerDisconnectConfirm = "Disconnect this Page? The assistant stops answering its messages.";
     public const string MessengerChoose = "Choose the Page to connect";
