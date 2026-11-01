@@ -2,7 +2,7 @@
 
 Until Meta approves the app, only people with a role on it (admin, developer, tester) can connect a Page or chat with it. This is the list of what to do, in order, and text you can copy. Written from general knowledge of Meta's process on 2026-11-02; **Meta changes its screens and rules often, so check each step against what the dashboard says today.** Nothing here has been submitted yet and approval is not guaranteed.
 
-The app: **VeskaFlow Assistant**, a Business-type app with the Messenger use case and Facebook Login for Business (a configuration that asks for `pages_show_list`, `pages_messaging`, `pages_manage_metadata`). The code that uses them is in `src/VeskaFlow.Web/Services/Messenger.cs` and described in BUSINESS_RULES 6.y23.
+The app: **VeskaFlow Assistant**, a Business-type app with the Messenger use case and Facebook Login for Business (a configuration that asks for `pages_show_list`, `pages_messaging`, `pages_manage_metadata`, `pages_read_engagement`). The code that uses them is in `src/VeskaFlow.Web/Services/Messenger.cs` and described in BUSINESS_RULES 6.y23.
 
 ## 1. Business Verification (usually the slowest part)
 
@@ -43,6 +43,9 @@ Ask for Advanced Access to each. Copy the text and change anything that is not t
 
 **`pages_manage_metadata`**
 > When the owner chooses a Page, we use pages_manage_metadata to subscribe our app to that Page's webhook ("messages" only) so that the messages people send to the Page reach our server. When the owner presses "Disconnect", we remove the subscription. We do not change any other setting of the Page.
+
+**`pages_read_engagement`**
+> When the owner chooses a Page, we read that Page's name and the access token Facebook issues for it (the Page endpoint needs pages_read_engagement for this, as Meta's own error message states). The name is shown to the owner on the connection screen; the token is stored encrypted and used only to send replies as that Page. We do not read the Page's posts, comments, followers or insights.
 
 **`pages_messaging`**
 > VeskaFlow is an online booking system for barbershops, salons and clinics. A shop can connect its Facebook Page so that an automated assistant answers the messages people send to the Page: it tells them the shop's services, prices and free times, and books an appointment when they ask. We use pages_messaging only to reply to a person who wrote to the Page first, inside the reply window, with a text message. We do not send promotions or messages to people who did not write to the Page. The assistant tells the person it is automated, and the shop's booking page always offers the same booking without it.

@@ -231,7 +231,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
                 foreach (var s in scopes.EnumerateArray())
                 {
                     var scope = s.TryGetProperty("scope", out var sc) ? sc.GetString() : null;
-                    if (scope is not ("pages_messaging" or "pages_show_list" or "pages_manage_metadata")) continue;
+                    if (scope is not ("pages_messaging" or "pages_show_list" or "pages_manage_metadata" or "pages_read_engagement")) continue;
                     if (!s.TryGetProperty("target_ids", out var targets) || targets.ValueKind != JsonValueKind.Array) continue;
                     foreach (var t in targets.EnumerateArray())
                         if (t.GetString() is { Length: > 0 and <= 100 } id && !ids.Contains(id)) ids.Add(id);
@@ -348,7 +348,7 @@ public sealed class MessengerConnectService(
         // Facebook Login for Business asks for its saved configuration (the permissions are set in the Meta app); classic Facebook Login asks for them here.
         return options.ConfigId.Length > 0
             ? url + $"&config_id={Uri.EscapeDataString(options.ConfigId)}&override_default_response_type=true"
-            : url + "&scope=pages_show_list,pages_messaging,pages_manage_metadata";
+            : url + "&scope=pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement";
     }
 
     /// <summary>The Pages the person who just came back from Facebook manages.</summary>

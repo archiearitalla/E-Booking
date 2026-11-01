@@ -49,7 +49,7 @@ public class MessengerConnectTests
 
             Environment.SetEnvironmentVariable("Messenger__ConfigId", null);
             var classic = AuthorizeUrlFor();
-            Assert.Contains("scope=pages_show_list,pages_messaging,pages_manage_metadata", classic);
+            Assert.Contains("scope=pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement", classic);
             Assert.DoesNotContain("config_id", classic);
         }
         finally { Environment.SetEnvironmentVariable("Messenger__ConfigId", null); ClearSettings(); }
