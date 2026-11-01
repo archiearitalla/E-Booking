@@ -4,6 +4,10 @@ Until Meta approves the app, only people with a role on it (admin, developer, te
 
 The app: **VeskaFlow Assistant**, a Business-type app with the Messenger use case and Facebook Login for Business (a configuration that asks for `pages_show_list`, `pages_messaging`, `pages_manage_metadata`, `pages_read_engagement`). The code that uses them is in `src/VeskaFlow.Web/Services/Messenger.cs` and described in BUSINESS_RULES 6.y23.
 
+## 0. Tech Provider (the app dashboard says so)
+
+The dashboard of the Meta app shows a box "Become a Tech Provider": Meta says it is needed to submit to App Review and request access to data from other businesses, which is exactly what the shops' Pages are. Read what Meta asks for there before anything else (it usually comes with Business Verification and an agreement). **Not checked by me; follow what the dashboard says today.**
+
 ## 1. Business Verification (usually the slowest part)
 
 1. Meta Business Suite, Business settings, **Security Center**, Start verification, for the business portfolio you want the app to belong to.
