@@ -26,6 +26,8 @@ public sealed class MessengerOptions(IConfiguration config)
     public string ShopSlug => Clean("Messenger:ShopSlug");
     public string AppId => Clean("Messenger:AppId");
     public string TokenKey => Clean("Messenger:TokenKey");
+    /// <summary>The Configuration ID of Facebook Login for Business (which permissions to ask for). When empty the classic <c>scope</c> list is used.</summary>
+    public string ConfigId => Clean("Messenger:ConfigId");
     public string GraphVersion => Clean("Messenger:GraphVersion") is { Length: > 0 } v ? v : "v21.0";
 
     /// <summary>A Page set in the settings answers as one shop.</summary>
@@ -250,9 +252,15 @@ public sealed class MessengerConnectService(
     public const int MaxPagesPerShop = 5;
 
     /// <summary>Where Facebook sends the person: its own login and permission screen. <paramref name="state"/> is checked when they come back.</summary>
-    public string AuthorizeUrl(string redirectUri, string state) =>
-        $"https://www.facebook.com/{options.GraphVersion}/dialog/oauth?client_id={Uri.EscapeDataString(options.AppId)}&redirect_uri={Uri.EscapeDataString(redirectUri)}"
-        + $"&state={Uri.EscapeDataString(state)}&response_type=code&scope=pages_show_list,pages_messaging,pages_manage_metadata";
+    public string AuthorizeUrl(string redirectUri, string state)
+    {
+        var url = $"https://www.facebook.com/{options.GraphVersion}/dialog/oauth?client_id={Uri.EscapeDataString(options.AppId)}&redirect_uri={Uri.EscapeDataString(redirectUri)}"
+            + $"&state={Uri.EscapeDataString(state)}&response_type=code";
+        // Facebook Login for Business asks for its saved configuration (the permissions are set in the Meta app); classic Facebook Login asks for them here.
+        return options.ConfigId.Length > 0
+            ? url + $"&config_id={Uri.EscapeDataString(options.ConfigId)}&override_default_response_type=true"
+            : url + "&scope=pages_show_list,pages_messaging,pages_manage_metadata";
+    }
 
     /// <summary>The Pages the person who just came back from Facebook manages.</summary>
     public async Task<ServiceResult<IReadOnlyList<FacebookPage>>> PagesFromCodeAsync(string code, string redirectUri, CancellationToken ct = default)

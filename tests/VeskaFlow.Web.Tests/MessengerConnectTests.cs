@@ -35,7 +35,31 @@ public class MessengerConnectTests
         public Task<bool> SendTextAsync(string pageToken, string psid, string text, CancellationToken ct = default) { Sent.Add((pageToken, psid, text)); return Task.FromResult(true); }
     }
 
-    private static readonly string[] SettingNames = ["Messenger__VerifyToken", "Messenger__AppSecret", "Messenger__AppId", "Messenger__TokenKey", "Messenger__PageAccessToken", "Messenger__ShopSlug"];
+    [Fact]
+    public void The_login_address_asks_for_a_saved_configuration_when_one_is_set_and_for_the_permissions_otherwise()
+    {
+        try
+        {
+            SetConnectSettings();
+            Environment.SetEnvironmentVariable("Messenger__ConfigId", "CFG123");
+            var withConfig = AuthorizeUrlFor();
+            Assert.Contains("config_id=CFG123", withConfig);
+            Assert.Contains("override_default_response_type=true", withConfig);
+            Assert.DoesNotContain("scope=", withConfig);
+
+            Environment.SetEnvironmentVariable("Messenger__ConfigId", null);
+            var classic = AuthorizeUrlFor();
+            Assert.Contains("scope=pages_show_list,pages_messaging,pages_manage_metadata", classic);
+            Assert.DoesNotContain("config_id", classic);
+        }
+        finally { Environment.SetEnvironmentVariable("Messenger__ConfigId", null); ClearSettings(); }
+
+        static string AuthorizeUrlFor() =>
+            new MessengerConnectService(null!, TimeProvider.System, new MessengerOptions(Config()), new MessengerCipher(new MessengerOptions(Config())), null!, null!,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<MessengerConnectService>.Instance).AuthorizeUrl("https://x.test/Admin/MessengerReturn", "S");
+    }
+
+    private static readonly string[] SettingNames = ["Messenger__ConfigId", "Messenger__VerifyToken", "Messenger__AppSecret", "Messenger__AppId", "Messenger__TokenKey", "Messenger__PageAccessToken", "Messenger__ShopSlug"];
 
     private static void SetConnectSettings()
     {
