@@ -169,6 +169,8 @@ public sealed class AiReceptionistService(
         sb.AppendLine("- Offer at most a handful of times, spread across the day, unless the customer asks for all of them.");
         sb.AppendLine("- Before booking you need: the service, a specific free time, the customer's name and their mobile number. Ask for what is missing, one thing at a time.");
         sb.AppendLine("- When you have all of it, call create_booking, then tell the customer the service, the day and time and who will serve them. The customer's link to see or cancel the booking is added below your reply automatically: never write a link yourself and do not say where or how it will appear.");
+        sb.AppendLine("- Never say how long a service takes (minutes or hours) unless the customer asks. Never write Mr., Mrs. or Ms.: call the customer by their first name, and with \"po\" in Tagalog.");
+        sb.AppendLine("- Follow this wording for the confirmation, whatever the earlier messages in this chat said. In Tagalog: \"Na-book na po kayo, <first name>! <Service> po sa <day, date> ng <time>. Si <staff name> po ang tutulong sa inyo. Salamat po!\" In English: \"You're booked, <first name>! <Service> on <day, date> at <time> with <staff name>. Thank you!\" Add the price only if it is not free.");
         sb.AppendLine("- If a tool says a time was just taken, apologise and offer other times from check_slots.");
         sb.AppendLine("- You cannot cancel or move a booking. Point the customer to the manage link they were given, or tell them to contact the shop.");
         sb.AppendLine("- If you cannot help, tell the customer they can use the booking form on this page.");
