@@ -84,3 +84,20 @@ Record the real screens, not a mock-up. Show the address bar. Do not show any pa
 - Whether Meta accepts an AI assistant for this use. Their policies for automated replies change; read the current Messenger Platform policy before you submit and say clearly that the assistant is automated.
 - Handing a conversation to a person (not built).
 - A token Meta revokes (for example when the owner changes their Facebook password): the Page goes quiet and the owner must connect it again.
+
+## Where this guide lives in the app
+
+The same steps, with a tick for each and the texts in boxes you can click and copy, are on the platform owner's own page `/Platform/MetaReview` (button "Meta App Review guide" on the Platform page). It is separate from the Pilot checklist. This file is the longer version.
+
+## Where to click in the Meta dashboard
+
+| Step | Where (the menu on the left of the app at developers.facebook.com, unless it says otherwise) |
+|---|---|
+| Tech Provider | Dashboard, the box "Become a Tech Provider" |
+| Business Verification | business.facebook.com/settings, Security Center; then App settings, Basic to set the portfolio |
+| App information | App settings, Basic |
+| OAuth redirect URI | Facebook Login for Business, Settings |
+| Permissions (Advanced Access) | Use cases, "Engage with customers on Messenger from Meta", Customize, tab "Permissions and features", Actions on each permission |
+| Submit and go Live | Publish (shows "Unpublished") |
+
+I could not check these against Meta today; if a menu has another name, use the closest one.

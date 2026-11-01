@@ -526,6 +526,7 @@ public static class Text
     public const string PilotBack = "Back to Platform";
     public const string PilotLink = "Pilot checklist";
     public const string PilotReviewLink = "Meta App Review guide";
+    public const string MetaReviewIntro = "Your steps to get Meta to approve the app, so the shops' customers can talk to the assistant on Facebook. Until it is approved only people with a role on the app can. Each step says where to click in the Meta dashboard and has the texts to paste. This comes from general knowledge of Meta's process: its screens change, so check each step against what the dashboard shows today. Nothing has been submitted and approval is not guaranteed.";
     public const string PilotTick = "Mark done";
     public const string PilotUntick = "Mark not done";
     public static string PilotDoneOn(string date) => $"Done on {date}.";

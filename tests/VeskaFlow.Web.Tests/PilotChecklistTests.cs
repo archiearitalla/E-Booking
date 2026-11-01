@@ -14,11 +14,7 @@ public class PilotChecklistTests
         var all = PilotChecklist.Sections.SelectMany(s => s.Items).ToList();
         Assert.Equal(all.Count, all.Select(i => i.Id).Distinct().Count());
         Assert.All(all, i => { Assert.False(string.IsNullOrWhiteSpace(i.Title)); Assert.DoesNotContain(" ", i.Id); });
-        Assert.Equal(5, PilotChecklist.Sections.Count);
-        var review = PilotChecklist.Sections.Single(s => s.Id == "review");
-        Assert.True(review.Tickable);
-        Assert.All(new[] { "r-show", "r-meta", "r-read", "r-msg", "r-data" }, id => Assert.False(string.IsNullOrWhiteSpace(review.Items.Single(i => i.Id == id).Copy))); // each permission has its ready-made text
-        Assert.True(PilotChecklist.IsKnown("r-msg"));
+        Assert.Equal(4, PilotChecklist.Sections.Count);
         Assert.All(PilotChecklist.Sections, s => Assert.NotEmpty(s.Items));
         Assert.False(PilotChecklist.Sections.Single(s => s.Id == "ask").Tickable);
         Assert.False(PilotChecklist.IsKnown("q-use")); // a question can not be ticked
@@ -81,9 +77,9 @@ public class PilotChecklistTests
         Assert.Contains(Text.PilotTitle, page);
         Assert.Contains("Test the main flows on a real phone", page);
         Assert.Contains("After two weeks: ask the owner", page);
-        Assert.Contains("Meta App Review (to open Messenger to the public)", page);                                                      // the App Review guide, with text to copy
-        Assert.Contains("We use pages_messaging only to reply to a person who wrote to the Page first", page);
-        Assert.Contains("href=\"/Platform/Pilot#review\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));               // linked from the Platform page
+        Assert.DoesNotContain("pages_messaging", page);                                                                                   // the App Review guide is its own page, not mixed in here
+        Assert.Contains("href=\"/Platform/MetaReview\"", page);                                                                            // but linked from here and from the Platform page
+        Assert.Contains("href=\"/Platform/MetaReview\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
         Assert.Contains("0 / 8", page);                                                                                                  // before you charge: none done yet
         Assert.Contains("href=\"/Platform/Pilot\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));                      // linked from the Platform page
 
@@ -97,5 +93,56 @@ public class PilotChecklistTests
         Assert.Equal(HttpStatusCode.NotFound, (await HttpApp.PostFormAsync(tenant, "/Platform/Pilot?handler=Toggle", new() { ["id"] = "email", ["done"] = "true" }, tokenPage: "/Admin")).StatusCode);
         await using var check = db.CreateDbContext();
         Assert.False(await check.PlatformSettings.AnyAsync(s => s.Key == "pilot:email"));                                                // the other shop's tick did nothing
+    }
+
+    [Fact]
+    public void The_Meta_review_guide_has_its_own_sections_with_the_permission_texts_and_where_to_click_and_its_items_can_be_ticked()
+    {
+        Assert.Equal(3, MetaReviewGuide.Sections.Count);
+        var all = MetaReviewGuide.Sections.SelectMany(s => s.Items).ToList();
+        Assert.Equal(all.Count, all.Select(i => i.Id).Distinct().Count());
+        Assert.Empty(all.Select(i => i.Id).Intersect(PilotChecklist.Sections.SelectMany(s => s.Items).Select(i => i.Id)));                // no id shared with the pilot checklist
+        Assert.All(new[] { "r-show", "r-meta", "r-read", "r-msg", "r-data" }, id => Assert.False(string.IsNullOrWhiteSpace(all.Single(i => i.Id == id).Copy)));
+        Assert.All(all, i => Assert.Contains("Where", (i.Detail ?? "") + " " + MetaReviewGuide.Sections.First(s => s.Items.Contains(i)).Intro)); // each step says where to click
+        Assert.True(PilotChecklist.IsKnown("r-msg"));
+        Assert.False(PilotChecklist.IsKnown("r-made-up"));
+    }
+
+    [Fact]
+    public async Task The_Meta_review_page_is_for_the_platform_owner_only_and_a_tick_there_is_remembered()
+    {
+        var bossEmail = $"boss{Guid.NewGuid():N}@example.com";
+        var (factory, _) = await HttpApp.StartAsync(platformAdminEmails: bossEmail);
+        using var _f = factory;
+        Dictionary<string, string> Form(string email, string shop) => new()
+        {
+            ["Input.BusinessName"] = shop, ["Input.OwnerName"] = "Owner", ["Input.Email"] = email, ["Input.Password"] = "correct-horse-battery", ["Input.Accept"] = "true", ["Input.Industry"] = "barbershop",
+        };
+        var boss = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(boss, "/Register", Form(bossEmail, "Boss Shop"));
+        var tenant = HttpApp.NewClient(factory);
+        await HttpApp.PostFormAsync(tenant, "/Register", Form($"t{Guid.NewGuid():N}@example.com", "Some Salon"));
+        var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+        await using (var ctx = db.CreateDbContext()) await ctx.PlatformSettings.Where(s => s.Key.StartsWith("pilot:")).ExecuteDeleteAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, (await tenant.GetAsync("/Platform/MetaReview")).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await HttpApp.NewClient(factory).GetAsync("/Platform/MetaReview")).StatusCode);
+
+        var page = WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform/MetaReview"));
+        Assert.Contains("Meta App Review guide", page);
+        Assert.Contains("We use pages_messaging only to reply to a person who wrote to the Page first", page);        // the text to paste
+        Assert.Contains("business.facebook.com/settings", page);                                                       // where to click
+        Assert.Contains("Publish", page);
+        Assert.Contains("0 / 5", page);                                                                                // before you submit: none done yet
+
+        var ticked = await HttpApp.PostFormAsync(boss, "/Platform/MetaReview?handler=Toggle", new() { ["id"] = "r-verify", ["done"] = "true" }, tokenPage: "/Platform/MetaReview");
+        Assert.Equal(HttpStatusCode.Redirect, ticked.StatusCode);
+        Assert.Contains("1 / 5", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform/MetaReview")));
+        Assert.DoesNotContain("1 / 8", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform/Pilot")));          // the pilot page does not count it
+
+        Assert.Equal(HttpStatusCode.NotFound, (await HttpApp.PostFormAsync(boss, "/Platform/MetaReview?handler=Toggle", new() { ["id"] = "phone", ["done"] = "true" }, tokenPage: "/Platform/MetaReview")).StatusCode); // a pilot item is not for this page
+        Assert.Equal(HttpStatusCode.NotFound, (await HttpApp.PostFormAsync(tenant, "/Platform/MetaReview?handler=Toggle", new() { ["id"] = "r-live", ["done"] = "true" }, tokenPage: "/Admin")).StatusCode);
+        await using var check = db.CreateDbContext();
+        Assert.False(await check.PlatformSettings.AnyAsync(s => s.Key == "pilot:r-live" || s.Key == "pilot:phone"));
     }
 }

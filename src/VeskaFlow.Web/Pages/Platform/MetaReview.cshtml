@@ -1,0 +1,13 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.MetaReviewModel
+@{
+    ViewData["Title"] = Text.PilotReviewLink;
+}
+<h1>@Text.PilotReviewLink</h1>
+<p class="hint">@Text.MetaReviewIntro</p>
+<p class="actions"><a class="button secondary" href="/Platform">@Text.PilotBack</a></p>
+
+@foreach (var block in MetaReviewGuide.Sections)
+{
+    <partial name="_ChecklistSection" model="@(new VeskaFlow.Web.Pages.Platform.ChecklistSectionView(block, Model.Done))" />
+}
