@@ -199,6 +199,11 @@ public class PaymentTests
         Assert.Contains(Text.BillingPageTitle, page);
         Assert.Contains("₱999", page);
         Assert.Contains("₱9,990", page);
+        Assert.Contains("/js/billing.js", page);                                                                                      // the live total
+        Assert.Contains("id=\"pay-total\"", page);
+        Assert.Contains("data-kind=\"STAFF\"", page);
+        Assert.Contains("data-price=\"199\"", page);
+        Assert.Contains(Text.BillingStaffNow(5, 0, 5), page);                                                                         // 5 included + 0 extra = 5 staff
         Assert.Contains(Text.BillingYearSaving("₱1,998"), page);
 
         var reference = Ref();

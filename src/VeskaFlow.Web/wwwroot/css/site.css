@@ -876,3 +876,13 @@ a.kpi.open { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
 .help-tip { background: var(--brand-soft); color: var(--ink); border-radius: var(--radius-sm); padding: 0.6rem 0.75rem; }
 .help-topic { scroll-margin-top: 4.5rem; }
 .help-topic:focus { outline: none; }
+
+/* Plan and billing: the total the owner is about to pay. */
+.pay-total { margin: 0.75rem 0; font-size: 1.125rem; font-weight: 700; color: var(--accent, inherit); }
+.pay-total:empty { display: none; }
+
+/* Plan and billing: steps and the QR on the left, the form on the right on a wide screen; one column on a phone. */
+.billing-pay { display: grid; gap: 1.5rem; }
+@media (min-width: 48rem) { .billing-pay { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.billing-pay-form .actions { margin-top: 0.75rem; }
+.pay-total { padding: 0.75rem 1rem; border: 1px solid var(--line); border-radius: 0.75rem; }

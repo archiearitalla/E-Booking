@@ -901,8 +901,11 @@ public static class Text
     public const string PayKindStaff = "Extra staff";
     public const string PayStaffByHand = "Extra staff is set with the Extra staff box on the shop's card, not here.";
     public static string PayQuantityInvalid(int max) => $"Type how many extra staff you want, from 1 to {max}.";
-    public const string BillingQuantity = "How many extra staff (only for Extra staff)";
-    public const string BillingQuantityHint = "The total number of extra staff you want for the month, not just the new ones. The amount is the price of one times this number.";
+    public static string BillingStaffNow(int included, int extra, int total) => $"Now: {included} included + {extra} extra = {total} staff."; 
+    public const string BillingTotalToPay = "Total to pay:";
+    public const string BillingQuantity = "How many extra staff in total?";
+    public const string BillingPerStaffMonth = "per staff per month";
+    public const string BillingQuantityHint = "The total number of extra staff you want for the month, not just the new ones. The amount is the price of one times this number. Only fill this in for Extra staff.";
     public static string PlatformExtraStaffUntil(string date) => $"paid until {date}";
     public const string StaffRecordsLimit = "You have reached the most staff records ({0}), counting deactivated staff. Ask us to raise it.";
     public const string PlatformExtraStaff = "Extra staff";
