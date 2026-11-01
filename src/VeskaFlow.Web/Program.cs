@@ -48,6 +48,7 @@ builder.Services.AddKeyedScoped<VeskaFlow.Web.Services.IEmailSender>("raw", (sp,
     var resend = sp.GetRequiredService<VeskaFlow.Web.Services.ResendEmailSender>();
     return resend.IsConfigured ? resend : new VeskaFlow.Web.Services.NoEmailSender();
 });
+builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailPlatform, VeskaFlow.Web.Services.EmailPlatform>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.EmailQuota>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.IEmailSender>(sp =>
 {

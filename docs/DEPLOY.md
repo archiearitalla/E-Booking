@@ -150,7 +150,7 @@ When a client pays, open `/Platform` and use **Extend access** on their shop (30
 When a customer gives an email while booking, the shop can email them a confirmation and a reminder (the shop's switch is in Settings and is on by default; it also needs the email service above and `App__PublicBaseUrl`). To stay inside the email service's daily limit, every email is counted per day (UTC) and customer emails stop first. Settings (all optional):
 
 - `Email__DailyLimit`: what your email plan allows per day (Brevo free: 300). Raise it when you upgrade the plan.
-- `Email__OwnerReserve` (default 40): kept for the system's own emails to shop owners (sign-up, password reset, access reminders).
+- `Email__OwnerReserve` (default 40): kept for the system's own emails to shop owners (sign-up, password reset, access reminders). The day's limit is a hard stop for these too: at the limit nothing more is sent. With no email service set up (no `Email__BrevoApiKey`), shops can not turn on the email features at all.
 - `Email__PaidReserve` (default 100): kept for shops with the paid add-on, so free shops can never use up the day.
 - `Email__FreeShopDailyMax` (default 30): the most customer emails one shop without the add-on gets per day.
 - `Billing__EmailAddonPrice`: for example `PHP 199 per month`; shown in Settings so a shop knows what the add-on costs.

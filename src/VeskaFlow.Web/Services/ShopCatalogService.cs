@@ -31,7 +31,7 @@ public sealed record PublicShop(
     public PublicStaff? FindStaff(Guid? id) => Staff.FirstOrDefault(s => s.Id == id);
 }
 
-public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, IEmailPlatform? emailPlatform = null)
 {
     /// <summary>
     /// Days (from today, for <paramref name="days"/> days) on which the whole shop is closed, so the booking page does not
@@ -103,6 +103,6 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
             services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
             business.IsEnabled && (business.TrialEndsAtUtc is not { } ends
                 || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc)),
-            business.Industry, promoPercent, business.RequireEmailConfirm);
+            business.Industry, promoPercent, business.RequireEmailConfirm && (emailPlatform?.IsEnabled ?? true));
     }
 }

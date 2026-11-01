@@ -49,7 +49,7 @@ public sealed record WeeklyClosureRow(Guid Id, Guid? StaffId, string? StaffName,
 public sealed record WeeklyClosureInput(Guid? StaffId, int? DayOfWeek, string? Reason, TimeOnly? StartTime = null, TimeOnly? EndTime = null);
 
 /// <summary>Business settings and closures (blackouts). Business id always comes from the signed-in user.</summary>
-public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, IEmailPlatform? emailPlatform = null)
 {
     public static readonly int[] AllowedSlotMinutes = [5, 10, 15, 20, 30, 60];
     public const int MaxPayInstructions = 300;
@@ -100,6 +100,15 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var business = await db.Businesses.FirstOrDefaultAsync(b => b.Id == businessId, ct);
         if (business is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        // The email features need the platform to have an email service. Switching one ON without it is refused; leaving one as it was,
+        // or switching it OFF, is always allowed.
+        if (emailPlatform is { IsEnabled: false })
+        {
+            if (input.CustomerEmails == true && !business.CustomerEmails) errors["customerEmails"] = Text.EmailPlatformOff;
+            if (input.RequireEmailConfirm == true && !business.RequireEmailConfirm) errors["requireEmailConfirm"] = Text.EmailPlatformOff;
+            if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
+        }
 
         if (input.BrandColor is not null) business.BrandColor = input.BrandColor;
         if (input.FollowUpNoticeDays is { } noticeDays) business.FollowUpNoticeDays = noticeDays;

@@ -5,9 +5,12 @@ namespace VeskaFlow.Web.Pages.Admin;
 
 [AdminAccess(AdminLevel.Owner)]
 [RequestSizeLimit(1_048_576)] // a logo is at most 256 KB; nothing bigger is read
-public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing, PlatformImageService images, AiAccess ai) : AdminPageModel
+public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing, PlatformImageService images, AiAccess ai, IEmailPlatform emailPlatform) : AdminPageModel
 {
     [BindProperty] public SettingsForm Input { get; set; } = new();
+
+    /// <summary>False when the platform has no email service: the email switches then can not be turned on (and a saved one is ignored).</summary>
+    public bool EmailAvailable => emailPlatform.IsEnabled;
 
     /// <summary>The shop's opening hours as the form shows them.</summary>
     public DayFields ShopRange { get; private set; } = new("", "", "", "");

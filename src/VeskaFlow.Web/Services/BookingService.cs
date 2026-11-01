@@ -16,7 +16,7 @@ namespace VeskaFlow.Web.Services;
 /// <see cref="AvailabilityCalculator"/> and is re-derived here at confirmation; the database exclusion constraint
 /// <c>no_double_booking</c> is the final guarantee, and its violation (SQLSTATE 23P01) is a normal "slot taken" result.
 /// </summary>
-public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, BookingLimits? limits = null)
+public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, BookingLimits? limits = null, IEmailPlatform? emailPlatform = null)
 {
     private readonly BookingLimits caps = limits ?? new BookingLimits();
 
@@ -98,7 +98,8 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
             return ServiceResult<CreateOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
         // "Require email confirmation": a customer must give an email to book. Staff bookings (walk-ins, phone-ins) never need one.
-        var needsConfirm = request.Actor.Kind == ActorKind.Customer && business.RequireEmailConfirm;
+        // Without an email service on the platform the switch cannot be served, so it is ignored (never lock customers out).
+        var needsConfirm = request.Actor.Kind == ActorKind.Customer && business.RequireEmailConfirm && (emailPlatform?.IsEnabled ?? true);
         if (needsConfirm)
         {
             if (email is null)

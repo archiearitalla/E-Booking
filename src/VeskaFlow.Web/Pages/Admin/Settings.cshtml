@@ -231,13 +231,28 @@
             @if (Model.ErrorFor("reminderHours") is { } e9) { <p class="error" id="ReminderHours-error">@e9</p> }
         </div>
 
-        <div class="field">
-            <label class="choice">
-                <input type="checkbox" name="Input.CustomerEmails" value="true" checked="@Model.Input.CustomerEmails" />
-                <span><strong>@Text.LabelCustomerEmails</strong><span class="muted"> @Text.HintCustomerEmails</span></span>
-            </label>
-            <input type="hidden" name="Input.CustomerEmails" value="false" />
-        </div>
+        @if (Model.EmailAvailable)
+        {
+            <div class="field">
+                <label class="choice">
+                    <input type="checkbox" name="Input.CustomerEmails" value="true" checked="@Model.Input.CustomerEmails" />
+                    <span><strong>@Text.LabelCustomerEmails</strong><span class="muted"> @Text.HintCustomerEmails</span></span>
+                </label>
+                <input type="hidden" name="Input.CustomerEmails" value="false" />
+                @if (Model.ErrorFor("customerEmails") is { } eCe) { <p class="error">@eCe</p> }
+            </div>
+        }
+        else
+        {
+            @* No email service on the platform: these can not be turned on. The saved values are sent back unchanged so saving never flips them. *@
+            <div class="field">
+                <p><strong>@Text.LabelCustomerEmails</strong> &middot; <span class="badge">@(Model.Input.CustomerEmails ? Text.EmailSwitchOnIgnored : Text.EmailSwitchOff)</span></p>
+                <p class="hint">@Text.EmailPlatformOff</p>
+                <input type="hidden" name="Input.CustomerEmails" value="@(Model.Input.CustomerEmails ? "true" : "false")" />
+                <input type="hidden" name="Input.RequireEmailConfirm" value="@(Model.Input.RequireEmailConfirm ? "true" : "false")" />
+                <p><strong>@Text.LabelRequireEmailConfirm</strong> &middot; <span class="badge">@(Model.Input.RequireEmailConfirm ? Text.EmailSwitchOnIgnored : Text.EmailSwitchOff)</span></p>
+            </div>
+        }
 
         <div class="field">
             <label class="choice">
@@ -255,13 +270,17 @@
             <input type="hidden" name="Input.AllowManualSales" value="false" />
         </div>
 
-        <div class="field">
-            <label class="choice">
-                <input type="checkbox" name="Input.RequireEmailConfirm" value="true" checked="@Model.Input.RequireEmailConfirm" />
-                <span><strong>@Text.LabelRequireEmailConfirm</strong><span class="muted"> @Text.HintRequireEmailConfirm</span></span>
-            </label>
-            <input type="hidden" name="Input.RequireEmailConfirm" value="false" />
-        </div>
+        @if (Model.EmailAvailable)
+        {
+            <div class="field">
+                <label class="choice">
+                    <input type="checkbox" name="Input.RequireEmailConfirm" value="true" checked="@Model.Input.RequireEmailConfirm" />
+                    <span><strong>@Text.LabelRequireEmailConfirm</strong><span class="muted"> @Text.HintRequireEmailConfirm</span></span>
+                </label>
+                <input type="hidden" name="Input.RequireEmailConfirm" value="false" />
+                @if (Model.ErrorFor("requireEmailConfirm") is { } eRc) { <p class="error">@eRc</p> }
+            </div>
+        }
 
         <div class="field">
             <label for="PayInstructions">@Text.LabelPayInstructions</label>

@@ -40,6 +40,60 @@ public class EmailConfirmTests
     private static CreateBookingRequest Req(Ctx c, DateTime start, string? email, string? phone = null, BookingActor? actor = null) =>
         Request(c.Shop, start, phone, actor: actor) with { Email = email };
 
+    private sealed class FakePlatform(bool enabled) : IEmailPlatform
+    {
+        public bool IsEnabled => enabled;
+    }
+
+    [Fact]
+    public async Task Without_an_email_service_on_the_platform_the_email_switches_cannot_be_turned_on_but_can_be_turned_off()
+    {
+        var c = await SetupAsync(requireConfirm: false);
+        var off = new ShopSettingsService(c.Db, c.Clock, new FakePlatform(false));
+        var on = new ShopSettingsService(c.Db, c.Clock, new FakePlatform(true));
+        var current = (await on.GetSettingsAsync(c.Shop.BusinessId))!;
+        SettingsInput With(bool? emails, bool? confirm) => new(current.Name, current.TimeZone, current.SlotMinutes, current.LeadTimeMinutes,
+            current.HorizonDays, current.CancelCutoffHours, CustomerEmails: emails, RequireEmailConfirm: confirm);
+
+        // Customer emails start on (the default) and "require confirmation" starts off. With no platform email service:
+        var refused = await off.SaveSettingsAsync(c.Shop.BusinessId, With(null, true));
+        Assert.Contains("requireEmailConfirm", refused.FieldErrors.Keys);
+        Assert.False((await on.GetSettingsAsync(c.Shop.BusinessId))!.RequireEmailConfirm); // nothing changed
+
+        // Turning a switch off, or sending the saved value again, is fine.
+        Assert.True((await off.SaveSettingsAsync(c.Shop.BusinessId, With(false, false))).IsSuccess);
+        Assert.False((await on.GetSettingsAsync(c.Shop.BusinessId))!.CustomerEmails);
+        Assert.Contains("customerEmails", (await off.SaveSettingsAsync(c.Shop.BusinessId, With(true, null))).FieldErrors.Keys); // off to on: refused
+        Assert.True((await off.SaveSettingsAsync(c.Shop.BusinessId, With(false, false))).IsSuccess);                           // unchanged: fine
+
+        // With the platform service they can be turned on.
+        Assert.True((await on.SaveSettingsAsync(c.Shop.BusinessId, With(true, true))).IsSuccess);
+        Assert.True((await on.GetSettingsAsync(c.Shop.BusinessId))!.RequireEmailConfirm);
+        // A shop that already has them on keeps them when the platform loses its service and the form sends the same values back.
+        Assert.True((await off.SaveSettingsAsync(c.Shop.BusinessId, With(true, true))).IsSuccess);
+        Assert.True((await on.GetSettingsAsync(c.Shop.BusinessId))!.RequireEmailConfirm);
+    }
+
+    [Fact]
+    public async Task A_saved_require_confirmation_is_ignored_while_the_platform_has_no_email_service_so_customers_are_not_locked_out()
+    {
+        var c = await SetupAsync(); // the switch is saved ON for this shop
+        var noEmail = new BookingService(c.Db, c.Clock, null, new FakePlatform(false));
+        var made = (await noEmail.CreateAsync(Req(c, Manila(5, 10), null))).Value!; // no email typed
+        Assert.Equal(BookingStatus.Confirmed, made.Booking.Status);                   // confirmed at once, as with the switch off
+        Assert.Null(made.EmailConfirmToken);
+
+        string slug;
+        await using (var ctx = c.Db.CreateDbContext())
+            slug = await ctx.Businesses.Where(b => b.Id == c.Shop.BusinessId).Select(b => b.Slug).SingleAsync();
+        // The public page (its label and the chat) follows the same rule.
+        Assert.False((await new ShopCatalogService(c.Db, c.Clock, new FakePlatform(false)).GetBySlugAsync(slug))!.RequireEmailConfirm);
+        Assert.True((await new ShopCatalogService(c.Db, c.Clock, new FakePlatform(true)).GetBySlugAsync(slug))!.RequireEmailConfirm);
+        // With the platform service the same shop is held again.
+        var withEmail = new BookingService(c.Db, c.Clock, null, new FakePlatform(true));
+        Assert.Equal(BookingStatus.Held, (await withEmail.CreateAsync(Req(c, Manila(5, 12), "maria@example.com"))).Value!.Booking.Status);
+    }
+
     [Fact]
     public async Task With_the_switch_off_a_booking_is_confirmed_at_once_as_before()
     {

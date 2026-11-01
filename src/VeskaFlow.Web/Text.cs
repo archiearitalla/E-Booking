@@ -1053,6 +1053,9 @@ public static class Text
     public const string LabelAllowManualSales = "Allow recording a sale by hand";
     public const string HintAllowManualSales = "Adds a Record a sale page where a manager enters a service and what was paid, for your sales and customer records. A customer with no number is saved as a walk-in. Off by default.";
     public const string ManualSaleLink = "Record a sale";
+    public const string EmailPlatformOff = "Email is not set up for VeskaFlow yet, so email features can not be turned on. Ask the platform owner.";
+    public const string EmailSwitchOff = "Off";
+    public const string EmailSwitchOnIgnored = "On, but not used until email is set up";
     public const string BookLabelEmailRequired = "Email (we send a link there to confirm your booking)";
     public const string LabelRequireEmailConfirm = "Require email confirmation to book";
     public const string HintRequireEmailConfirm = "For a shop that gets fake bookings. A customer must give an email, we email them a link, and the booking is only confirmed when they press it (the time is held for 20 minutes). Customers with no email can not book online, and each booking uses one email from your daily limit. Staff bookings are not affected. Off by default.";
