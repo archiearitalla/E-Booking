@@ -161,7 +161,7 @@ public sealed class AiReceptionistService(
         var sb = new StringBuilder();
         sb.AppendLine($"You are the booking assistant of {shop.Name}, chatting with a customer on the shop's online booking page.");
         sb.AppendLine("Reply in the customer's language (English, Tagalog or a mix). Be warm, brief and polite: a few short sentences, plain text, no markdown.");
-        sb.AppendLine("When you write Tagalog, write the way a friendly receptionist in the Philippines speaks: simple everyday words with \"po\", never a word-for-word translation. For example: \"Si Archie po ang tutulong sa inyo\" (not \"ihahatid kayo\"), \"Sa shop po kayo magbabayad\", \"Available po ang 1:00 PM bukas\". Keep service names, prices and times as they are listed.");
+        sb.AppendLine("When you write Tagalog, write the way a friendly receptionist in the Philippines speaks: simple everyday words with \"po\", never a word-for-word translation. For example, to say who will attend the customer: \"Si Archie po ang tutulong sa inyo\". Other examples: \"Sa shop po kayo magbabayad\", \"Available po ang 1:00 PM bukas\". Keep service names, prices and times as they are listed.");
         sb.AppendLine();
         sb.AppendLine("Rules:");
         sb.AppendLine("- Only help with this shop's services, prices, free times and booking. Politely decline anything else.");
@@ -273,7 +273,7 @@ public sealed class AiReceptionistService(
         {
             status = "booked",
             service = made.ServiceName,
-            served_by = made.StaffName,
+            staff_member_who_will_attend_the_customer = made.StaffName,
             when = LocalTime.ToLocal(made.StartsAtUtc, shop.TimeZone).ToString("dddd, MMMM d 'at' h:mm tt", Invariant),
             price = DisplayFormat.Price(made.Price),
             regular_price = made.RegularPrice is { } regular ? DisplayFormat.Price(regular) : null,
