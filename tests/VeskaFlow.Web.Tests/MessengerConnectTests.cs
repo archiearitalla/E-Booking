@@ -110,7 +110,7 @@ public class MessengerConnectTests
 
     private static async Task<string> StartConnectAsync(HttpClient client)
     {
-        var response = await HttpApp.PostFormAsync(client, "/Admin/Messenger?handler=Connect", new(), tokenPage: "/Admin/Messenger");
+        var response = await client.GetAsync("/Admin/Messenger?handler=Start");
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         var location = response.Headers.Location!.ToString();
         Assert.StartsWith("https://www.facebook.com/", location);
@@ -169,11 +169,16 @@ public class MessengerConnectTests
             // Without the AI add-on the shop can not connect anything.
             var (noAi, _) = await RegisterShopAsync(factory, db, aiAddon: false);
             Assert.Contains(Text.MessengerNeedsAi, WebUtility.HtmlDecode(await noAi.GetStringAsync("/Admin/Messenger")));
-            var refused = await HttpApp.PostFormAsync(noAi, "/Admin/Messenger?handler=Connect", new(), tokenPage: "/Admin/Messenger");
+            var refused = await noAi.GetAsync("/Admin/Messenger?handler=Start");
             Assert.Equal(HttpStatusCode.Redirect, refused.StatusCode);
             Assert.DoesNotContain("facebook.com", refused.Headers.Location!.ToString());
 
             var (owner, businessId) = await RegisterShopAsync(factory, db, aiAddon: true);
+
+            // Connect is a link, not a form: the site's policy lets a form post only to its own address, so a form that ends at facebook.com would be stopped by the browser.
+            var startPage = WebUtility.HtmlDecode(await owner.GetStringAsync("/Admin/Messenger"));
+            Assert.Contains("href=\"/Admin/Messenger?handler=Start\"", startPage);
+            Assert.DoesNotContain("handler=Connect", startPage);
 
             // Coming back with the wrong state, or the wrong code, connects nothing.
             await StartConnectAsync(owner);
@@ -294,7 +299,7 @@ public class MessengerConnectTests
         using var _r = root;
         var (owner, _) = await RegisterShopAsync(root, db, aiAddon: true);
         Assert.Contains(Text.MessengerNotSetUp, WebUtility.HtmlDecode(await owner.GetStringAsync("/Admin/Messenger")));
-        Assert.Equal(HttpStatusCode.NotFound, (await HttpApp.PostFormAsync(owner, "/Admin/Messenger?handler=Connect", new(), tokenPage: "/Admin/Messenger")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.GetAsync("/Admin/Messenger?handler=Start")).StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, (await HttpApp.NewClient(root).GetAsync("/Admin/Messenger")).StatusCode);                  // signed out: sent to sign in
     }
 }

@@ -61,9 +61,7 @@ else
         @if (Model.AiActive && Model.CanAddMore)
         {
             <p class="hint">@Text.MessengerAdminNote</p>
-            <form method="post" asp-page-handler="Connect">
-                <button type="submit" class="primary">@(Model.Pages.Count == 0 ? Text.MessengerConnect : Text.MessengerConnectAnother)</button>
-            </form>
+            <p><a class="button primary" href="/Admin/Messenger?handler=Start">@(Model.Pages.Count == 0 ? Text.MessengerConnect : Text.MessengerConnectAnother)</a></p>
         }
         else if (!Model.AiActive)
         {

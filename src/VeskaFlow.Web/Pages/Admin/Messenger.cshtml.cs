@@ -31,8 +31,11 @@ public class MessengerModel(MessengerConnectService connect, MessengerOptions op
         return Page();
     }
 
-    /// <summary>Sends the owner to Facebook. The random <c>state</c> is also kept in a cookie so only the person who started it can finish it.</summary>
-    public async Task<IActionResult> OnPostConnectAsync(CancellationToken ct)
+    /// <summary>
+    /// Sends the owner to Facebook. The random <c>state</c> is also kept in a cookie so only the person who started it can finish it. This is a link (GET), not a form:
+    /// the site's security policy only lets a form post to its own address, and the browser would stop a form that ends at facebook.com. It changes no record.
+    /// </summary>
+    public async Task<IActionResult> OnGetStartAsync(CancellationToken ct)
     {
         if (!Available) return NotFound();
         if (!await ai.IsActiveAsync(BusinessId, ct)) { Failure = Text.MessengerNeedsAi; return RedirectToPage(); }
