@@ -1223,7 +1223,7 @@ public static class Text
     public const string MessengerOnlyOwner = "Only the shop owner can connect a Facebook Page.";
     public const string MessengerAdminNote = "You need to be an admin of the Facebook Page. Facebook will ask you to log in and allow VeskaFlow to read and answer messages of the Page you choose.";
     public const string MessengerFacebookRefused = "Facebook did not allow it, or the link expired. Please try again.";
-    public const string MessengerNoPages = "Facebook did not show any Page you manage. Make sure you are an admin of the Page and tick it when Facebook asks.";
+    public const string MessengerNoPages = "Facebook did not show any Page you manage. Check that you are an admin of the Page (full control). If you connected before, open Facebook, Settings, Business Integrations, remove \"VeskaFlow Assistant\", then press Connect again and tick the Page when Facebook asks.";
     public const string MessengerPageTaken = "That Page is already connected to another shop.";
     public const string MessengerSubscribeFailed = "Facebook did not accept the connection. Please try again.";
     public const string MessengerStateInvalid = "The connection expired. Please start again.";
