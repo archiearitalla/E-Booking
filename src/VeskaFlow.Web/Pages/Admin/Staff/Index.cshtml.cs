@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace VeskaFlow.Web.Pages.Admin.Staff;
 
 [AdminAccess(AdminLevel.Manager)]
-public class IndexModel(CatalogAdminService catalog, ShopSettingsService settings) : AdminPageModel
+public class IndexModel(CatalogAdminService catalog, ShopSettingsService settings, BillingInfo billing) : AdminPageModel
 {
     public IReadOnlyList<StaffRow> Rows { get; private set; } = [];
     public string Plan { get; private set; } = "FREE";
     public bool InTrial { get; private set; }
+    public int ExtraStaff { get; private set; }
+    public string ExtraStaffPrice => billing.ExtraStaffPrice;
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
@@ -16,6 +18,7 @@ public class IndexModel(CatalogAdminService catalog, ShopSettingsService setting
         var current = await settings.GetSettingsAsync(BusinessId, ct);
         Plan = current?.Plan ?? "FREE";
         InTrial = current?.TrialEndsAtUtc is not null;
+        ExtraStaff = current?.ExtraStaff ?? 0;
         return Page();
     }
 }

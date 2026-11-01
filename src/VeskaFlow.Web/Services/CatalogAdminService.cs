@@ -173,9 +173,10 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         // Serialize staff changes per business so two simultaneous adds cannot both slip under the plan limit.
         await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"staff:" + businessId}, 0))", ct);
 
-        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc }).FirstOrDefaultAsync(ct);
+        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc, b.ExtraStaff }).FirstOrDefaultAsync(ct);
         var plan = biz?.Plan;
         var inTrial = biz?.TrialEndsAtUtc is not null;
+        var extraStaff = biz?.ExtraStaff ?? 0;
         if (plan is null) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
         var isNew = input.Id is null;
@@ -194,12 +195,16 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         var wasActive = !isNew && staff.IsActive;
-        if (input.IsActive && !wasActive && PlanLimits.MaxStaff(plan!, inTrial) is { } limit)
+        if (input.IsActive && !wasActive)
         {
+            var limit = PlanLimits.MaxStaff(plan!, inTrial, extraStaff);
             var activeOthers = await db.StaffMembers.CountAsync(s => s.BusinessId == businessId && s.IsActive && s.Id != staff.Id, ct);
             if (activeOthers >= limit)
                 return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["isActive"] = string.Format(Text.StaffLimit, limit) });
         }
+        // Deactivated staff are kept, so the total is capped too (a shop cannot add and deactivate staff without end).
+        if (isNew && await db.StaffMembers.CountAsync(s => s.BusinessId == businessId, ct) >= PlanLimits.MaxStaffRecords(extraStaff))
+            return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["name"] = string.Format(Text.StaffRecordsLimit, PlanLimits.MaxStaffRecords(extraStaff)) });
 
         // Every service id must belong to this business; one foreign id rejects the whole request.
         var wanted = input.ServiceIds.Distinct().ToList();

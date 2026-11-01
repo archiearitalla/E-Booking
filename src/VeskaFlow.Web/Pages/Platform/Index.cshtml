@@ -129,6 +129,15 @@ else
                         </form>
                         }
                     </div>
+                    <div class="sub-row">
+                        <div class="sub-info"><strong>@Text.PlatformExtraStaff</strong><span class="sub-status muted">@PlanLimits.IncludedStaff + @s.ExtraStaff</span></div>
+                        <form method="post" asp-page-handler="ExtraStaff" class="sub-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <label for="extrastaff-@s.BusinessId" class="sr-only">@Text.PlatformExtraStaff @s.Name</label>
+                            <input type="number" id="extrastaff-@s.BusinessId" name="extra" value="@s.ExtraStaff" min="0" max="@PlanLimits.MaxExtraStaff" inputmode="numeric" />
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformExtraStaffAsk">@Text.PlatformExtraStaffSave<span class="sr-only"> @s.Name</span></button>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="shop-actions">

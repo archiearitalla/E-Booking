@@ -160,3 +160,7 @@ When a shop pays for the add-on, open `/Platform` and use **Email add-on** on it
 ## GCash QR code
 
 Open `/Platform`, card **GCash QR code**, and upload a screenshot of **My QR** from the GCash app (PNG, JPEG or WebP, up to 512 KB). Signed-in shop owners then see it on **About** (How to renew), in Settings (More emails) and on the page they see when access ends, next to the written details. The picture is kept in the database and is only served to signed-in people.
+
+## Extra staff (beyond the 5 included)
+
+Every shop's price includes 5 active staff. Put the price of one more staff member in Render, Environment, as `Billing__ExtraStaffPrice` (for example `PHP 149 per staff per month`); the Staff page shows it to the owner. When a client pays for extra staff, open `/Platform`, find the shop and type the number of extra staff under **Extra staff**, then Save. Lower the number when the client stops paying for them (nobody is cut down; they just cannot activate more staff). Shops also cannot have more than `20 + extra` staff records in all, counting deactivated staff.

@@ -51,6 +51,8 @@ public class Business
     public string? PayInstructions { get; set; }
     /// <summary>An online booking is held until the customer presses the link emailed to them (migration 034). Off by default.</summary>
     public bool RequireEmailConfirm { get; set; }
+    /// <summary>Staff the shop paid for on top of the 5 included (migration 035); set by the platform owner after the payment.</summary>
+    public int ExtraStaff { get; set; }
 }
 
 public class AdminUser

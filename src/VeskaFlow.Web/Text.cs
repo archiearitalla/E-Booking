@@ -893,6 +893,14 @@ public static class Text
     public const string StaffNoServices = "No services assigned.";
     public const string StaffDetails = "Details";
     public const string StaffPlanNote = "Plan {0}: up to {1} active staff member(s).";
+    public const string StaffIncludedNote = "{0} staff are included in your price. Extra staff paid for: {1}.";
+    public const string StaffExtraPriceNote = "Each extra staff member: {0}. To add more, message us and we will raise your limit once you have paid.";
+    public const string StaffRecordsLimit = "You have reached the most staff records ({0}), counting deactivated staff. Ask us to raise it.";
+    public const string PlatformExtraStaff = "Extra staff";
+    public const string PlatformExtraStaffSave = "Save";
+    public const string PlatformExtraStaffAsk = "Set the extra staff for this shop? Do this after the payment arrived.";
+    public const string PlatformExtraStaffInvalid = "Extra staff must be a whole number from 0 to 100.";
+    public const string PlatformExtraStaffSaved = "Extra staff saved.";
     public const string StaffUnlimited = "unlimited";
     public const string LabelStaffName = "Name";
     public const string HintStaffActive = "Only active staff can be booked. Deactivating never cancels bookings.";

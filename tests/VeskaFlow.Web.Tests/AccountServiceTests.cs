@@ -337,6 +337,6 @@ public class AccountServiceTests
     public void Free_plan_allows_one_staff_member()
     {
         Assert.Equal(1, PlanLimits.MaxStaff("FREE"));
-        Assert.Null(PlanLimits.MaxStaff("PRO"));
+        Assert.Equal(5, PlanLimits.MaxStaff("PRO"));       // five are included in the price
     }
 }

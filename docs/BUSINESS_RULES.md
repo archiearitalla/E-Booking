@@ -170,6 +170,15 @@ A shop can ask for a deposit to cut no-shows, with no payment gateway and no new
 - **Cancelling.** The system never refunds or keeps money. When a booking with a received deposit is cancelled by staff, the cancel box reminds them to write in the reason whether the deposit is refunded or kept.
 - **Later (gateway).** An automatic deposit (PayMongo or Xendit) would use the held slot, a time limit and idempotent payment calls described in section 14; it is not built.
 
+### 7.2 Staff included in the price, and extra staff ✅
+
+The price covers **5 active staff**; each one more is paid for. It stops one shop from abusing the system and from filling the database (migration 035, `business.extra_staff`, 0 to 100).
+
+- **Limit.** A shop in a trial or on the PRO plan may have `5 + extra_staff` **active** staff (`PlanLimits.MaxStaff`). A shop that is neither (no end date and no paid plan) keeps one. Switching on or adding a staff member past the limit is refused with the number. A shop that already has more active staff than the limit (for example the platform owner lowered it) is **not cut down**; it just cannot activate more.
+- **Total records.** Deactivated staff are kept for history and do not count as active, so the **total** (active and deactivated) is also capped at `20 + extra_staff`; adding past it is refused. Without this, a shop could add and deactivate staff without end.
+- **Paid by hand.** The platform owner types the number of extra staff on the shop's card on the Platform page after the payment arrived (a whole number from 0 to 100; asks first). The price of one extra staff member is `Billing:ExtraStaffPrice` (text, for example "PHP 149 per staff per month"); the Staff page shows it with how many are included and how many extra the shop has. There is no automatic expiry: the platform owner lowers the number when a client stops paying for it.
+- **Not built:** an expiry date per extra staff member, a payment kind for staff in the billing history.
+
 - Closing a shop day or changing hours **never silently cancels** existing bookings. The admin sees a warning with the number of affected bookings and handles them deliberately.
 
 ## 8. Booking creation
@@ -320,7 +329,7 @@ Pricing hypotheses (₱299–₱999 per month for PRO, after the free pilot) are
 4. ~~Customer identity~~ **Decided: phone number** (section 8.2). Email is optional.
 5. ~~Reminders~~ **Decided: no SMS gateway.** Messages are sent manually through a prefilled link that opens the sender's own messaging app (section 8.5). Free email and push remain optional (section 17).
 6. ~~Mobile auth~~ **Decided (recommended default, no objection raised):** short-lived JWT access token (about 15 minutes) plus a refresh token kept in the phone's secure storage. Web admin keeps its cookie.
-7. **Plan limits, working default (not yet confirmed):** all features are free for pilot shops. The FREE plan keeps the 1-staff limit in code so a PRO plan can be defined after the pilot.
+7. **Plan limits, working default (not yet confirmed):** all features are free for pilot shops. The 1-staff limit now applies only to a shop that is neither in a trial nor on PRO; see 7.2 for the 5 included staff.
 8. ~~Data retention~~ **Decided (recommended default, no objection raised):** keep customer details 24 months after the last booking, then anonymize. Deletion on request always applies.
 9. ~~Mobile client~~ **Decided: Flutter** (cross-platform, Android and iOS from one codebase).
 
@@ -587,7 +596,7 @@ The shop can send its running promo to customers, but only to those who **said y
 - `Trial:Days` (configuration, default 30) sets `trial_ends_at_utc` at sign-up. `0` turns trials off, for example on a deployment the client hosts for itself. Existing shops have no trial date and are never limited.
 - The admin shows the days left.
 - **After the trial ends the account lapses.** The public page stops accepting customer bookings and says so, and every back-office page sends the owner to a "your free trial has ended" page with a way to contact the operator and a sign-out button. The server checks this against the database on every admin request (the cookie is only for the bell). Nothing is deleted: the data is kept. The operator extends or lifts a trial by setting or clearing `trial_ends_at_utc` for that business (see DEPLOY.md), and deletes a tenant by hand after confirming with the business.
-- **A trial has every feature and no staff limit.** The one-staff limit of the FREE plan applies only to a business with no trial date.
+- **A trial has every feature and the same staff limit as a paid plan** (5 included, see 7.2). The one-staff limit applies only to a business with no trial date and no PRO plan.
 - Sign-up is open (no invite code) while the URL is shared only with the business being shown the system. The sign-in and sign-up rate limit applies. An invite code can be added later if the URL becomes public.
 
 ### 18.3 Customer data

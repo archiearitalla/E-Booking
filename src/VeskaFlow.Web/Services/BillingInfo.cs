@@ -18,6 +18,9 @@ public sealed class BillingInfo(IConfiguration config)
     /// <summary>The price of the AI receptionist add-on, for example "PHP 1,500 per month" (Billing:AiAddonPrice).</summary>
     public string AiAddonPrice => Clean(config["Billing:AiAddonPrice"]);
 
+    /// <summary>The price of one extra staff member beyond the 5 included, for example "PHP 149 per staff per month" (Billing:ExtraStaffPrice).</summary>
+    public string ExtraStaffPrice => Clean(config["Billing:ExtraStaffPrice"]);
+
     /// <summary>True when there is anything to tell a client about paying.</summary>
     public bool HasDetails => Price.Length > 0 || PayTo.Length > 0 || Note.Length > 0;
 
