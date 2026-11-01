@@ -101,7 +101,7 @@ public class MessengerConnectTests
             Assert.Equal("P1", Assert.Single(one!).Id);
 
             // When Meta answers neither way, the result is null (a refusal), not an empty list.
-            var down = new StubHandler(_ => (HttpStatusCode.InternalServerError, "{}"));
+            var down = new StubHandler(_ => (HttpStatusCode.BadRequest, "{\"error\":{\"message\":\"(#100) not allowed\",\"type\":\"OAuthException\",\"code\":100,\"error_subcode\":33}}")); // the reason is read for the log, never thrown
             Assert.Null(await new GraphMessengerClient(new HttpClient(down), options, Microsoft.Extensions.Logging.Abstractions.NullLogger<GraphMessengerClient>.Instance).ListPagesAsync("user-token"));
         }
         finally { ClearSettings(); }

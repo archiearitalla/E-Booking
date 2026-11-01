@@ -164,7 +164,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
         try
         {
             using var response = await http.GetAsync($"{Base}/oauth/access_token?{query}", ct);
-            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not give a token: HTTP {Status}", (int)response.StatusCode); return null; }
+            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not give a token: HTTP {Status} {Why}", (int)response.StatusCode, await WhyAsync(response, ct)); return null; }
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             return doc.RootElement.TryGetProperty("access_token", out var t) ? t.GetString() : null;
         }
@@ -201,7 +201,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{Base}/me/accounts?fields=id,name,access_token&limit=50");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userToken);
             using var response = await http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not list the Pages: HTTP {Status}", (int)response.StatusCode); return null; }
+            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not list the Pages: HTTP {Status} {Why}", (int)response.StatusCode, await WhyAsync(response, ct)); return null; }
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             var pages = new List<FacebookPage>();
             if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
@@ -224,7 +224,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{Base}/debug_token?input_token={Uri.EscapeDataString(userToken)}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", $"{options.AppId}|{options.AppSecret}"); // the app's own token
             using var response = await http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not check the token: HTTP {Status}", (int)response.StatusCode); return null; }
+            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not check the token: HTTP {Status} {Why}", (int)response.StatusCode, await WhyAsync(response, ct)); return null; }
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             var ids = new List<string>();
             if (doc.RootElement.TryGetProperty("data", out var data) && data.TryGetProperty("granular_scopes", out var scopes) && scopes.ValueKind == JsonValueKind.Array)
@@ -252,7 +252,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{Base}/{Uri.EscapeDataString(pageId)}?fields=id,name,access_token");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userToken);
             using var response = await http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not give a Page: HTTP {Status}", (int)response.StatusCode); return null; }
+            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not give a Page: HTTP {Status} {Why}", (int)response.StatusCode, await WhyAsync(response, ct)); return null; }
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             return ReadPage(doc.RootElement);
         }
@@ -273,6 +273,26 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
         return new FacebookPage(id, label.Length > 200 ? label[..200] : label, token);
     }
 
+
+    /// <summary>
+    /// Why Meta refused, from the error it sends back (its code, type and short message), for the log. Meta's error text never holds a token or a secret,
+    /// and it is cut short; nothing the person wrote is in it.
+    /// </summary>
+    private static async Task<string> WhyAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            if (!doc.RootElement.TryGetProperty("error", out var error)) return "";
+            var code = error.TryGetProperty("code", out var c) ? c.ToString() : "?";
+            var sub = error.TryGetProperty("error_subcode", out var s) ? "/" + s : "";
+            var type = error.TryGetProperty("type", out var t) ? t.GetString() : "";
+            var message = error.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+            return $"(code {code}{sub} {type}: {(message.Length > 240 ? message[..240] : message)})";
+        }
+        catch (Exception ex) when (ex is JsonException or HttpRequestException or TaskCanceledException) { return ""; }
+    }
+
     public async Task<bool> SubscribeAsync(string pageId, string pageToken, CancellationToken ct = default)
     {
         try
@@ -283,7 +303,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", pageToken);
             using var response = await http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) log.LogWarning("Meta did not subscribe the Page: HTTP {Status}", (int)response.StatusCode);
+            if (!response.IsSuccessStatusCode) log.LogWarning("Meta did not subscribe the Page: HTTP {Status} {Why}", (int)response.StatusCode, await WhyAsync(response, ct));
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -300,7 +320,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             using var request = new HttpRequestMessage(HttpMethod.Delete, $"{Base}/{Uri.EscapeDataString(pageId)}/subscribed_apps");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", pageToken);
             using var response = await http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) log.LogWarning("Meta did not unsubscribe the Page: HTTP {Status}", (int)response.StatusCode);
+            if (!response.IsSuccessStatusCode) log.LogWarning("Meta did not unsubscribe the Page: HTTP {Status} {Why}", (int)response.StatusCode, await WhyAsync(response, ct));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
