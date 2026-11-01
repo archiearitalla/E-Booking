@@ -175,7 +175,26 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
         }
     }
 
+    /// <summary>
+    /// The Pages the person allowed the app to use. The usual list (<c>/me/accounts</c>) misses some Pages, notably ones that belong to a business portfolio,
+    /// so the Pages named in the token's own permissions (<c>debug_token</c>, "granular scopes") are looked up one by one as well. Null only when Meta answered neither way.
+    /// </summary>
     public async Task<IReadOnlyList<FacebookPage>?> ListPagesAsync(string userToken, CancellationToken ct = default)
+    {
+        var listed = await AccountsAsync(userToken, ct);
+        var granted = await GrantedPageIdsAsync(userToken, ct);
+        if (listed is null && granted is null) return null;
+
+        var pages = new List<FacebookPage>(listed ?? []);
+        foreach (var id in granted ?? [])
+        {
+            if (pages.Any(p => p.Id == id)) continue;
+            if (await PageByIdAsync(id, userToken, ct) is { } page) pages.Add(page);
+        }
+        return pages;
+    }
+
+    private async Task<List<FacebookPage>?> AccountsAsync(string userToken, CancellationToken ct)
     {
         try
         {
@@ -187,14 +206,7 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             var pages = new List<FacebookPage>();
             if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
                 foreach (var p in data.EnumerateArray())
-                {
-                    var id = p.TryGetProperty("id", out var i) ? i.GetString() : null;
-                    var name = p.TryGetProperty("name", out var n) ? n.GetString() : null;
-                    var token = p.TryGetProperty("access_token", out var t) ? t.GetString() : null;
-                    if (string.IsNullOrWhiteSpace(id) || id.Length > 100 || string.IsNullOrWhiteSpace(token)) continue;
-                    var label = (string.IsNullOrWhiteSpace(name) ? id : name).Trim();
-                    pages.Add(new FacebookPage(id, label.Length > 200 ? label[..200] : label, token));
-                }
+                    if (ReadPage(p) is { } page) pages.Add(page);
             return pages;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
@@ -202,6 +214,63 @@ public sealed class GraphMessengerClient(HttpClient http, MessengerOptions optio
             log.LogWarning("Meta could not be reached for the Pages: {Reason}", ex.GetType().Name);
             return null;
         }
+    }
+
+    /// <summary>The ids of the Pages the person ticked for the messaging permission, as Meta's own token check reports them.</summary>
+    private async Task<List<string>?> GrantedPageIdsAsync(string userToken, CancellationToken ct)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{Base}/debug_token?input_token={Uri.EscapeDataString(userToken)}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", $"{options.AppId}|{options.AppSecret}"); // the app's own token
+            using var response = await http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not check the token: HTTP {Status}", (int)response.StatusCode); return null; }
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            var ids = new List<string>();
+            if (doc.RootElement.TryGetProperty("data", out var data) && data.TryGetProperty("granular_scopes", out var scopes) && scopes.ValueKind == JsonValueKind.Array)
+                foreach (var s in scopes.EnumerateArray())
+                {
+                    var scope = s.TryGetProperty("scope", out var sc) ? sc.GetString() : null;
+                    if (scope is not ("pages_messaging" or "pages_show_list" or "pages_manage_metadata")) continue;
+                    if (!s.TryGetProperty("target_ids", out var targets) || targets.ValueKind != JsonValueKind.Array) continue;
+                    foreach (var t in targets.EnumerateArray())
+                        if (t.GetString() is { Length: > 0 and <= 100 } id && !ids.Contains(id)) ids.Add(id);
+                }
+            return ids.Take(10).ToList();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            log.LogWarning("Meta could not be reached to check the token: {Reason}", ex.GetType().Name);
+            return null;
+        }
+    }
+
+    private async Task<FacebookPage?> PageByIdAsync(string pageId, string userToken, CancellationToken ct)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{Base}/{Uri.EscapeDataString(pageId)}?fields=id,name,access_token");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userToken);
+            using var response = await http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode) { log.LogWarning("Meta did not give a Page: HTTP {Status}", (int)response.StatusCode); return null; }
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            return ReadPage(doc.RootElement);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            log.LogWarning("Meta could not be reached for a Page: {Reason}", ex.GetType().Name);
+            return null;
+        }
+    }
+
+    private static FacebookPage? ReadPage(JsonElement p)
+    {
+        var id = p.TryGetProperty("id", out var i) ? i.GetString() : null;
+        var name = p.TryGetProperty("name", out var n) ? n.GetString() : null;
+        var token = p.TryGetProperty("access_token", out var t) ? t.GetString() : null;
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 100 || string.IsNullOrWhiteSpace(token)) return null;
+        var label = (string.IsNullOrWhiteSpace(name) ? id : name).Trim();
+        return new FacebookPage(id, label.Length > 200 ? label[..200] : label, token);
     }
 
     public async Task<bool> SubscribeAsync(string pageId, string pageToken, CancellationToken ct = default)

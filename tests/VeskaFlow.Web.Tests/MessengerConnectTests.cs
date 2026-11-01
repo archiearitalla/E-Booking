@@ -59,6 +59,54 @@ public class MessengerConnectTests
                 Microsoft.Extensions.Logging.Abstractions.NullLogger<MessengerConnectService>.Instance).AuthorizeUrl("https://x.test/Admin/MessengerReturn", "S");
     }
 
+    private sealed class StubHandler(Func<HttpRequestMessage, (HttpStatusCode, string)> answer) : HttpMessageHandler
+    {
+        public List<string> Paths { get; } = [];
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Paths.Add(request.RequestUri!.AbsolutePath);
+            var (status, body) = answer(request);
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+        }
+    }
+
+    [Fact]
+    public async Task A_Page_the_usual_list_misses_is_found_through_the_token_s_own_permissions_and_Meta_failing_gives_null()
+    {
+        try
+        {
+            SetConnectSettings();
+            var options = new MessengerOptions(Config());
+            var handler = new StubHandler(r => r.RequestUri!.AbsolutePath switch
+            {
+                var p when p.EndsWith("/me/accounts") => (HttpStatusCode.OK, "{\"data\":[]}"),                                                 // the usual list is empty (a Page in a business portfolio)
+                var p when p.EndsWith("/debug_token") => (HttpStatusCode.OK, "{\"data\":{\"granular_scopes\":[{\"scope\":\"pages_messaging\",\"target_ids\":[\"869957749543347\"]},{\"scope\":\"pages_show_list\",\"target_ids\":[\"869957749543347\"]},{\"scope\":\"email\"}]}}"),
+                var p when p.EndsWith("/869957749543347") => (HttpStatusCode.OK, "{\"id\":\"869957749543347\",\"name\":\"Tambay sa Kalye\",\"access_token\":\"page-tok\"}"),
+                _ => (HttpStatusCode.NotFound, "{}"),
+            });
+            var graph = new GraphMessengerClient(new HttpClient(handler), options, Microsoft.Extensions.Logging.Abstractions.NullLogger<GraphMessengerClient>.Instance);
+            var pages = await graph.ListPagesAsync("user-token");
+            var page = Assert.Single(pages!);
+            Assert.Equal(("869957749543347", "Tambay sa Kalye", "page-tok"), (page.Id, page.Name, page.Token));
+            Assert.Equal(1, handler.Paths.Count(p => p.EndsWith("/869957749543347")));                                                         // listed once, not twice
+
+            // A Page that is in the usual list and in the permissions is shown once.
+            var both = new StubHandler(r => r.RequestUri!.AbsolutePath switch
+            {
+                var p when p.EndsWith("/me/accounts") => (HttpStatusCode.OK, "{\"data\":[{\"id\":\"P1\",\"name\":\"One\",\"access_token\":\"t1\"}]}"),
+                var p when p.EndsWith("/debug_token") => (HttpStatusCode.OK, "{\"data\":{\"granular_scopes\":[{\"scope\":\"pages_messaging\",\"target_ids\":[\"P1\"]}]}}"),
+                _ => (HttpStatusCode.NotFound, "{}"),
+            });
+            var one = await new GraphMessengerClient(new HttpClient(both), options, Microsoft.Extensions.Logging.Abstractions.NullLogger<GraphMessengerClient>.Instance).ListPagesAsync("user-token");
+            Assert.Equal("P1", Assert.Single(one!).Id);
+
+            // When Meta answers neither way, the result is null (a refusal), not an empty list.
+            var down = new StubHandler(_ => (HttpStatusCode.InternalServerError, "{}"));
+            Assert.Null(await new GraphMessengerClient(new HttpClient(down), options, Microsoft.Extensions.Logging.Abstractions.NullLogger<GraphMessengerClient>.Instance).ListPagesAsync("user-token"));
+        }
+        finally { ClearSettings(); }
+    }
+
     private static readonly string[] SettingNames = ["Messenger__ConfigId", "Messenger__VerifyToken", "Messenger__AppSecret", "Messenger__AppId", "Messenger__TokenKey", "Messenger__PageAccessToken", "Messenger__ShopSlug"];
 
     private static void SetConnectSettings()
