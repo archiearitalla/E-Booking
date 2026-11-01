@@ -378,6 +378,16 @@ public class PlatformImage
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>A Facebook Page a shop owner connected to the AI receptionist (migration 038). The token is encrypted.</summary>
+public class MessengerConnection
+{
+    public string PageId { get; set; } = "";
+    public Guid BusinessId { get; set; }
+    public string PageName { get; set; } = "";
+    public string PageTokenEnc { get; set; } = "";
+    public DateTime ConnectedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
 /// <summary>A person who messaged a shop's Facebook Page and the AI conversation that goes with them (migration 037).</summary>
 public class MessengerThread
 {

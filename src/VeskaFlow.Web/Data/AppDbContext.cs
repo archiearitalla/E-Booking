@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BusinessBanner> BusinessBanners => Set<BusinessBanner>();
     public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
     public DbSet<MessengerThread> MessengerThreads => Set<MessengerThread>();
+    public DbSet<MessengerConnection> MessengerConnections => Set<MessengerConnection>();
     public DbSet<EmailDaily> EmailDailies => Set<EmailDaily>();
     public DbSet<AiUsage> AiUsages => Set<AiUsage>();
     public DbSet<AiUsageDay> AiUsageDays => Set<AiUsageDay>();
@@ -56,6 +57,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<BusinessBanner>().HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.NoAction);
         m.Entity<PlatformSetting>().HasKey(x => x.Key);
         m.Entity<MessengerThread>().HasKey(x => new { x.BusinessId, x.Psid });
+        m.Entity<MessengerConnection>().HasKey(x => x.PageId);
         m.Entity<EmailDaily>().HasKey(x => new { x.Day, x.BusinessId });
         m.Entity<AiUsage>().HasKey(x => new { x.Month, x.BusinessId });
         m.Entity<AiUsageDay>().HasKey(x => new { x.Day, x.BusinessId });

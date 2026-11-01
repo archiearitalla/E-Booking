@@ -17,7 +17,8 @@ public class MessengerTests
     private sealed class CapturingMessenger : IMessengerSender
     {
         public List<(string Psid, string Text)> Sent { get; } = [];
-        public Task<bool> SendTextAsync(string psid, string text, CancellationToken ct = default) { Sent.Add((psid, text)); return Task.FromResult(true); }
+        public List<string> Tokens { get; } = [];
+        public Task<bool> SendTextAsync(string pageToken, string psid, string text, CancellationToken ct = default) { Tokens.Add(pageToken); Sent.Add((psid, text)); return Task.FromResult(true); }
     }
 
     private static string Body(string psid, string mid, string? text, bool echo = false, string obj = "page") =>
@@ -102,6 +103,7 @@ public class MessengerTests
             Assert.Equal("EVENT_RECEIVED", await first.Content.ReadAsStringAsync());
             var answer = Assert.Single(sender.Sent);
             Assert.Equal(("P1", "Hello from the assistant"), answer);
+            Assert.Equal("page-token", Assert.Single(sender.Tokens));                                                    // the Page token from the settings
             await using (var check = db.CreateDbContext())
             {
                 var thread = await check.MessengerThreads.AsNoTracking().SingleAsync(t => t.BusinessId == shop.BusinessId && t.Psid == "P1");

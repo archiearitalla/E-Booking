@@ -134,6 +134,10 @@
     {
         <p>@Text.AiAddonActive(DisplayFormat.Date(aiUntil, Model.TimeZoneName))</p>
         <p class="hint">@Text.AiAddonUsage(Model.AiUsage.Conversations, Model.AiUsage.Limit)</p>
+        @if (Model.MessengerAvailable)
+        {
+            <p><a class="button" href="/Admin/Messenger">@Text.MessengerOpenSettings</a></p>
+        }
     }
     else
     {

@@ -176,4 +176,16 @@ The AI receptionist can also answer messages sent to a shop's Facebook Page. It 
 5. In Render set `Messenger__VerifyToken` (the word from step 3), `Messenger__AppSecret`, `Messenger__PageAccessToken` and `Messenger__ShopSlug` (the shop's address name, the part after `/b/`). Save; the service restarts. Then press **Verify and save** in Meta's webhook setup.
 6. Message the Page from a Facebook account that has a role on the app (admin, developer or tester). Until Meta approves the app (App Review for `pages_messaging`) only those accounts can chat with it.
 
-To switch it off, remove any one of the four settings. Not verified against Meta's real servers; check Meta's current requirements for the permission and the Graph API version (`Messenger__GraphVersion`, default `v21.0`) before you rely on it.
+To switch it off, remove any one of the four settings. The one-Page setup above was tried once with the platform owner's own account and Page (the assistant answered and booked). Check Meta's current requirements for the permission and the Graph API version (`Messenger__GraphVersion`, default `v21.0`) before you rely on it.
+
+### Each shop connects its own Pages (for many clients)
+
+Instead of one Page in Render, every shop owner connects their own Page(s) from **Admin, Messenger** (linked from the AI block in Settings). You set up Meta once:
+
+1. In the Meta app, add the product **Facebook Login for Business** (or Facebook Login) and under its settings add this to **Valid OAuth Redirect URIs**, exactly: `https://flow.veskacode.com/Admin/MessengerReturn`.
+2. Keep the webhook from the steps above (callback URL and verify token). Page subscriptions are made for each Page by the app itself when an owner connects.
+3. In Render set `Messenger__VerifyToken`, `Messenger__AppSecret`, `Messenger__AppId` (App settings, Basic, App ID) and `Messenger__TokenKey`: a long random phrase (at least 16 characters, 32 or more is better) that the saved Page tokens are encrypted with. **Write it down somewhere safe**: if it is lost or changed, the saved tokens can no longer be read and every shop must connect its Pages again.
+4. Until Meta approves **App Review** (`pages_messaging`, plus `pages_show_list` and `pages_manage_metadata`) and Business Verification, only accounts with a role on the app (admin, developer, tester) can connect a Page or chat with it. Real clients need that approval.
+5. A shop needs the AI add-on, and its owner must be an admin of the Facebook Page. One shop may connect up to 5 Pages; a Page can belong to one shop only.
+
+The `Messenger__ShopSlug` and `Messenger__PageAccessToken` pair can stay for your own test Page; a Page a shop connected is always answered as that shop. Not tried against Meta's real servers yet (the tests use a fake).

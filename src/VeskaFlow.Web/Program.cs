@@ -88,6 +88,11 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.AiReceptionistService>();
 // Messenger (off until the four Messenger settings are filled in; see BUSINESS_RULES 6.y23).
 builder.Services.AddSingleton<VeskaFlow.Web.Services.MessengerOptions>();
 builder.Services.AddHttpClient<VeskaFlow.Web.Services.IMessengerSender, VeskaFlow.Web.Services.GraphMessengerSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<VeskaFlow.Web.Services.IMessengerGraph, VeskaFlow.Web.Services.GraphMessengerClient>(c => c.Timeout = TimeSpan.FromSeconds(15));
+// The token request to Meta carries the app secret in its address; the default HTTP client log would write that address, so it is kept to warnings.
+builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+builder.Services.AddSingleton<VeskaFlow.Web.Services.MessengerCipher>();
+builder.Services.AddScoped<VeskaFlow.Web.Services.MessengerConnectService>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.MessengerService>();
 
 // Authentication: cookie for the web back office. Authorization is always enforced server-side.
