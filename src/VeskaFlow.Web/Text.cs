@@ -525,6 +525,7 @@ public static class Text
     public const string PilotIntro = "Your own list for the pilot: what to finish before you charge, how to set up a pilot shop, what to ask the owner after two weeks and what to watch each week. Only you can see it. Tick an item when it is done.";
     public const string PilotBack = "Back to Platform";
     public const string PilotLink = "Pilot checklist";
+    public const string PilotReviewLink = "Meta App Review guide";
     public const string PilotTick = "Mark done";
     public const string PilotUntick = "Mark not done";
     public static string PilotDoneOn(string date) => $"Done on {date}.";

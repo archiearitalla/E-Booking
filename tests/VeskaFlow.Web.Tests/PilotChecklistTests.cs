@@ -14,7 +14,11 @@ public class PilotChecklistTests
         var all = PilotChecklist.Sections.SelectMany(s => s.Items).ToList();
         Assert.Equal(all.Count, all.Select(i => i.Id).Distinct().Count());
         Assert.All(all, i => { Assert.False(string.IsNullOrWhiteSpace(i.Title)); Assert.DoesNotContain(" ", i.Id); });
-        Assert.Equal(4, PilotChecklist.Sections.Count);
+        Assert.Equal(5, PilotChecklist.Sections.Count);
+        var review = PilotChecklist.Sections.Single(s => s.Id == "review");
+        Assert.True(review.Tickable);
+        Assert.All(new[] { "r-show", "r-meta", "r-read", "r-msg", "r-data" }, id => Assert.False(string.IsNullOrWhiteSpace(review.Items.Single(i => i.Id == id).Copy))); // each permission has its ready-made text
+        Assert.True(PilotChecklist.IsKnown("r-msg"));
         Assert.All(PilotChecklist.Sections, s => Assert.NotEmpty(s.Items));
         Assert.False(PilotChecklist.Sections.Single(s => s.Id == "ask").Tickable);
         Assert.False(PilotChecklist.IsKnown("q-use")); // a question can not be ticked
@@ -77,6 +81,9 @@ public class PilotChecklistTests
         Assert.Contains(Text.PilotTitle, page);
         Assert.Contains("Test the main flows on a real phone", page);
         Assert.Contains("After two weeks: ask the owner", page);
+        Assert.Contains("Meta App Review (to open Messenger to the public)", page);                                                      // the App Review guide, with text to copy
+        Assert.Contains("We use pages_messaging only to reply to a person who wrote to the Page first", page);
+        Assert.Contains("href=\"/Platform/Pilot#review\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));               // linked from the Platform page
         Assert.Contains("0 / 8", page);                                                                                                  // before you charge: none done yet
         Assert.Contains("href=\"/Platform/Pilot\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));                      // linked from the Platform page
 

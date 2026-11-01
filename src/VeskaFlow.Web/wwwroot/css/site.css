@@ -900,3 +900,6 @@ a.kpi.open { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
 
 /* A danger text button (no background) must show in the red itself, not in the dark text meant for the red fill. */
 button.link.danger { color: var(--danger); background: none; }
+
+/* Ready-made text to copy (App Review answers): easy to select, wraps, and stands out from the hint text. */
+.pilot-text { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; border: 1px solid var(--line); border-radius: 0.5rem; background: var(--field); color: var(--ink); user-select: all; white-space: pre-wrap; overflow-wrap: anywhere; }

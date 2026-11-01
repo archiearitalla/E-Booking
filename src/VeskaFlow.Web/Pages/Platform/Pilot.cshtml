@@ -36,6 +36,7 @@
                             <div>
                                 <strong>@item.Title</strong>
                                 @if (item.Detail is not null) { <p class="hint">@item.Detail</p> }
+                                @if (item.Copy is not null) { <p class="pilot-text" tabindex="0">@item.Copy</p> }
                                 @if (done) { <p class="hint">@Text.PilotDoneOn(DisplayFormat.Date(Model.Done[item.Id], "Asia/Manila"))</p> }
                             </div>
                         </form>
