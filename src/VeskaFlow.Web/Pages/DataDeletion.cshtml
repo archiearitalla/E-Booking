@@ -1,0 +1,29 @@
+@page "/data-deletion"
+@using VeskaFlow.Web.Services
+@inject IConfiguration Config
+@{
+    ViewData["Title"] = "Delete your data";
+    var operatorName = LegalInfo.OperatorName(Config);
+    var contact = LegalInfo.ContactText(Config);
+}
+<div class="card legal">
+    <h1>Delete your data</h1>
+    <p class="muted">Version @LegalInfo.Version</p>
+
+    <p>This page explains how to have your data removed from VeskaFlow. It covers what we keep when you write to a shop's Facebook Page and talk to its assistant, and what we keep when you book an appointment.</p>
+
+    <h2>If you wrote to a shop's Facebook Page</h2>
+    <ul>
+        <li><strong>What we keep:</strong> the text of the messages, the replies, and an identifier Facebook gives you for that Page. We do not keep your Facebook name, photo or profile.</li>
+        <li><strong>It goes away by itself:</strong> the messages are deleted 30 days after the conversation started.</li>
+        <li><strong>To have it deleted sooner:</strong> contact us at @contact. Tell us which Page you wrote to and about when, so we can find the conversation. We delete it and confirm to you within 30 days. We never need your password.</li>
+    </ul>
+
+    <h2>If you booked an appointment</h2>
+    <p>Ask the shop first. The shop can export or permanently delete your name, number and bookings from its own screen. If you cannot reach the shop, contact us at @contact and we will pass the request on or carry it out.</p>
+
+    <h2>If you are a shop owner</h2>
+    <p>You can delete a customer, or your whole shop, from the app. You can also disconnect a Facebook Page at any time under Messenger in the back office; its saved access token is deleted at once, and you can remove VeskaFlow from your Facebook settings under Business Integrations.</p>
+
+    <p>More about what we keep and who sees it is in the <a href="/Privacy">Privacy Notice</a>. @operatorName runs VeskaFlow.</p>
+</div>
