@@ -177,6 +177,32 @@ public sealed class AccountControlService(
         await db.SaveChangesAsync(ct);
     }
 
+    // ------------------------------------------------------------------ pilot checklist (the platform owner's own notes)
+
+    /// <summary>The checklist items the platform owner ticked, as item id and when.</summary>
+    public async Task<IReadOnlyDictionary<string, DateTime>> GetPilotChecksAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var prefix = PilotChecklist.Key("");
+        var rows = await db.PlatformSettings.AsNoTracking().Where(s => s.Key.StartsWith(prefix) && s.Value == "1").ToListAsync(ct);
+        return rows.Where(r => PilotChecklist.IsKnown(r.Key[prefix.Length..]))
+            .ToDictionary(r => r.Key[prefix.Length..], r => DateTime.SpecifyKind(r.UpdatedAtUtc, DateTimeKind.Utc));
+    }
+
+    /// <summary>Ticks or unticks one item. An id that is not on the checklist is refused (nothing is stored for it).</summary>
+    public async Task<bool> SetPilotCheckAsync(string? itemId, bool done, CancellationToken ct = default)
+    {
+        if (!PilotChecklist.IsKnown(itemId)) return false;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = time.GetUtcNow().UtcDateTime;
+        var key = PilotChecklist.Key(itemId!);
+        var row = await db.PlatformSettings.FirstOrDefaultAsync(s => s.Key == key, ct);
+        if (row is null) db.PlatformSettings.Add(new PlatformSetting { Key = key, Value = done ? "1" : "0", UpdatedAtUtc = now });
+        else { row.Value = done ? "1" : "0"; row.UpdatedAtUtc = now; }
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     /// <summary>Whole days since the last saved copy at <paramref name="now"/>, or null when none was ever recorded.</summary>
     public static int? DaysSince(DateTime? savedAtUtc, DateTime now) =>
         savedAtUtc is { } saved ? Math.Max(0, (int)(now - saved).TotalDays) : null;

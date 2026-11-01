@@ -623,3 +623,11 @@ Invite codes, a consent record per booking, clinic-specific fields such as an in
 ### 17.3.1 Result of the Neon safety gate (2026-10-25)
 
 On the Neon Free project in AWS Singapore, **PostgreSQL 18.6**: `CREATE EXTENSION btree_gist` succeeded (version 1.8), `tests/db/double_booking.sh` printed "All database invariants hold." against a separate `veskaflow_test` database, and the whole Web test suite passed (91 of 91, direct connection, `SSL Mode=Require`). One earlier run lost two tests to a dropped connection while the development PC was asleep; the rerun passed. Not checked: a Neon branch restore, behaviour after the compute has been idle, and PostgreSQL 16 on Neon (the other tests ran on 16.11 locally).
+
+## 19. Pilot checklist (platform owner) ✅
+
+A page only the platform owner sees, at `/Platform/Pilot` (linked from the Platform page; not found for a shop owner, a sign-in for someone signed out). It is the platform owner's own list for running a pilot with a few shops before charging for real. It changes nothing in any shop.
+
+- **Four parts** (the words live in `PilotChecklist.cs`; the ids of the items are stable): *Before you charge anyone* (test the main flows on a real phone, test the real emails, a lawyer reads the Privacy Notice and Terms, paid always-on hosting, practise restoring a backup, decide how to give support, set the real prices in Render, check the email service and its daily limit); *Setting up a pilot shop* (about 30 minutes with the owner); *After two weeks: ask the owner* (questions to write down word for word; not tickable); *What to watch every week*.
+- **Ticks** are saved in `platform_setting` (key `pilot:<item id>`, value 1 or 0, with the time), so no migration. A tick can be taken back. An id that is not a tickable item on the list is refused (not found) and nothing is stored. Each part shows how many are done.
+- **Not built:** a checklist per pilot shop (who is in the pilot, what they said), reminders, exporting the answers.

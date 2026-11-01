@@ -1,0 +1,56 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.PilotModel
+@{
+    ViewData["Title"] = Text.PilotTitle;
+}
+<h1>@Text.PilotTitle</h1>
+<p class="hint">@Text.PilotIntro</p>
+<p class="actions"><a class="button secondary" href="/Platform">@Text.PilotBack</a></p>
+
+@foreach (var block in PilotChecklist.Sections)
+{
+    var progress = Model.Progress(block);
+    <section class="card card-wide pilot" id="@block.Id">
+        <h2>@block.Title@if (block.Tickable) { <span class="badge @(progress.Done == progress.Total ? "" : "off")">@progress.Done / @progress.Total</span> }</h2>
+        <p class="hint">@block.Intro</p>
+        <ul class="pilot-list">
+            @foreach (var item in block.Items)
+            {
+                var done = Model.Done.ContainsKey(item.Id);
+                <li id="@item.Id" class="@(done ? "pilot-done" : "")">
+                    @if (block.Tickable)
+                    {
+                        <form method="post" asp-page-handler="Toggle" class="pilot-item">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input type="hidden" name="done" value="@(done ? "false" : "true")" />
+                            <button type="submit" class="pilot-check @(done ? "on" : "")" aria-pressed="@(done ? "true" : "false")" aria-label="@(done ? Text.PilotUntick : Text.PilotTick): @item.Title">
+                                @if (done)
+                                {
+                                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" fill-opacity="0.18"/><path d="M8 12.5l3 3 5-6"/></svg>
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+                                }
+                            </button>
+                            <div>
+                                <strong>@item.Title</strong>
+                                @if (item.Detail is not null) { <p class="hint">@item.Detail</p> }
+                                @if (done) { <p class="hint">@Text.PilotDoneOn(DisplayFormat.Date(Model.Done[item.Id], "Asia/Manila"))</p> }
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="pilot-item">
+                            <div>
+                                <strong>@item.Title</strong>
+                                @if (item.Detail is not null) { <p class="hint">@item.Detail</p> }
+                            </div>
+                        </div>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
+}

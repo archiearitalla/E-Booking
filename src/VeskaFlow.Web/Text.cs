@@ -521,6 +521,13 @@ public static class Text
     public const string PaymentsMonthTotal = "This month";
     public static string PaymentsAlert(int n) => n == 1 ? "1 payment is waiting for you to confirm." : $"{n} payments are waiting for you to confirm.";
     public const string PaymentsAlertView = "Open payments";
+    public const string PilotTitle = "Pilot checklist";
+    public const string PilotIntro = "Your own list for the pilot: what to finish before you charge, how to set up a pilot shop, what to ask the owner after two weeks and what to watch each week. Only you can see it. Tick an item when it is done.";
+    public const string PilotBack = "Back to Platform";
+    public const string PilotLink = "Pilot checklist";
+    public const string PilotTick = "Mark done";
+    public const string PilotUntick = "Mark not done";
+    public static string PilotDoneOn(string date) => $"Done on {date}.";
     public const string PaymentsLink = "Payments";
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
