@@ -185,6 +185,7 @@ Still open: a registration and booking run on a real phone against the live link
 | Require email confirmation to book (per-shop switch): held booking, emailed link, release when it runs out, no chat booking | 8.8 | tests (7); migration 034 | real Brevo email and link on a phone; how many emails a busy shop uses |
 | 5 staff included; extra staff bought in Billing (30 days, renewable) or set by hand; cap on total staff records | 7.2 | tests (6); migrations 035 and 036 | the Platform form on a real phone; a real payment for extra staff |
 | Pilot checklist for the platform owner (/Platform/Pilot): four parts, ticks saved | 19 | tests (3); looked at in a local browser, desktop and phone | a real phone |
+| Messenger: the AI receptionist on one shop's Facebook Page (off until four settings are filled in; signed webhook, no repeated answers) | 6.y23 | tests (3, with a fake sender); migration 037 | **Meta's real servers, App Review, a real Page** |
 | Deposit paid by hand: per service amount, snapshot on the booking, "Deposit received" mark, pay instructions in Settings, shown on the manage page | 7.1 | tests (7); migration 032 | pages on a real phone; real GCash payment |
 | Reports: outcomes, revenue, by service and staff | 6.y4 | tests | page on a real phone |
 | Staff move a confirmed booking (Move button, free times, audit, new reminder) | 6.y5 | tests | page on a real phone |

@@ -164,3 +164,16 @@ Open `/Platform`, card **GCash QR code**, and upload a screenshot of **My QR** f
 ## Extra staff (beyond the 5 included)
 
 Every shop's price includes 5 active staff. A client buys more in **Plan and billing** (option Extra staff, type how many in total; the price is `Pricing__ExtraStaffMonthly`, default 199 per staff per month) and says "I paid"; you confirm it in Platform, Payments, and the extra staff run 30 days (paying again adds 30). Put the price text in Render as `Billing__ExtraStaffPrice` (for example `PHP 199 per staff per month`) for the Staff page. You can also type the number by hand under **Extra staff** on the shop's card in `/Platform`; that one has no end date. After the end date nobody is cut down; they just cannot activate more staff. Shops also cannot have more than `20 + extra` staff records in all, counting deactivated staff.
+
+## Messenger (optional, one Page for one shop)
+
+The AI receptionist can also answer messages sent to a shop's Facebook Page. It is off until you fill in four settings in Render, Environment (nothing else changes). It needs the AI add-on for that shop (see the AI section above).
+
+1. In Facebook, the shop needs a **Page** and you need to be its admin.
+2. At developers.facebook.com create an **app** (Business type) and add the **Messenger** product.
+3. In Messenger settings, **Webhooks**: callback URL `https://flow.veskacode.com/webhooks/messenger`, and a **verify token** you make up (any long word). Subscribe the Page to `messages` (and `messaging_postbacks`).
+4. In Messenger settings, **Token Generation**: choose the Page and copy the **page access token**. The **app secret** is in the app's Settings, Basic. Keep both out of chats, commits and screenshots.
+5. In Render set `Messenger__VerifyToken` (the word from step 3), `Messenger__AppSecret`, `Messenger__PageAccessToken` and `Messenger__ShopSlug` (the shop's address name, the part after `/b/`). Save; the service restarts. Then press **Verify and save** in Meta's webhook setup.
+6. Message the Page from a Facebook account that has a role on the app (admin, developer or tester). Until Meta approves the app (App Review for `pages_messaging`) only those accounts can chat with it.
+
+To switch it off, remove any one of the four settings. Not verified against Meta's real servers; check Meta's current requirements for the permission and the Graph API version (`Messenger__GraphVersion`, default `v21.0`) before you rely on it.

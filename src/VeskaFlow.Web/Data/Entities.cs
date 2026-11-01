@@ -377,3 +377,14 @@ public class PlatformImage
     public byte[] Data { get; set; } = [];
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
+
+/// <summary>A person who messaged a shop's Facebook Page and the AI conversation that goes with them (migration 037).</summary>
+public class MessengerThread
+{
+    public Guid BusinessId { get; set; }
+    /// <summary>The person's id on that Page (a page-scoped id, not a Facebook profile id).</summary>
+    public string Psid { get; set; } = "";
+    public Guid? ChatId { get; set; }
+    public string? LastMid { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}

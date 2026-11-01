@@ -85,6 +85,10 @@ builder.Services.AddScoped<VeskaFlow.Web.Services.ShopSettingsService>();
 builder.Services.AddSingleton<VeskaFlow.Web.Services.IAiModel, VeskaFlow.Web.Services.AnthropicAiModel>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AiAccess>();
 builder.Services.AddScoped<VeskaFlow.Web.Services.AiReceptionistService>();
+// Messenger (off until the four Messenger settings are filled in; see BUSINESS_RULES 6.y23).
+builder.Services.AddSingleton<VeskaFlow.Web.Services.MessengerOptions>();
+builder.Services.AddHttpClient<VeskaFlow.Web.Services.IMessengerSender, VeskaFlow.Web.Services.GraphMessengerSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<VeskaFlow.Web.Services.MessengerService>();
 
 // Authentication: cookie for the web back office. Authorization is always enforced server-side.
 builder.Services
@@ -193,6 +197,35 @@ app.MapRazorPages();
 // A plain "I am awake" answer that never touches the database. A free uptime monitor can call it every few minutes
 // so the hosting does not put the app to sleep, without keeping the database awake.
 app.MapMethods("/ping", ["GET", "HEAD"], () => Results.Text("ok")); // uptime monitors often use HEAD
+
+// Messenger webhook. Meta asks once (GET) to check the verify token, then sends every message to the Page here (POST). Off (not found) until the Messenger
+// settings are filled in. A POST is only believed when its signature matches the app secret, and Meta always gets a quick 200 for a message we understood.
+app.MapGet("/webhooks/messenger", (HttpContext http, VeskaFlow.Web.Services.MessengerOptions options) =>
+{
+    if (!options.IsEnabled) return Results.Text("not found", "text/plain", statusCode: StatusCodes.Status404NotFound); // with a body, so the error page is not put in its place
+    var q = http.Request.Query;
+    var tokenOk = q["hub.mode"] == "subscribe" && q["hub.verify_token"].ToString() is { Length: > 0 } given
+        && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+            System.Text.Encoding.UTF8.GetBytes(given), System.Text.Encoding.UTF8.GetBytes(options.VerifyToken));
+    return tokenOk ? Results.Text(q["hub.challenge"].ToString()) : Results.Text("forbidden", "text/plain", statusCode: StatusCodes.Status403Forbidden);
+});
+app.MapPost("/webhooks/messenger", async (HttpContext http, VeskaFlow.Web.Services.MessengerService messenger, IConfiguration config, CancellationToken ct) =>
+{
+    if (http.Request.ContentLength is > VeskaFlow.Web.Services.MessengerService.MaxBodyBytes) return Results.Text("too large", "text/plain", statusCode: StatusCodes.Status413PayloadTooLarge);
+    using var buffer = new MemoryStream();
+    await http.Request.Body.CopyToAsync(buffer, ct);
+    if (buffer.Length > VeskaFlow.Web.Services.MessengerService.MaxBodyBytes) return Results.Text("too large", "text/plain", statusCode: StatusCodes.Status413PayloadTooLarge);
+    var baseUrl = config["App:PublicBaseUrl"] is { Length: > 0 } configured ? configured.Trim().TrimEnd('/') : $"{http.Request.Scheme}://{http.Request.Host}";
+    using var work = CancellationTokenSource.CreateLinkedTokenSource(ct);
+    work.CancelAfter(TimeSpan.FromSeconds(25)); // Meta waits about 20 seconds; it sends the message again if we are slower, and the repeat is ignored
+    var outcome = await messenger.HandleAsync(buffer.ToArray(), http.Request.Headers["X-Hub-Signature-256"].FirstOrDefault(), baseUrl, work.Token);
+    return outcome switch
+    {
+        VeskaFlow.Web.Services.MessengerOutcome.Disabled => Results.Text("not found", "text/plain", statusCode: StatusCodes.Status404NotFound),
+        VeskaFlow.Web.Services.MessengerOutcome.BadSignature => Results.Text("forbidden", "text/plain", statusCode: StatusCodes.Status403Forbidden),
+        _ => Results.Text("EVENT_RECEIVED"),
+    };
+});
 
 // The shop's logo for the booking page. The browser keeps it and asks again each time (ETag), so a new logo shows at once.
 // The GCash QR code clients scan to pay. Only for signed-in people (shop owners on About and on the trial-ended page).
