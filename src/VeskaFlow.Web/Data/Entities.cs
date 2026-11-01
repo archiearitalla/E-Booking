@@ -53,6 +53,8 @@ public class Business
     public bool RequireEmailConfirm { get; set; }
     /// <summary>Staff the shop paid for on top of the 5 included (migration 035); set by the platform owner after the payment.</summary>
     public int ExtraStaff { get; set; }
+    /// <summary>Until when the extra staff are paid for (migration 036); null means set by hand by the platform owner and no expiry.</summary>
+    public DateTime? ExtraStaffUntilUtc { get; set; }
 }
 
 public class AdminUser
@@ -352,6 +354,8 @@ public class Payment
     public string? DecidedBy { get; set; }
     public string? RejectReason { get; set; }
     public string? ReceiptNo { get; set; }
+    /// <summary>For kind STAFF: how many extra staff, in total, this payment is for (migration 036). 1 for the other kinds.</summary>
+    public int Quantity { get; set; } = 1;
 }
 
 /// <summary>One customer conversation with the AI receptionist (migration 021). The transcript is JSON text of what was said, nothing else.</summary>

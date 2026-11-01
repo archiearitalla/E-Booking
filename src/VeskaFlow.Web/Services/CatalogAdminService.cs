@@ -173,10 +173,10 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         // Serialize staff changes per business so two simultaneous adds cannot both slip under the plan limit.
         await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"staff:" + businessId}, 0))", ct);
 
-        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc, b.ExtraStaff }).FirstOrDefaultAsync(ct);
+        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc, b.ExtraStaff, b.ExtraStaffUntilUtc }).FirstOrDefaultAsync(ct);
         var plan = biz?.Plan;
         var inTrial = biz?.TrialEndsAtUtc is not null;
-        var extraStaff = biz?.ExtraStaff ?? 0;
+        var extraStaff = biz is null ? 0 : PlanLimits.EffectiveExtra(biz.ExtraStaff, biz.ExtraStaffUntilUtc, time.GetUtcNow().UtcDateTime);
         if (plan is null) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
         var isNew = input.Id is null;

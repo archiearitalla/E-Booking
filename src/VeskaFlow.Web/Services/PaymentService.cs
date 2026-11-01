@@ -6,7 +6,7 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record PaymentRow(
     Guid Id, Guid BusinessId, string Shop, string Slug, string Kind, string Period, int Days, decimal Amount, string Reference, string? Note, string Status, bool ByHand,
-    DateTime SubmittedAtUtc, string SubmittedBy, DateTime? DecidedAtUtc, string? DecidedBy, string? RejectReason, string? ReceiptNo);
+    DateTime SubmittedAtUtc, string SubmittedBy, DateTime? DecidedAtUtc, string? DecidedBy, string? RejectReason, string? ReceiptNo, int Quantity = 1);
 
 public sealed record PaymentTotals(DateOnly Month, decimal Total, int Count, IReadOnlyDictionary<string, decimal> ByKind);
 
@@ -26,16 +26,23 @@ public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFac
     private DateTime Now => time.GetUtcNow().UtcDateTime;
 
     private static PaymentRow Row(Payment p, string shop, string slug) => new(p.Id, p.BusinessId, shop, slug, p.Kind, p.Period, p.Days, p.Amount, p.Reference, p.Note, p.Status,
-        p.ByHand, p.SubmittedAtUtc, p.SubmittedBy, p.DecidedAtUtc, p.DecidedBy, p.RejectReason, p.ReceiptNo);
+        p.ByHand, p.SubmittedAtUtc, p.SubmittedBy, p.DecidedAtUtc, p.DecidedBy, p.RejectReason, p.ReceiptNo, p.Quantity);
 
     // ---------------------------------------------------------------- the client
 
     /// <summary>A client says it paid. Errors are keyed "option", "reference", "note" and "limit".</summary>
-    public async Task<ServiceResult<Guid>> SubmitAsync(Guid businessId, string? optionKey, string? reference, string? note, string submittedBy, CancellationToken ct = default)
+    public async Task<ServiceResult<Guid>> SubmitAsync(Guid businessId, string? optionKey, string? reference, string? note, string submittedBy, int? quantity = null, CancellationToken ct = default)
     {
         var errors = new Dictionary<string, string>();
         var option = pricing.Options.FirstOrDefault(o => o.Key == optionKey);
         if (option is null) errors["option"] = Text.PayOptionInvalid;
+        // Extra staff: how many, in total, for the month. The amount is the price of one times that, worked out here, never typed by the client.
+        var count = 1;
+        if (option?.Kind == PaymentKinds.Staff)
+        {
+            if (quantity is not { } q || q < 1 || q > PlanLimits.MaxExtraStaff) errors["quantity"] = Text.PayQuantityInvalid(PlanLimits.MaxExtraStaff);
+            else count = q;
+        }
         var refText = (reference ?? "").Trim();
         if (!ReferencePattern().IsMatch(refText)) errors["reference"] = Text.PayReferenceInvalid;
         var noteText = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
@@ -53,7 +60,7 @@ public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFac
 
         var payment = new Payment
         {
-            BusinessId = businessId, Kind = option!.Kind, Period = option.Period, Days = option.Days, Amount = option.Price, Reference = refText, Note = noteText,
+            BusinessId = businessId, Kind = option!.Kind, Period = option.Period, Days = option.Days, Amount = option.Price * count, Quantity = count, Reference = refText, Note = noteText,
             Status = "PENDING", SubmittedAtUtc = Now, SubmittedBy = submittedBy,
         };
         db.Payments.Add(payment);
@@ -129,6 +136,8 @@ public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFac
         var errors = new Dictionary<string, string>();
         var option = pricing.Options.FirstOrDefault(o => o.Key == optionKey);
         if (option is null) errors["option"] = Text.PayOptionInvalid;
+        // Extra staff has a quantity; the platform owner sets those by hand with the Extra staff box on the shop's card instead.
+        else if (option.Kind == PaymentKinds.Staff) errors["option"] = Text.PayStaffByHand;
         var paid = amount ?? option?.Price ?? 0m;
         if (paid is < 0 or > 1_000_000) errors["amount"] = Text.PayAmountInvalid;
         var refText = string.IsNullOrWhiteSpace(reference) ? "By hand" : reference.Trim();
@@ -165,6 +174,12 @@ public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFac
                 break;
             case PaymentKinds.Ai: shop.AiAddonUntilUtc = Extend(shop.AiAddonUntilUtc); break;
             case PaymentKinds.Email: shop.EmailAddonUntilUtc = Extend(shop.EmailAddonUntilUtc); break;
+            case PaymentKinds.Staff:
+                // The payment is for this many extra staff in total: set the number and run it a month further (from the later of today and
+                // the current end). Extra staff set by hand (no end date) start counting from today.
+                shop.ExtraStaff = Math.Clamp(payment.Quantity, 0, PlanLimits.MaxExtraStaff);
+                shop.ExtraStaffUntilUtc = Extend(shop.ExtraStaffUntilUtc);
+                break;
         }
         var number = await db.Database.SqlQuery<long>($"SELECT nextval('payment_receipt_seq') AS \"Value\"").SingleAsync();
         payment.Status = "CONFIRMED";

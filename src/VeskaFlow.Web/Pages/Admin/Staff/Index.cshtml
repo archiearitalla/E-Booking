@@ -9,7 +9,11 @@
 <p class="hint">@string.Format(Text.StaffPlanNote, Model.Plan, PlanLimits.MaxStaff(Model.Plan, Model.InTrial, Model.ExtraStaff))</p>
 @if (Model.Plan == "PRO" || Model.InTrial)
 {
-    <p class="hint">@string.Format(Text.StaffIncludedNote, PlanLimits.IncludedStaff, Model.ExtraStaff)@(Model.ExtraStaffPrice.Length > 0 ? " " + string.Format(Text.StaffExtraPriceNote, Model.ExtraStaffPrice) : "")</p>
+    <p class="hint">@string.Format(Text.StaffIncludedNote, PlanLimits.IncludedStaff, Model.ExtraStaff)@(Model.ExtraStaffUntilUtc is { } paidUntil ? " " + Text.StaffExtraUntil(DisplayFormat.Date(paidUntil, Model.TimeZoneName)) : "")@(Model.ExtraStaffPrice.Length > 0 ? " " + string.Format(Text.StaffExtraPriceNote, Model.ExtraStaffPrice) : "")</p>
+    <p class="actions">
+        @if (Model.Level >= AdminLevel.Owner) { <a class="button secondary" href="/Admin/Billing">@Text.StaffBuyExtra</a> }
+        @if (Model.ContactUrl.Length > 0) { <a class="button secondary" href="@Model.ContactUrl" target="_blank" rel="noopener">@Text.StaffMessageUs</a> }
+    </p>
 }
 
 @if (Model.Rows.Count == 0)

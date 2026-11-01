@@ -894,7 +894,16 @@ public static class Text
     public const string StaffDetails = "Details";
     public const string StaffPlanNote = "Plan {0}: up to {1} active staff member(s).";
     public const string StaffIncludedNote = "{0} staff are included in your price. Extra staff paid for: {1}.";
-    public const string StaffExtraPriceNote = "Each extra staff member: {0}. To add more, message us and we will raise your limit once you have paid.";
+    public const string StaffExtraPriceNote = "Each extra staff member: {0}. Pay in Plan and billing and your limit goes up once we confirm it.";
+    public static string StaffExtraUntil(string date) => $"Paid until {date}.";
+    public const string StaffBuyExtra = "Buy extra staff";
+    public const string StaffMessageUs = "Message us";
+    public const string PayKindStaff = "Extra staff";
+    public const string PayStaffByHand = "Extra staff is set with the Extra staff box on the shop's card, not here.";
+    public static string PayQuantityInvalid(int max) => $"Type how many extra staff you want, from 1 to {max}.";
+    public const string BillingQuantity = "How many extra staff (only for Extra staff)";
+    public const string BillingQuantityHint = "The total number of extra staff you want for the month, not just the new ones. The amount is the price of one times this number.";
+    public static string PlatformExtraStaffUntil(string date) => $"paid until {date}";
     public const string StaffRecordsLimit = "You have reached the most staff records ({0}), counting deactivated staff. Ask us to raise it.";
     public const string PlatformExtraStaff = "Extra staff";
     public const string PlatformExtraStaffSave = "Save";

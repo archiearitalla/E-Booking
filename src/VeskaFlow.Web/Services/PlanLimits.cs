@@ -23,4 +23,11 @@ public static class PlanLimits
     /// someone could add and deactivate staff without end and fill the database).
     /// </summary>
     public static int MaxStaffRecords(int extraStaff = 0) => 20 + Math.Clamp(extraStaff, 0, MaxExtraStaff);
+
+    /// <summary>
+    /// The extra staff that count right now: the number the shop paid for while its end date has not passed, or the number set by hand
+    /// (no end date) without limit in time. After the end date they count as 0 (nobody is cut down; no more can be activated).
+    /// </summary>
+    public static int EffectiveExtra(int extraStaff, DateTime? untilUtc, DateTime nowUtc) =>
+        untilUtc is { } until && DateTime.SpecifyKind(until, DateTimeKind.Utc) <= nowUtc ? 0 : Math.Clamp(extraStaff, 0, MaxExtraStaff);
 }

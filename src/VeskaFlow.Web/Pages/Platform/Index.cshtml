@@ -130,7 +130,7 @@ else
                         }
                     </div>
                     <div class="sub-row">
-                        <div class="sub-info"><strong>@Text.PlatformExtraStaff</strong><span class="sub-status muted">@PlanLimits.IncludedStaff + @s.ExtraStaff</span></div>
+                        <div class="sub-info"><strong>@Text.PlatformExtraStaff</strong><span class="sub-status @(s.ExtraStaffUntilUtc is { } xe && xe < DateTime.UtcNow ? "due" : "muted")">@PlanLimits.IncludedStaff + @s.ExtraStaff@(s.ExtraStaffUntilUtc is { } xu ? " · " + Text.PlatformExtraStaffUntil(xu.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)) : "")</span></div>
                         <form method="post" asp-page-handler="ExtraStaff" class="sub-form">
                             <input type="hidden" name="id" value="@s.BusinessId" />
                             <label for="extrastaff-@s.BusinessId" class="sr-only">@Text.PlatformExtraStaff @s.Name</label>

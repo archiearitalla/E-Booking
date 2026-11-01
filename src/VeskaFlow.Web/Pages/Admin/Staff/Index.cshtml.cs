@@ -10,7 +10,10 @@ public class IndexModel(CatalogAdminService catalog, ShopSettingsService setting
     public string Plan { get; private set; } = "FREE";
     public bool InTrial { get; private set; }
     public int ExtraStaff { get; private set; }
+    public DateTime? ExtraStaffUntilUtc { get; private set; }
+    public string TimeZoneName { get; private set; } = "Asia/Manila";
     public string ExtraStaffPrice => billing.ExtraStaffPrice;
+    public string ContactUrl => billing.ContactUrl;
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
@@ -18,7 +21,9 @@ public class IndexModel(CatalogAdminService catalog, ShopSettingsService setting
         var current = await settings.GetSettingsAsync(BusinessId, ct);
         Plan = current?.Plan ?? "FREE";
         InTrial = current?.TrialEndsAtUtc is not null;
-        ExtraStaff = current?.ExtraStaff ?? 0;
+        ExtraStaff = current is null ? 0 : PlanLimits.EffectiveExtra(current.ExtraStaff, current.ExtraStaffUntilUtc, DateTime.UtcNow);
+        ExtraStaffUntilUtc = current?.ExtraStaff > 0 && current.ExtraStaffUntilUtc is { } u ? DateTime.SpecifyKind(u, DateTimeKind.Utc) : null;
+        TimeZoneName = current?.TimeZone ?? "Asia/Manila";
         return Page();
     }
 }

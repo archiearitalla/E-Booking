@@ -183,7 +183,7 @@ Still open: a registration and booking run on a real phone against the live link
 | Customer moves their own booking: `/booking/{token}/move`, same cutoff as cancel, same staff and service | 7 | tests (5 service and page tests, 4 Core checks) | page on a real phone, in Safari |
 | Record a sale: time defaults to when entered, inside working hours; blocks its time while running; label "Manual input of sales" | 6.y20 | tests (3 new); migration 033 | form and label on a real phone |
 | Require email confirmation to book (per-shop switch): held booking, emailed link, release when it runs out, no chat booking | 8.8 | tests (7); migration 034 | real Brevo email and link on a phone; how many emails a busy shop uses |
-| 5 staff included, extra staff paid and set by the platform owner; cap on total staff records | 7.2 | tests (4); migration 035 | the Platform form on a real phone; a real payment for extra staff |
+| 5 staff included; extra staff bought in Billing (30 days, renewable) or set by hand; cap on total staff records | 7.2 | tests (6); migrations 035 and 036 | the Platform form on a real phone; a real payment for extra staff |
 | Deposit paid by hand: per service amount, snapshot on the booking, "Deposit received" mark, pay instructions in Settings, shown on the manage page | 7.1 | tests (7); migration 032 | pages on a real phone; real GCash payment |
 | Reports: outcomes, revenue, by service and staff | 6.y4 | tests | page on a real phone |
 | Staff move a confirmed booking (Move button, free times, audit, new reminder) | 6.y5 | tests | page on a real phone |

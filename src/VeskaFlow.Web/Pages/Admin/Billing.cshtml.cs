@@ -30,7 +30,7 @@ public class BillingModel(ShopSettingsService settings, PaymentService payments,
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!await LoadAsync(ct)) return NotFound();
-        var result = await payments.SubmitAsync(BusinessId, Input.Option, Input.Reference, Input.Note, StaffActor.Label, ct);
+        var result = await payments.SubmitAsync(BusinessId, Input.Option, Input.Reference, Input.Note, StaffActor.Label, Input.Quantity, ct);
         if (result.IsSuccess)
         {
             Success = Text.BillingSubmitted;
@@ -68,6 +68,7 @@ public class BillingModel(ShopSettingsService settings, PaymentService payments,
     public class PayForm
     {
         public string? Option { get; set; }
+        public int? Quantity { get; set; }
         public string? Reference { get; set; }
         public string? Note { get; set; }
     }
