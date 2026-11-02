@@ -120,6 +120,16 @@ html[data-mode="light"] .site-header { box-shadow: 0 1px 0 var(--line); }
   cursor: pointer;
 }
 .theme-toggle:hover { color: var(--ink); background: var(--brand-soft); }
+/* On a narrow phone the header holds the bell, Dashboard, Sign out and the switch: keep each word on one line and trim the padding. */
+.site-header nav a, .site-header nav button.link { white-space: nowrap; }
+@media (max-width: 26rem) {
+  body .site-header { padding-left: 0.75rem; padding-right: 0.25rem; gap: 0.125rem; }
+  body .site-header nav { gap: 0; }
+  body .site-header nav a, body .site-header nav button.link { padding: 0 0.25rem; font-size: 0.8125rem; }
+  body .site-header nav .bell summary { padding: 0 0.25rem; }
+  body .site-header .brand { font-size: 1rem; }
+  .theme-toggle { width: 2.25rem; margin-left: 0; }
+}
 .theme-toggle .icon-moon { display: none; }
 html[data-mode="light"] .theme-toggle .icon-sun { display: none; }
 html[data-mode="light"] .theme-toggle .icon-moon { display: inline; }
