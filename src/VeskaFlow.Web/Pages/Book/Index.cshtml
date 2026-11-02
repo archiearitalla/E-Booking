@@ -81,10 +81,11 @@
                     </label>
                     @foreach (var staff in shop.Staff)
                     {
-                        <label class="choice person">
+                        var noTime = Model.StaffWithoutTime.Contains(staff.Id);
+                        <label class="choice person@(noTime ? " person-off" : "")">
                             <input type="radio" name="staffId" value="@staff.Id" checked="@(Model.StaffId == staff.Id)" />
                             <span class="avatar" aria-hidden="true">@staff.Name.Trim()[..1].ToUpperInvariant()</span>
-                            <span><strong>@staff.Name</strong></span>
+                            <span><strong>@staff.Name</strong>@if (noTime) { <span class="person-tag">@Text.BookStaffNoTimeTag</span> }</span>
                         </label>
                     }
                 </div>

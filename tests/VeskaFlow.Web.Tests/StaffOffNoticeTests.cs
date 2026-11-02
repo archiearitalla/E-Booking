@@ -41,11 +41,14 @@ public class StaffOffNoticeTests
         Assert.Contains(Text.WaitlistLinkHintStaff("Staff 1"), off);
         Assert.DoesNotContain(Text.BookNoTimes, off);
         Assert.DoesNotContain("class=\"slot\"", off);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(off, "person-off"));                       // only Staff 1's chip is marked
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(off, System.Text.RegularExpressions.Regex.Escape(Text.BookStaffNoTimeTag)).Count);
 
         // The second person is free: times are listed and there is no such notice.
         var (free, _) = await LoadAsync(client, slug, shop.ServiceId, shop.StaffIds[1], day);
         Assert.Contains("class=\"slot\"", free);
         Assert.DoesNotContain(Text.BookStaffNoTimes("Staff 2"), free);
+        Assert.Contains("person-off", free);                                                                           // Staff 1 is still marked while Staff 2 is looked at
 
         // Choosing "anyone available" lists the free person's times.
         var (anyone, _) = await LoadAsync(client, slug, shop.ServiceId, null, day);
@@ -61,6 +64,11 @@ public class StaffOffNoticeTests
         Assert.Contains(Text.BookNoTimes, nobody);
         Assert.DoesNotContain(Text.BookShowAnyone, nobody);
         Assert.Contains(Text.WaitlistLinkHint, nobody);
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(nobody, "person-off").Count);                    // both are marked now
+
+        // Before a service is chosen nobody is marked.
+        var blank = WebUtility.HtmlDecode(await client.GetStringAsync($"/b/{slug}"));
+        Assert.DoesNotContain("person-off", blank);
     }
 
     [Fact]

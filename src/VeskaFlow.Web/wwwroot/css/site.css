@@ -454,6 +454,10 @@ th { font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
 
 .people { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; }
 .people .choice { margin-bottom: 0; align-items: center; }
+/* A person with no free time on the chosen day stays in the list, calmer, with a small tag, so the customer sees why before tapping. */
+.choice.person-off strong { color: var(--muted); }
+.choice.person-off .avatar { opacity: 0.6; }
+.person-tag { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); }
 .choice.person input, .daychip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .avatar {
   flex: none;

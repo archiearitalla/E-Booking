@@ -121,6 +121,7 @@ public static class Text
     public const string BookNoTimes = "No times are available on this day. Try another date.";
     public static string BookStaffNoTimes(string name) => $"{name} has no free time on this day, but other people do.";
     public const string BookShowAnyone = "Show times with anyone available";
+    public const string BookStaffNoTimeTag = "No free time";
     public const string BookPickService = "Choose a service to see available times.";
     public const string BookTaken = "That time was just taken. Please choose another time below.";
     public const string BookStaffMismatch = "That person does not offer this service. Choose someone else or any available.";
