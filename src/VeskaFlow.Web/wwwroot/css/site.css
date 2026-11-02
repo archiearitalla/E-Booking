@@ -59,6 +59,71 @@ body::before {
     radial-gradient(640px 640px at -6% -8%, rgba(45, 212, 196, 0.13), transparent 62%),
     radial-gradient(560px 560px at 106% 48%, rgba(99, 102, 241, 0.13), transparent 62%);
 }
+/* The bright theme (the switch in the header, wwwroot/js/theme.js, sets data-mode="light" on <html>). Dark stays the default.
+   Proportions: the page ground is a cool grey, cards are white and lifted by a soft shadow, and the fields, time chips and list rows
+   sit one step darker than the card so they read as separate things; the line color is firm enough to see on white. The accent is the
+   deep teal (white text on it passes), so primary buttons are solid and secondary ones are outlined with a pale wash on hover. */
+:root[data-mode="light"] {
+  color-scheme: light;
+  --ink: #0f172a;
+  --muted: #566474;
+  --bg: #eef2f6;
+  --card: #ffffff;
+  --field: #f5f7fa;
+  --line: #d3dce6;
+  --brand: #0f766e;
+  --brand-hover: #115e59;
+  --brand-ink: #ffffff;
+  --brand-soft: #e1f3f0;
+  --danger: #b42318;
+  --danger-soft: #fdeceb;
+  --warn-ink: #7a2e0e;
+  --warn-soft: #fff3e0;
+  --warn-line: #d97706;
+  --focus: #2563eb;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+/* Per-shop accent colors on the bright theme (the body carries data-theme, so these need the extra specificity). */
+html[data-mode="light"] body[data-theme="blue"]   { --brand: #1d4ed8; --brand-hover: #1e40af; --brand-soft: #e5edff; --brand-ink: #ffffff; }
+html[data-mode="light"] body[data-theme="orange"] { --brand: #c2410c; --brand-hover: #9a3412; --brand-soft: #ffeede; --brand-ink: #ffffff; }
+html[data-mode="light"] body[data-theme="rose"]   { --brand: #be123c; --brand-hover: #9f1239; --brand-soft: #ffe4ea; --brand-ink: #ffffff; }
+html[data-mode="light"] body[data-theme="violet"] { --brand: #6d28d9; --brand-hover: #5b21b6; --brand-soft: #efe7ff; --brand-ink: #ffffff; }
+html[data-mode="light"] body[data-theme="slate"]  { --brand: #334155; --brand-hover: #1e293b; --brand-soft: #e8edf3; --brand-ink: #ffffff; }
+/* The soft glows behind the page are quieter on the bright theme. */
+html[data-mode="light"] body::before {
+  background:
+    radial-gradient(640px 640px at -6% -8%, rgba(15, 118, 110, 0.07), transparent 62%),
+    radial-gradient(560px 560px at 106% 48%, rgba(99, 102, 241, 0.06), transparent 62%);
+}
+/* Dark text was chosen for the soft red of the dark theme; on the deep red of the bright theme the text is white. */
+html[data-mode="light"] button.danger { color: #ffffff; }
+html[data-mode="light"] button.danger:hover { background: #912018; }
+html[data-mode="light"] .confirm-dialog { box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25); }
+html[data-mode="light"] .confirm-dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
+html[data-mode="light"] .logo-preview, html[data-mode="light"] .logo-creator-preview img { background: rgba(15, 23, 42, 0.05); }
+/* A line under the header and under each list row, so rows on white do not float. */
+html[data-mode="light"] .site-header { box-shadow: 0 1px 0 var(--line); }
+
+/* The switch: the sun in the dark theme (press for bright), the moon in the bright theme (press for dark). */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-left: 0.25rem;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.theme-toggle:hover { color: var(--ink); background: var(--brand-soft); }
+.theme-toggle .icon-moon { display: none; }
+html[data-mode="light"] .theme-toggle .icon-sun { display: none; }
+html[data-mode="light"] .theme-toggle .icon-moon { display: inline; }
+
 * { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }

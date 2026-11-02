@@ -18,6 +18,8 @@ public static class Text
     public const string NotAllowed = "That action is not allowed.";
 
     public const string AppName = "VeskaFlow";
+    public const string ThemeToLight = "Switch to bright theme";
+    public const string ThemeToDark = "Switch to dark theme";
     public const string BusinessNameInvalid = "Enter your shop name (1 to 80 characters).";
     public const string SlugInvalid = "The booking address needs at least 3 letters or numbers.";
     public static string SignedUpAddress(string slug) => $"Welcome! Your online booking page is at /b/{slug}. Share that address, or the QR code in Settings, with your customers.";
@@ -1215,7 +1217,7 @@ public static class Text
     public const string MessengerConnectAnother = "Connect another Page";
     public const string MessengerConnected = "Connected Pages";
     public const string MessengerNone = "No Page is connected yet.";
-    public const string MessengerReviewNote = "Until Meta approves VeskaFlow for the public, only people we have added as testers can message the assistant on Facebook. Your customers will not get an answer from it yet. To try it, ask us to add your own Facebook account as a tester.";
+    public const string MessengerReviewNote = "Not open to your customers yet. Facebook has not yet approved this feature for everyone, so for now the assistant replies only to people we add for testing, such as you. Your customers can still book and chat on your booking page. Want to try it on your Page? Message us and we will add your Facebook account.";
     public const string MessengerDisconnect = "Disconnect";
     public const string MessengerDisconnectConfirm = "Disconnect this Page? The assistant stops answering its messages.";
     public const string MessengerChoose = "Choose the Page to connect";
