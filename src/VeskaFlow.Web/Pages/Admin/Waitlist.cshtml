@@ -25,7 +25,7 @@ else
                         @if (r.NotifiedAtUtc is { } emailed) { <span class="badge">@Text.WaitlistEmailed(DisplayFormat.Date(emailed, Model.View!.TimeZone))</span> }
                     </div>
                     <dl class="facts">
-                        <dt>@Text.ManageWho</dt>
+                        <dt>@Text.CustomersContact</dt>
                         <dd>@if (hasPhone) { <a href="tel:@r.CustomerPhone">@r.CustomerPhone</a> } @if (!string.IsNullOrEmpty(r.CustomerEmail)) { <text>&middot; @r.CustomerEmail</text> }</dd>
                         <dt>@Text.ManageService</dt><dd>@r.ServiceName &middot; @(r.StaffName ?? Text.WaitlistAnyStaff)</dd>
                         <dt>@Text.ManageWhen</dt>
