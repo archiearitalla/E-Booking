@@ -1,0 +1,119 @@
+{
+  "name": "Messenger FAQ Auto-Reply (Claude)",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "GET", "path": "messenger", "responseMode": "responseNode", "options": {} },
+      "id": "n1", "name": "Webhook Verify", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [0, 0], "webhookId": "messenger-verify"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.query['hub.verify_token'] }}", "rightValue": "={{ $env.FB_VERIFY_TOKEN }}", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n2", "name": "Token OK?", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [220, 0]
+    },
+    {
+      "parameters": { "respondWith": "text", "responseBody": "={{ $('Webhook Verify').item.json.query['hub.challenge'] }}", "options": {} },
+      "id": "n3", "name": "Respond Challenge", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [440, -80]
+    },
+    {
+      "parameters": { "respondWith": "text", "responseBody": "Forbidden", "options": { "responseCode": 403 } },
+      "id": "n4", "name": "Respond Forbidden", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [440, 80]
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "messenger", "responseMode": "onReceived", "options": {} },
+      "id": "n5", "name": "Webhook Messages", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [0, 320], "webhookId": "messenger-messages"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== EDIT THIS BLOCK PER CLIENT =====\nconst BUSINESS = {\n  name: 'Sample Barbershop',\n  hours: 'Mon-Sat 9:00 AM to 8:00 PM, closed Sunday',\n  location: '123 Sample St., Quezon City',\n  prices: 'Haircut P250, Haircut + Shave P350, Hair color from P800',\n  booking: 'Customers can book at https://example.com/book',\n  other: 'Walk-ins welcome. Cancel at least 3 hours before the appointment.'\n};\n// =======================================\n\nconst body = $input.first().json.body;\nconst m = body && body.entry && body.entry[0] && body.entry[0].messaging && body.entry[0].messaging[0];\nif (!m || !m.message || m.message.is_echo || !m.message.text) return [];\n\nconst system = `You are the friendly Messenger assistant of ${BUSINESS.name}.\nReply in the same language as the customer (English, Tagalog or Taglish). Keep replies short (max 3 sentences).\nUse ONLY these facts:\n- Hours: ${BUSINESS.hours}\n- Location: ${BUSINESS.location}\n- Prices: ${BUSINESS.prices}\n- Booking: ${BUSINESS.booking}\n- Other: ${BUSINESS.other}\nNever invent prices, times or policies. Never promise a booking slot.\nIf the customer wants to book, share the booking link.\nIf you do not know the answer, or the customer is upset, wants a refund, or asks for a person, reply with exactly: [HANDOFF]`;\n\nreturn [{ json: { senderId: m.sender.id, text: m.message.text, system } }];"
+      },
+      "id": "n6", "name": "Extract Message", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+          { "name": "anthropic-version", "value": "2023-06-01" },
+          { "name": "content-type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 400, system: $json.system, messages: [{ role: 'user', content: $json.text }] }) }}",
+        "options": {}
+      },
+      "id": "n7", "name": "Ask Claude", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [440, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = ($json.content && $json.content[0] && $json.content[0].text) || '';\nconst handoff = raw.includes('[HANDOFF]') || raw.trim() === '';\nconst replyText = handoff ? 'Salamat po! A staff member will reply to you shortly.' : raw.trim();\nconst src = $('Extract Message').first().json;\nreturn [{ json: { senderId: src.senderId, customerText: src.text, handoff, replyText } }];"
+      },
+      "id": "n8", "name": "Parse Reply", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [660, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v21.0/me/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "=Bearer {{ $env.FB_PAGE_TOKEN }}" },
+          { "name": "content-type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_type: 'RESPONSE', recipient: { id: $json.senderId }, message: { text: $json.replyText } }) }}",
+        "options": {}
+      },
+      "id": "n9", "name": "Send Reply", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [880, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c2", "leftValue": "={{ $json.handoff }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n10", "name": "Needs Human?", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [880, 420]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@yourdomain.com",
+        "toEmail": "owner@clientbusiness.com",
+        "subject": "Messenger: customer needs a human reply",
+        "emailFormat": "text",
+        "text": "=A customer needs a person.\n\nMessage: {{ $json.customerText }}\nMessenger sender id: {{ $json.senderId }}\n\nOpen Meta Business Suite inbox to reply.",
+        "options": {}
+      },
+      "id": "n11", "name": "Notify Owner", "type": "n8n-nodes-base.emailSend", "typeVersion": 2.1, "position": [1100, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Verify": { "main": [[{ "node": "Token OK?", "type": "main", "index": 0 }]] },
+    "Token OK?": { "main": [
+      [{ "node": "Respond Challenge", "type": "main", "index": 0 }],
+      [{ "node": "Respond Forbidden", "type": "main", "index": 0 }]
+    ] },
+    "Webhook Messages": { "main": [[{ "node": "Extract Message", "type": "main", "index": 0 }]] },
+    "Extract Message": { "main": [[{ "node": "Ask Claude", "type": "main", "index": 0 }]] },
+    "Ask Claude": { "main": [[{ "node": "Parse Reply", "type": "main", "index": 0 }]] },
+    "Parse Reply": { "main": [[
+      { "node": "Send Reply", "type": "main", "index": 0 },
+      { "node": "Needs Human?", "type": "main", "index": 0 }
+    ]] },
+    "Needs Human?": { "main": [[{ "node": "Notify Owner", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
