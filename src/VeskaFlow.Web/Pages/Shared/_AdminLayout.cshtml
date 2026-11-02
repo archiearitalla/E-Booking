@@ -69,7 +69,7 @@
 @if (alert.Reminders > 0 && !onReminders)
 {
     <div class="notice" role="status">
-        <a href="/Admin/Reminders">@Text.ReminderAlertText(alert.Reminders)</a>
+        @Text.ReminderAlertMessage(alert.Reminders) <a href="/Admin/Reminders">@Text.ReminderAlertAction</a>
     </div>
 }
 

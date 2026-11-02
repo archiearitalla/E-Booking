@@ -808,6 +808,13 @@ button.saved::before {
 
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 0.75rem; margin: 1rem 0; }
 @media (max-width: 560px) { .kpis { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; } .kpi { padding: 0.65rem 0.7rem; } .kpi-value { font-size: 1.2rem; } .kpi-label { font-size: 0.7rem; } .daynav a { padding: 0 0.25rem; font-size: 0.9rem; } }
+/* On a phone the date is too long to sit between the two arrows (it broke into three lines): it gets its own row and the arrows go under it. */
+@media (max-width: 560px) {
+  .daynav { grid-template-columns: 1fr 1fr; grid-template-areas: "date date" "prev next"; row-gap: 0.25rem; }
+  .daynav strong { grid-area: date; font-size: 1.05rem; }
+  .daynav a:first-child { grid-area: prev; justify-self: start; }
+  .daynav a:last-child { grid-area: next; justify-self: end; }
+}
 .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 0.9rem; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
 a.kpi { color: inherit; text-decoration: none; cursor: pointer; }
 a.kpi:hover, a.kpi:focus-visible { border-color: var(--brand); }

@@ -131,7 +131,8 @@ public class ReminderTests
         Assert.Contains($"data-confirm=\"{Text.ConfirmReminded}\"", page);
 
         var admin = WebUtility.HtmlDecode(await client.GetStringAsync("/Admin"));
-        Assert.Contains(Text.ReminderAlertText(1), admin);
+        Assert.Contains(Text.ReminderAlertMessage(1), admin);                                                         // the words, and only the action is the link
+        Assert.Contains($"<a href=\"/Admin/Reminders\">{Text.ReminderAlertAction}</a>", admin);
 
         var marked = await HttpApp.PostFormAsync(client, "/Admin/Reminders?handler=Reminded", new() { ["id"] = booked.Id.ToString() }, tokenPage: "/Admin/Reminders");
         Assert.Equal(HttpStatusCode.Redirect, marked.StatusCode);

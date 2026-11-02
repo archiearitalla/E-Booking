@@ -752,9 +752,11 @@ public static class Text
     public const string ConfirmReminded = "Mark this customer as reminded? They leave the list.";
     public const string ReminderWhen = "Appointment";
     public const string ReminderSubject = "Reminder of your appointment";
-    public static string ReminderAlertText(int count) => count == 1
-        ? "1 customer is due a reminder for an upcoming appointment. Send them a message."
-        : $"{count} customers are due a reminder for an upcoming appointment. Send them a message.";
+    public static string ReminderAlertMessage(int count) => count == 1
+        ? "1 customer is due a reminder for an upcoming appointment."
+        : $"{count} customers are due a reminder for an upcoming appointment.";
+    public const string ReminderAlertAction = "Send them a message.";
+    public static string ReminderAlertText(int count) => ReminderAlertMessage(count) + " " + ReminderAlertAction;
     public static string ReminderMessage(string firstName, string shop, string service, string whenText, string manageUrl) =>
         $"Hi {firstName}, this is a reminder of your {service} appointment at {shop} on {whenText}. To see or cancel your booking: {manageUrl} See you!";
     public const string TermsLink = "Terms of Service";
