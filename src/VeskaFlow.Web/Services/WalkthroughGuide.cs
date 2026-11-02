@@ -112,5 +112,12 @@ public static class WalkthroughGuide
                 new("w-mail-3", "Watch the limit",
                     "Where: Platform page, the day's email count.\nSay to yourself: the free email plan is 300 a day for everyone; near 250 it is time to upgrade."),
             ], Tickable: false),
+        new("w-offer", "8. Offering VeskaFlow to a shop owner (message to send)",
+            "Send it by Messenger or text to a shop owner you know. Keep it as it is: it promises only what the system does today.",
+            [
+                new("w-offer-1", "The first message",
+                    "Say: Send it as it is, then answer questions and offer the 10-minute demo.\nTell them honestly: the assistant answers on the shop's booking page for everyone; on Facebook Messenger it works only for people we add for testing until Meta approves the app, so do not promise Messenger to their customers yet.",
+                    "Hi! Do you take bookings by message or phone call?\n\nVeskaFlow gives your shop a booking link. Customers pick a service, a barber and a time, and double bookings can’t happen. They also get reminders.\n\nThere is an optional AI assistant that answers your customers’ questions and books their appointment for them, in English or Tagalog, any hour of the day. It checks your real free times first.\n\n30-day free trial, and I will help you set it up: flow.veskacode.com"),
+            ], Tickable: false),
     ];
 }

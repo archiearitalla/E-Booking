@@ -44,7 +44,10 @@ public class WalkthroughTests
         Assert.Contains("A 10-minute demo for a new client", page);
         Assert.Contains("Set up a new shop with the owner", page);
         Assert.Contains("Where: /Register", page);
-        Assert.DoesNotContain("pilot-check", page);                                                                          // no tick buttons
+        Assert.Contains("Offering VeskaFlow to a shop owner", page);
+        Assert.Contains("Do you take bookings by message or phone call?", page);                                            // the ready message
+        Assert.Contains("data-copy=\"copy-w-offer-1\"", page);                                                               // with its Copy button
+        Assert.DoesNotContain("pilot-check", page);                                                                        // no tick buttons
         Assert.Contains("href=\"/Platform/Walkthroughs\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
     }
 }

@@ -41,6 +41,11 @@
                         <div>
                             <strong>@item.Title</strong>
                             @if (item.Detail is not null) { <p class="hint">@item.Detail</p> }
+                            @if (item.Copy is not null)
+                            {
+                                <p class="pilot-text" id="copy-@item.Id" tabindex="0">@item.Copy</p>
+                                <button type="button" class="secondary" data-copy="copy-@item.Id" data-copied="@Text.FollowUpCopied">@Text.FollowUpCopy</button>
+                            }
                         </div>
                     </div>
                 }
