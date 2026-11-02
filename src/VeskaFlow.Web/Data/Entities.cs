@@ -378,6 +378,22 @@ public class PlatformImage
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>A customer waiting for a slot on a full day (migration 039). <c>Day</c> is the shop's local date; <c>StaffId</c> null means any staff.</summary>
+public class WaitlistEntry
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public Guid ServiceId { get; set; }
+    public Guid? StaffId { get; set; }
+    public DateOnly Day { get; set; }
+    public string CustomerName { get; set; } = "";
+    public string CustomerPhone { get; set; } = "";
+    public string? CustomerEmail { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    /// <summary>When the one automatic email was sent after a time opened up; null if none was.</summary>
+    public DateTime? NotifiedAtUtc { get; set; }
+}
+
 /// <summary>A Facebook Page a shop owner connected to the AI receptionist (migration 038). The token is encrypted.</summary>
 public class MessengerConnection
 {

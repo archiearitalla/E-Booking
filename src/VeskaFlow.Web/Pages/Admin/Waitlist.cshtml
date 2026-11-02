@@ -1,0 +1,51 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.WaitlistModel
+@{
+    ViewData["Title"] = Text.AdminNavWaitlist;
+}
+<h1>@Text.AdminNavWaitlist</h1>
+<p class="hint">@Text.WaitlistAdminHint</p>
+
+@if (Model.Days.Count == 0)
+{
+    <div class="card empty"><p>@Text.WaitlistEmpty</p></div>
+}
+else
+{
+    @foreach (var day in Model.Days)
+    {
+        <h2>@Model.DayText(day.Key)</h2>
+        <ul class="bookings">
+            @foreach (var r in day)
+            {
+                var hasPhone = !DisplayFormat.IsPlaceholderPhone(r.CustomerPhone);
+                <li class="card">
+                    <div class="booking-head">
+                        <strong>@r.CustomerName</strong>
+                        @if (r.NotifiedAtUtc is { } emailed) { <span class="badge">@Text.WaitlistEmailed(DisplayFormat.Date(emailed, Model.View!.TimeZone))</span> }
+                    </div>
+                    <dl class="facts">
+                        <dt>@Text.ManageWho</dt>
+                        <dd>@if (hasPhone) { <a href="tel:@r.CustomerPhone">@r.CustomerPhone</a> } @if (!string.IsNullOrEmpty(r.CustomerEmail)) { <text>&middot; @r.CustomerEmail</text> }</dd>
+                        <dt>@Text.ManageService</dt><dd>@r.ServiceName &middot; @(r.StaffName ?? Text.WaitlistAnyStaff)</dd>
+                        <dt>@Text.ManageWhen</dt>
+                        <dd>@if (r.FreeNow.Count > 0) { <strong>@Text.WaitlistFreeNow(Model.TimesText(r))</strong> } else { <span class="muted">@Text.WaitlistNoFree</span> }</dd>
+                    </dl>
+
+                    @if (r.FreeNow.Count > 0)
+                    {
+                        @await Html.PartialAsync("_SendMessage", new VeskaFlow.Web.Pages.SendMessageModel(
+                            "w" + r.Id.ToString("N"), Model.MessageFor(r), r.CustomerPhone, r.CustomerEmail, Text.WaitlistEmailSubject(Model.View!.ShopName),
+                            $"/Admin/Waitlist?handler=Contact&id={r.Id}"))
+                    }
+                    <div class="actions">
+                        <form method="post" asp-page-handler="Remove">
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <button type="submit" class="secondary" data-confirm="@Text.WaitlistRemoveAsk">@Text.WaitlistRemove<span class="sr-only"> @r.CustomerName</span></button>
+                        </form>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+}

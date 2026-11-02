@@ -74,6 +74,46 @@ public sealed class CustomerMailer(
         return MailResult.Sent;
     }
 
+    /// <summary>
+    /// The one email to a waiting customer when a time opened up on their day (BUSINESS_RULES 7.3). Like the reminder it needs the customer's email, the shop's
+    /// "email my customers" switch, the email service and room in the daily limit; without them nothing is sent and staff use the manual message.
+    /// </summary>
+    public async Task<MailResult> SendWaitlistAsync(Guid businessId, Guid entryId, string baseUrl, IReadOnlyList<DateTime> freeTimes, CancellationToken ct = default)
+    {
+        if (!email.IsConfigured || string.IsNullOrWhiteSpace(baseUrl) || freeTimes.Count == 0) return MailResult.NotSent;
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await (
+            from e in db.WaitlistEntries.AsNoTracking()
+            where e.Id == entryId && e.BusinessId == businessId
+            join b in db.Businesses.AsNoTracking() on e.BusinessId equals b.Id
+            join s in db.Services.AsNoTracking() on e.ServiceId equals s.Id
+            select new { e.CustomerName, e.CustomerEmail, e.Day, e.ServiceId, e.StaffId, ServiceName = s.Name, ShopName = b.Name, b.Slug, b.TimeZone, Enabled = b.IsEnabled && b.CustomerEmails }
+        ).FirstOrDefaultAsync(ct);
+        if (row is null || !row.Enabled) return MailResult.NotSent;
+        var to = (row.CustomerEmail ?? "").Trim();
+        if (to.Length is < 3 or > 120 || !to.Contains('@') || to.Contains(' ')) return MailResult.NotSent;
+
+        var room = await quota.CheckCustomerAsync(businessId, ct);
+        if (room == EmailRoom.ShopLimit) return MailResult.ShopLimit;
+        if (room == EmailRoom.PoolLimit) return MailResult.PoolLimit;
+
+        var first = row.CustomerName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? row.CustomerName;
+        var day = row.Day.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture);
+        var times = string.Join(", ", freeTimes.Take(6).Select(t => DisplayFormat.Time(t, row.TimeZone)));
+        var link = $"{baseUrl.TrimEnd('/')}/b/{row.Slug}?serviceId={row.ServiceId}{(row.StaffId is { } staff ? $"&staffId={staff}" : "")}&date={DisplayFormat.DateParam(row.Day)}";
+        var body = Text.WaitlistEmailBody(first, row.ShopName, row.ServiceName, day, times, link) + "\n\n" + Text.CustomerEmailFooter(row.ShopName);
+
+        var ok = await email.SendAsync(to, Text.WaitlistEmailSubject(row.ShopName), body, null, ct);
+        if (!ok)
+        {
+            log.LogWarning("A waitlist email was not accepted by the email service."); // no address in the log
+            return MailResult.NotSent;
+        }
+        await quota.CountAsync(businessId, ct);
+        return MailResult.Sent;
+    }
+
     private async Task<MailResult> SendAsync(Guid businessId, Guid bookingId, string baseUrl, bool reminder, CancellationToken ct)
     {
         if (!email.IsConfigured || string.IsNullOrWhiteSpace(baseUrl)) return MailResult.NotSent;

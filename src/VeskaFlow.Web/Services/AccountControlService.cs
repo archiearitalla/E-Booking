@@ -369,6 +369,7 @@ public sealed class AccountControlService(
         // Children first, one transaction: either the whole shop goes or nothing does.
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.AuditLogs.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.WaitlistEntries.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.Bookings.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.Customers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.WeeklyClosures.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);

@@ -303,6 +303,36 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string AdminNavWaitlist = "Waitlist";
+
+    // ---- waitlist (rules 7.3)
+    public const string WaitlistTitle = "Notify me if a time opens";
+    public const string WaitlistLink = "Notify me if a time opens";
+    public const string WaitlistLinkHint = "This day is full. Leave your details and the shop will tell you if a time opens up.";
+    public static string WaitlistIntro(string service, string day) => $"Leave your details for {service} on {day}. If a time opens up, the shop will contact you. If you give an email, you also get one email when a time opens.";
+    public const string WaitlistEmailLabel = "Email (optional, for one message when a time opens)";
+    public const string WaitlistSubmit = "Join the waitlist";
+    public const string WaitlistConfirmAsk = "Join the waitlist for this day?";
+    public const string WaitlistBack = "Back to the times";
+    public const string WaitlistJoined = "You are on the waitlist. The shop will contact you if a time opens up.";
+    public const string WaitlistSlotsFree = "This day has free times now. Please pick one on the booking page.";
+    public const string WaitlistDayInvalid = "Choose a day from today up to the last day this shop takes bookings.";
+    public const string WaitlistTooMany = "You are already on the waitlist a few times. Please wait for the shop to contact you.";
+    public const string WaitlistShopFull = "The waitlist is full for now. Please try again later or contact the shop.";
+    public const string WaitlistAdminHint = "Customers who asked to be told when a time opens on a full day. A time opens when a booking is cancelled or moved. Message them yourself, or they get one automatic email if they gave an address and your email switch is on.";
+    public const string WaitlistEmpty = "No one is on the waitlist.";
+    public const string WaitlistNoFree = "No free time yet.";
+    public static string WaitlistFreeNow(string times) => $"Free now: {times}";
+    public static string WaitlistEmailed(string when) => $"Emailed {when}";
+    public const string WaitlistRemove = "Remove";
+    public const string WaitlistRemoveAsk = "Remove this person from the waitlist?";
+    public const string WaitlistRemoved = "Removed from the waitlist.";
+    public const string WaitlistAnyStaff = "Any staff";
+    public static string WaitlistMessage(string first, string shop, string service, string day, string times, string link) =>
+        $"Hi {first}, a time opened up at {shop} for {service} on {day}: {times}. Book here before it is taken: {link}";
+    public static string WaitlistEmailSubject(string shop) => $"A time opened up at {shop}";
+    public static string WaitlistEmailBody(string first, string shop, string service, string day, string times, string link) =>
+        $"Hi {first},\n\nA time opened up at {shop} for {service} on {day}: {times}.\n\nTo book it before someone else does, use this link:\n{link}";
     public const string PayQrTitle = "GCash QR code";
     public const string PayQrSaveImage = "Save QR to my phone";
     public const string PayQrOpenGcash = "Open GCash";

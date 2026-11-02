@@ -753,24 +753,37 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         return result.ToList();
     }
 
-    private static Dictionary<string, string> ValidateInput(
-        CreateBookingRequest r, out string name, out string phone, out string? email)
+    /// <summary>
+    /// The name, number and optional email a customer typed, checked the same way for a booking and for the waitlist. Returns the field errors (empty when
+    /// all is well) and the cleaned values: the number in its one canonical form, the email null when left empty.
+    /// </summary>
+    public static Dictionary<string, string> ValidateContact(string? rawName, string? rawPhone, string? rawEmail, out string name, out string phone, out string? email)
     {
         var errors = new Dictionary<string, string>();
 
-        name = (r.CustomerName ?? "").Trim();
+        name = (rawName ?? "").Trim();
         if (name.Length is < 1 or > 80) errors["name"] = Text.NameInvalid;
 
         // One canonical form, so the same person is recognised however the number was typed (+63 917…, 0917…).
-        phone = PhoneNumber.Normalize(Regex.Replace(r.Phone ?? "", @"[\s\-().]", ""));
-        if (r.Actor.Kind == ActorKind.Staff && phone.Length == 0)
-            phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N"); // a walk-in with no number: its own customer, never matched later
-        else if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;
+        phone = PhoneNumber.Normalize(Regex.Replace(rawPhone ?? "", @"[\s\-().]", ""));
+        if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;
 
-        var rawEmail = (r.Email ?? "").Trim();
-        email = rawEmail.Length == 0 ? null : rawEmail;
+        var trimmedEmail = (rawEmail ?? "").Trim();
+        email = trimmedEmail.Length == 0 ? null : trimmedEmail;
         if (email is not null && (email.Length > 120 || !MailAddress.TryCreate(email, out var parsed) || parsed.Address != email))
             errors["email"] = Text.EmailInvalid;
+        return errors;
+    }
+
+    private static Dictionary<string, string> ValidateInput(
+        CreateBookingRequest r, out string name, out string phone, out string? email)
+    {
+        var errors = ValidateContact(r.CustomerName, r.Phone, r.Email, out name, out phone, out email);
+        if (r.Actor.Kind == ActorKind.Staff && phone.Length == 0)
+        {
+            errors.Remove("phone");
+            phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N"); // a walk-in with no number: its own customer, never matched later
+        }
 
         var key = (r.IdempotencyKey ?? "").Trim();
         if (key.Length is < 1 or > 100) errors["idempotencyKey"] = Text.IdempotencyKeyInvalid;

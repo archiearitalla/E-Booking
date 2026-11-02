@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
     public DbSet<MessengerThread> MessengerThreads => Set<MessengerThread>();
     public DbSet<MessengerConnection> MessengerConnections => Set<MessengerConnection>();
+    public DbSet<WaitlistEntry> WaitlistEntries => Set<WaitlistEntry>();
     public DbSet<EmailDaily> EmailDailies => Set<EmailDaily>();
     public DbSet<AiUsage> AiUsages => Set<AiUsage>();
     public DbSet<AiUsageDay> AiUsageDays => Set<AiUsageDay>();
@@ -58,6 +59,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         m.Entity<PlatformSetting>().HasKey(x => x.Key);
         m.Entity<MessengerThread>().HasKey(x => new { x.BusinessId, x.Psid });
         m.Entity<MessengerConnection>().HasKey(x => x.PageId);
+        m.Entity<WaitlistEntry>().HasKey(x => x.Id);
         m.Entity<EmailDaily>().HasKey(x => new { x.Day, x.BusinessId });
         m.Entity<AiUsage>().HasKey(x => new { x.Month, x.BusinessId });
         m.Entity<AiUsageDay>().HasKey(x => new { x.Day, x.BusinessId });

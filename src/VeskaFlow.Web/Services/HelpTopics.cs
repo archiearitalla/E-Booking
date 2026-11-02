@@ -76,6 +76,16 @@ public static class HelpTopics
             ],
             "Nothing is sent by itself. You choose how to reach each customer.", "/Admin/Reminders", "Open Reminders"),
 
+        new("waitlist", "Waitlist: customers waiting for a full day",
+            "When a day is full, customers can ask to be told if a time opens. They show up here.",
+            [
+                "Open Waitlist. Each line is a customer who wants a time on a day that was full.",
+                "When a time is free, the line shows it and a ready message. Send it by text, email or Messenger, or copy it.",
+                "If the customer gave an email and your email switch is on, they also get one automatic email when a time opens.",
+                "Press Remove when the customer has booked or no longer needs a time. It asks first.",
+            ],
+            "The first customer to book the time gets it. Nothing is held for the person at the top of the list.", "/Admin/Waitlist", "Open Waitlist"),
+
         new("followups", "Follow-ups: bring customers back",
             "Customers you asked to come back, with a ready message when it is time.",
             [

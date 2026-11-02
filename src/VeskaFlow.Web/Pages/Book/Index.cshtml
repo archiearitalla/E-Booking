@@ -151,6 +151,12 @@
         else if (Model.Times.Count == 0)
         {
             <p>@Text.BookNoTimes</p>
+            @if (shop.FindService(Model.ServiceId) is { IsOther: false })
+            {
+                <p class="hint">@Text.WaitlistLinkHint</p>
+                <p><a class="button secondary" asp-page="/Book/Waitlist" asp-route-slug="@shop.Slug" asp-route-serviceId="@Model.ServiceId"
+                      asp-route-staffId="@Model.StaffId" asp-route-date="@DisplayFormat.DateParam(Model.SelectedDate)">@Text.WaitlistLink</a></p>
+            }
         }
         else
         {

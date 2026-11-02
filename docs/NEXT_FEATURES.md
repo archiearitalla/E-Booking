@@ -53,7 +53,9 @@ Note: `BUSINESS_RULES.md` already describes an online deposit with a held slot (
 
 **Acceptance:** rules written first; state machine changes covered by `VeskaFlow.Core.SelfCheck` if the state machine is touched; tests for hold expiry and for double-booking while a hold exists.
 
-### 3. Waitlist
+### 3. Waitlist (DONE: `/b/{slug}/waitlist` and `/Admin/Waitlist`, rules in section 7.3, migration 039)
+
+Built as briefed, except that it does not hook into the cancel and move code: a worker (every 5 minutes) and the list itself look at which times are free, which also catches closures lifted and held bookings that expired. Not built: holding a time for the first person on the list, SMS, automatic removal when the customer books, a count on the Bookings page. The text below is the original brief.
 
 **Goal:** when a day is full, the customer leaves a name and contact, and the shop sees who wants a slot.
 

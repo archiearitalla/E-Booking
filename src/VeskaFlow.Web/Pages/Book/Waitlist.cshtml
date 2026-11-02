@@ -1,0 +1,69 @@
+@page "/b/{slug}/waitlist"
+@model VeskaFlow.Web.Pages.Book.WaitlistModel
+@{
+    ViewData["Title"] = Text.WaitlistTitle;
+    var shop = Model.Shop!;
+    ViewData["Theme"] = shop.BrandColor;
+    ViewData["Public"] = true;
+}
+<div class="book-shell book-confirm">
+<div class="card">
+    <h1>@Text.WaitlistTitle</h1>
+    <dl class="facts">
+        <dt>@Text.ManageShop</dt><dd>@shop.Name</dd>
+        <dt>@Text.ManageService</dt><dd>@Model.Service!.Name</dd>
+        <dt>@Text.ManageWith</dt><dd>@(Model.Staff?.Name ?? Text.BookStaffAny)</dd>
+        <dt>@Text.ManageWhen</dt><dd>@Model.DayText</dd>
+    </dl>
+    @if (Model.Joined)
+    {
+        <div class="notice" role="status">@Text.WaitlistJoined</div>
+    }
+    <p><a href="@Model.BackUrl">@Text.WaitlistBack</a></p>
+</div>
+
+@if (!Model.Joined)
+{
+<div class="card">
+    <h2>@Text.BookYourDetails</h2>
+    <p class="hint">@Text.WaitlistIntro(Model.Service.Name, Model.DayText)</p>
+    <form method="post" novalidate>
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="alert" role="alert">@(Model.ErrorFor("policy") ?? Text.ValidationFailed)</div>
+        }
+        <input type="hidden" name="Input.ServiceId" value="@Model.Service.Id" />
+        <input type="hidden" name="Input.StaffId" value="@Model.Staff?.Id" />
+        <input type="hidden" name="Input.Date" value="@DisplayFormat.DateParam(Model.Day)" />
+
+        <div class="field">
+            <label for="Name">@Text.BookLabelName</label>
+            <input type="text" id="Name" name="Input.Name" value="@Model.Input.Name" maxlength="80" autocomplete="name"
+                   aria-invalid="@(Model.ErrorFor("name") is null ? "false" : "true")" aria-describedby="Name-error" />
+            @if (Model.ErrorFor("name") is { } e1) { <p class="error" id="Name-error">@e1</p> }
+        </div>
+
+        <div class="field">
+            <label for="Phone">@Text.BookLabelPhone</label>
+            <input type="tel" id="Phone" name="Input.Phone" value="@Model.Input.Phone" maxlength="20" autocomplete="tel" inputmode="tel"
+                   aria-invalid="@(Model.ErrorFor("phone") is null ? "false" : "true")" aria-describedby="Phone-hint Phone-error" />
+            <p class="hint" id="Phone-hint">@Text.BookHintPhone</p>
+            @if (Model.ErrorFor("phone") is { } e2) { <p class="error" id="Phone-error">@e2</p> }
+        </div>
+
+        <div class="field">
+            <label for="Email">@Text.WaitlistEmailLabel</label>
+            <input type="email" id="Email" name="Input.Email" value="@Model.Input.Email" maxlength="120" autocomplete="email"
+                   aria-invalid="@(Model.ErrorFor("email") is null ? "false" : "true")" aria-describedby="Email-error" />
+            @if (Model.ErrorFor("email") is { } e3) { <p class="error" id="Email-error">@e3</p> }
+        </div>
+
+        <p class="hint">@Text.BookPrivacy <a href="/Privacy" target="_blank" rel="noopener">@Text.PrivacyLink</a></p>
+        <partial name="_Captcha" />
+        @if (Model.ErrorFor("captcha") is { } captchaError) { <p class="error">@captchaError</p> }
+        <div class="hp" aria-hidden="true"><label for="Website">Website</label><input type="text" id="Website" name="Input.Website" tabindex="-1" autocomplete="off" /></div>
+        <button type="submit" class="primary once" data-confirm="@Text.WaitlistConfirmAsk">@Text.WaitlistSubmit</button>
+    </form>
+</div>
+}
+</div>
