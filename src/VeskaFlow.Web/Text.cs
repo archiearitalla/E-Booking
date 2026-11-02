@@ -119,6 +119,8 @@ public static class Text
     public const string BookAnotherDate = "Pick another date";
     public const string BookAvailableTimes = "Available times on";
     public const string BookNoTimes = "No times are available on this day. Try another date.";
+    public static string BookStaffNoTimes(string name) => $"{name} has no free time on this day, but other people do.";
+    public const string BookShowAnyone = "Show times with anyone available";
     public const string BookPickService = "Choose a service to see available times.";
     public const string BookTaken = "That time was just taken. Please choose another time below.";
     public const string BookStaffMismatch = "That person does not offer this service. Choose someone else or any available.";
@@ -309,6 +311,7 @@ public static class Text
     public const string WaitlistTitle = "Notify me if a time opens";
     public const string WaitlistLink = "Notify me if a time opens";
     public const string WaitlistLinkHint = "This day is full. Leave your details and the shop will tell you if a time opens up.";
+    public static string WaitlistLinkHintStaff(string name) => $"Want to wait for {name}? Leave your details and the shop will tell you if a time opens up.";
     public static string WaitlistIntro(string service, string day) => $"Leave your details for {service} on {day}. If a time opens up, the shop will contact you. If you give an email, you also get one email when a time opens.";
     public const string WaitlistEmailLabel = "Email (optional, for one message when a time opens)";
     public const string WaitlistSubmit = "Join the waitlist";
@@ -571,7 +574,7 @@ public static class Text
     public const string KpiDetailsClose = "Close the list";
     public const string KpiDone = "Done";
     public const string KpiRevenue = "Earned";
-    public const string KpiNoShows = "No-shows";
+    public const string KpiNoShows = "No‑shows"; // a non-breaking hyphen, so the label does not split in two on a narrow phone
     public const string KpiCancelled = "Cancelled";
     public const string PlatformBackupTitle = "Database backup";
     public const string PlatformBackupHint = "A copy of everything is made every night (encrypted) and kept on GitHub for 14 days. Once a month, download one and keep it on your own drive: open the link, pick the newest green run, and download veskaflow-backup under Artifacts. The passphrase is in your password manager.";

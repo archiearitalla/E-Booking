@@ -28,6 +28,10 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking, Logo
     public string? Notice { get; private set; }
     public IReadOnlyList<DateTime> Times { get; private set; } = [];
 
+    /// <summary>Set when the chosen staff member has no free time that day but someone else does: the page says so and offers "anyone available".</summary>
+    public string? PickedStaffName { get; private set; }
+    public bool OthersFree => PickedStaffName is not null;
+
     /// <summary>A date typed in "Pick another date" beyond the strip wins over the strip.</summary>
     [BindProperty(SupportsGet = true)] public DateOnly? Other { get; set; }
 
@@ -69,7 +73,15 @@ public class IndexModel(ShopCatalogService catalog, BookingService booking, Logo
             return Page();
         }
         var result = await booking.GetFreeStartsAsync(Shop.Id, service.Id, StaffId, SelectedDate, walkIn: false, ct);
-        if (result.IsSuccess) Times = result.Value!;
+        if (result.IsSuccess)
+        {
+            Times = result.Value!;
+            if (Times.Count == 0 && StaffId is not null && Shop.FindStaff(StaffId) is { } picked)
+            {
+                var anyone = await booking.GetFreeStartsAsync(Shop.Id, service.Id, null, SelectedDate, walkIn: false, ct);
+                if (anyone.IsSuccess && anyone.Value!.Count > 0) PickedStaffName = picked.Name;
+            }
+        }
         else Notice = Text.BookStaffMismatch;
         return Page();
     }

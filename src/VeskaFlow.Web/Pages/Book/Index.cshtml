@@ -150,10 +150,20 @@
         }
         else if (Model.Times.Count == 0)
         {
-            <p>@Text.BookNoTimes</p>
+            @if (Model.OthersFree)
+            {
+                @* The chosen person is off or fully booked that day but the shop is not: say so and offer everyone else, instead of "no times". *@
+                <p>@Text.BookStaffNoTimes(Model.PickedStaffName!)</p>
+                <p><a class="button" asp-page="/Book/Index" asp-route-slug="@shop.Slug" asp-route-serviceId="@Model.ServiceId"
+                      asp-route-serviceNote="@Model.ServiceNote" asp-route-date="@DisplayFormat.DateParam(Model.SelectedDate)">@Text.BookShowAnyone</a></p>
+            }
+            else
+            {
+                <p>@Text.BookNoTimes</p>
+            }
             @if (shop.FindService(Model.ServiceId) is { IsOther: false })
             {
-                <p class="hint">@Text.WaitlistLinkHint</p>
+                <p class="hint">@(Model.OthersFree ? Text.WaitlistLinkHintStaff(Model.PickedStaffName!) : Text.WaitlistLinkHint)</p>
                 <p><a class="button secondary" asp-page="/Book/Waitlist" asp-route-slug="@shop.Slug" asp-route-serviceId="@Model.ServiceId"
                       asp-route-staffId="@Model.StaffId" asp-route-date="@DisplayFormat.DateParam(Model.SelectedDate)">@Text.WaitlistLink</a></p>
             }
