@@ -51,7 +51,7 @@ public class WalkthroughTests
         var noLink = WalkthroughGuide.Sections.SelectMany(s => s.Items).Single(i => i.Id == "w-offer-2").Copy!;
         Assert.DoesNotContain("veskacode.com", noLink);
         Assert.DoesNotContain("http", noLink);
-        Assert.Contains("a service, a staff and a time", noLink);                                                            // not "barber": the message fits any kind of shop
+        Assert.Contains("a service, a staff member and a time", noLink);                                                            // not "barber": the message fits any kind of shop
         Assert.DoesNotContain("barber", noLink);
         Assert.Contains("phone number", noLink);                                                                            // asks for their number instead
         Assert.DoesNotContain("pilot-check", page);                                                                      // no tick buttons
