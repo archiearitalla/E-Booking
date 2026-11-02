@@ -47,7 +47,12 @@ public class WalkthroughTests
         Assert.Contains("Offering VeskaFlow to a shop owner", page);
         Assert.Contains("Do you take bookings by message or phone call?", page);                                            // the ready message
         Assert.Contains("data-copy=\"copy-w-offer-1\"", page);                                                               // with its Copy button
-        Assert.DoesNotContain("pilot-check", page);                                                                        // no tick buttons
+        Assert.Contains("data-copy=\"copy-w-offer-2\"", page);                                                               // and the one without a link
+        var noLink = WalkthroughGuide.Sections.SelectMany(s => s.Items).Single(i => i.Id == "w-offer-2").Copy!;
+        Assert.DoesNotContain("veskacode.com", noLink);
+        Assert.DoesNotContain("http", noLink);
+        Assert.Contains("phone number", noLink);                                                                             // asks for their number instead
+        Assert.DoesNotContain("pilot-check", page);                                                                      // no tick buttons
         Assert.Contains("href=\"/Platform/Walkthroughs\"", WebUtility.HtmlDecode(await boss.GetStringAsync("/Platform")));
     }
 }
