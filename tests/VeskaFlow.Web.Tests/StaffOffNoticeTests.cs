@@ -42,7 +42,7 @@ public class StaffOffNoticeTests
         Assert.DoesNotContain(Text.BookNoTimes, off);
         Assert.DoesNotContain("class=\"slot\"", off);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(off, "person-off"));                       // only Staff 1's chip is marked
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(off, System.Text.RegularExpressions.Regex.Escape(Text.BookStaffNoTimeTag)).Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(off, System.Text.RegularExpressions.Regex.Escape(Text.BookStaffNoTimeTag)));
 
         // The second person is free: times are listed and there is no such notice.
         var (free, _) = await LoadAsync(client, slug, shop.ServiceId, shop.StaffIds[1], day);
