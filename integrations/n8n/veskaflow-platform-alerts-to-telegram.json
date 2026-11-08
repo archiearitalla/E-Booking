@@ -1,0 +1,182 @@
+{
+  "name": "VeskaFlow - platform alerts to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "veskaflow-platform",
+        "responseMode": "onReceived",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "32667019-d36f-5fcb-8c55-b54716ac71ab",
+      "name": "VeskaFlow Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "6f1d3c52-0a1e-4c55-9a52-0d9c1d2e7a02"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reads the request VeskaFlow sent, and prepares the text that was signed.\nconst item = $input.first();\nlet raw;\nif (item.binary && item.binary.data) {\n  // The Webhook node's \"Raw Body\" option keeps the exact bytes VeskaFlow signed.\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} else {\n  raw = JSON.stringify(item.json.body);\n}\nconst headers = item.json.headers || {};\nconst timestamp = headers['x-veskaflow-timestamp'] || '';\nconst ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));\nreturn [{\n  json: {\n    signedString: timestamp + '.' + raw,\n    signature: headers['x-veskaflow-signature'] || '',\n    fresh: ageSeconds < 300,\n    event: headers['x-veskaflow-event'] || '',\n    delivery: headers['x-veskaflow-delivery'] || '',\n    payload: JSON.parse(raw),\n  },\n}];"
+      },
+      "id": "fd69c7a6-07d5-5cac-aad8-d59a86861938",
+      "name": "Check input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.signedString }}",
+        "dataPropertyName": "computed",
+        "secret": "PASTE_THE_SECRET_FROM_VESKAFLOW",
+        "encoding": "hex"
+      },
+      "id": "91fe5f23-0f45-5202-9c27-da9cf04cbeb0",
+      "name": "Compute signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ 'sha256=' + $json.computed }}",
+              "value2": "={{ $('Check input').first().json.signature }}"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ $('Check input').first().json.fresh }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "21b6e437-5e10-5931-94f2-2926d5cc0bff",
+      "name": "Signature is valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns a platform event (for the VeskaFlow platform owner) into a short message.\nconst p = $('Check input').first().json.payload;\nconst e = p.event;\nconst d = p.data || {};\nconst shop = d.shop ? d.shop.name : '';\nconst pay = d.payment || {};\nconst owner = d.owner || {};\nconst lines = {\n  'payment.submitted': 'Payment waiting: ' + shop + '\\n' + pay.kind + ' ' + pay.period + ', PHP ' + pay.amount + '\\nGCash ref: ' + pay.reference + '\\nConfirm it in /Platform/Payments',\n  'payment.confirmed': 'Payment confirmed: ' + shop + '\\n' + pay.kind + ' ' + pay.period + ', PHP ' + pay.amount + '\\nReceipt: ' + pay.receiptNo,\n  'shop.signed_up': 'New shop signed up: ' + (d.shop ? d.shop.name : '') + '\\nOwner: ' + owner.name + ' (' + owner.email + ')' + (d.needsApproval ? '\\nWaiting for your approval' : ''),\n  'test.ping': 'VeskaFlow test: the connection works.',\n};\nreturn [{ json: { text: lines[e] || ('VeskaFlow event: ' + e) } }];"
+      },
+      "id": "34739e23-14ef-5f75-bbbe-309c5affb5f6",
+      "name": "Make the message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "PASTE_YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e7839419-681a-5c1b-9c11-782771dea2bd",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        220
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "SELECT_YOUR_TELEGRAM_CREDENTIAL",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "VeskaFlow Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check input": {
+      "main": [
+        [
+          {
+            "node": "Compute signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute signature": {
+      "main": [
+        [
+          {
+            "node": "Signature is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature is valid?": {
+      "main": [
+        [
+          {
+            "node": "Make the message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Make the message": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

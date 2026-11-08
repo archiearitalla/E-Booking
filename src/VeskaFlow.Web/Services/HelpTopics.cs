@@ -212,6 +212,17 @@ public static class HelpTopics
             ],
             "Paying for a year costs less than twelve months. If your access has ended, you can still open this page to pay and your data is kept.", "/Admin/Billing", "Open Plan and billing", AdminLevel.Owner),
 
+        new("integrations", "Integrations: connect n8n and other tools",
+            "Let VeskaFlow tell another tool when something happens in your shop, so a workflow can send a message or fill a sheet.",
+            [
+                "In n8n, make a workflow that starts with a Webhook node (method POST) and copy its production address.",
+                "Open Integrations in VeskaFlow, paste the address, tick Send events and press Save.",
+                "Copy the Secret and paste it into your workflow. It is how your workflow checks that an event really came from VeskaFlow.",
+                "Press Send a test event. If it says the test was received, you are connected.",
+                "From now on a booking, a cancellation, a completed visit and other events are sent to your workflow. Latest deliveries shows what was sent and whether it worked.",
+            ],
+            "Events carry your customers' names, phones and emails. Connect only tools you trust. If a delivery fails, VeskaFlow tries again a few times.", "/Admin/Integrations", "Open Integrations", AdminLevel.Owner),
+
         new("team", "Team: who can sign in",
             "Give your staff their own login with the right level of access.",
             [
