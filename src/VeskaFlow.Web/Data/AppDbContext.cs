@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AiUsage> AiUsages => Set<AiUsage>();
     public DbSet<AiUsageDay> AiUsageDays => Set<AiUsageDay>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
     public DbSet<AiChat> AiChats => Set<AiChat>();
     public DbSet<PlatformImage> PlatformImages => Set<PlatformImage>();
     public DbSet<Blackout> Blackouts => Set<Blackout>();

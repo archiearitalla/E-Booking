@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace VeskaFlow.Web.Pages;
 
 [EnableRateLimiting(RateLimitPolicies.Auth)]
-public class RegisterModel(OnboardingService onboarding, AccountControlService accounts, IConfiguration config, ICaptcha captcha) : FormPageModel
+public class RegisterModel(OnboardingService onboarding, AccountControlService accounts, IConfiguration config, ICaptcha captcha, WebhookService webhooks) : FormPageModel
 {
     /// <summary>Trial length in days for new sign-ups. 0 turns trials off (for example on a dedicated deployment).</summary>
     private int TrialDays => config.GetValue("Trial:Days", 0);
@@ -53,6 +53,14 @@ public class RegisterModel(OnboardingService onboarding, AccountControlService a
             Input.Password = null; // never echo a password back
             return Page();
         }
+
+        // The platform owner's webhook hears about every new shop (nothing happens when it is not set up).
+        await webhooks.EnqueuePlatformAsync("shop.signed_up", new
+        {
+            shop = new { id = result.Value!.BusinessId, slug = result.Value.Slug, name = Input.BusinessName?.Trim(), industry = Input.Industry },
+            owner = new { name = result.Value.DisplayName, email = result.Value.Email },
+            needsApproval = !result.Value.Enabled,
+        }, ct);
 
         // The owner must prove the email address first: send the link and stop here (no sign-in yet).
         if (result.Value!.ConfirmationToken is { } token)

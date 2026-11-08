@@ -597,6 +597,19 @@ The shop can send its running promo to customers, but only to those who **said y
 
 - **Not built:** automatic payment by a gateway (PayMongo, Xendit), automatic renewal or reminders to pay by email (the existing access-ending emails remain), invoices with tax, refunds, a public pricing page, coupons, and a downgrade to a free plan after the trial.
 
+### 6.y24 Outgoing webhooks (n8n and other tools)
+
+VeskaFlow can post **events** to a web address, so a tool such as n8n can start a workflow (send a message, fill a sheet). VeskaFlow only sends; the receiving tool decides what to do. Samples and the full request format are in `integrations/n8n/`.
+
+- **A shop** (Owner level, **Integrations** page): the address, a switch (off by default) and a secret made by the system (`business.webhook_url`, `webhook_secret`, `webhook_enabled`, migration 040). A **test event** can be sent at once, the secret can be replaced, and the last 20 deliveries are shown.
+- **The platform owner** has one address and secret in settings (`Webhooks:PlatformUrl`, `Webhooks:PlatformSecret`, at least 16 characters), for `payment.submitted`, `payment.confirmed` and `shop.signed_up`. Nothing happens when they are not set.
+- **Events of a shop**, made from its audit log by a worker that runs every 10 seconds: `booking.created`, `booking.confirmed`, `booking.cancelled`, `booking.completed`, `booking.no_show`, `booking.rescheduled`, `sale.recorded` (and `test.ping`). One audit row makes one event (`webhook_event.source_audit_id` is unique). Only changes made after the switch was turned on are sent: history is never replayed. Each event carries the booking (status, service, staff, times in UTC and local, prices, payment, the reason for a cancellation) and the customer's name, phone (not a walk-in placeholder) and email. **Never sent:** medical records, the manage link, passwords.
+- **Signed.** Every request has `X-VeskaFlow-Event`, `X-VeskaFlow-Delivery` (the event id, the same on a retry), `X-VeskaFlow-Timestamp` and `X-VeskaFlow-Signature: sha256=` plus the hex HMAC-SHA256 of `timestamp + "." + body` with the secret. The receiver checks the signature and rejects an old timestamp.
+- **Retries.** An answer other than 2xx, or no answer within 8 seconds, is tried again after 1 minute, 5 minutes, 30 minutes, 2 hours and 6 hours, then the event is marked failed. A slow or broken receiver never slows or breaks a booking: events wait in an outbox. Delivered events are removed after a week and failed ones after a month. The events of a deleted shop are dropped.
+- **Safe addresses only.** The address must be **https**, public, with no user name or password, not `localhost`, `.local`, `.internal` or a bare name. The server resolves the name itself and connects only to a **public** address (never loopback, private, link-local, shared, multicast or reserved ranges, IPv4 or IPv6), follows no redirects, and never puts the address or the secret in a log.
+- **Privacy.** The tool a shop connects holds that shop's customers' details, so the page says so. A workflow that messages customers still follows the promo consent rules (6.y21).
+- **Not built:** an API the other tool can call (read or change bookings), a webhook for the AI chat, per-event choices, and automatic switching off after many failures.
+
 ### 6.z Who may use the system
 
 - A new owner must confirm the email address before signing in (`Signup:RequireEmailConfirmation`, default on). The link carries a random token; only its SHA-256 is stored; it works once and expires after 48 hours. Signing in with the right password before confirming says why and offers to send the link again; a wrong password gets the one generic message. "Send again" answers the same for any address and only mails an account that is waiting.

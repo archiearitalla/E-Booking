@@ -52,6 +52,8 @@ Rules for code: business logic lives in services (never in pages); Core has no N
 
 **Platform tools:** shop list as summary lines with search, expiry dates and a heads-up when a client's access ends soon, subscription table per shop, payments, AI usage.
 
+**Integrations:** outgoing signed webhooks (Integrations page, `integrations/n8n/` samples) so n8n or another tool can react to bookings; no API for the other tool to call yet.
+
 **Other:** in-app Help and guide (topic per feature, `HelpTopics.cs`), Privacy Notice and Terms pages, email confirmation and password reset, customer data export and erase (Data Privacy Act), reports (revenue, promo discounts given), PWA basics, QR code for the booking page.
 
 ## 5. Configuration (names only; values are in Render, never in git)

@@ -1,0 +1,182 @@
+{
+  "name": "VeskaFlow - shop events to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "veskaflow-shop",
+        "responseMode": "onReceived",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "77756fc5-165b-5408-9c05-53afb797398c",
+      "name": "VeskaFlow Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "6f1d3c52-0a1e-4c55-9a52-0d9c1d2e7a01"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reads the request VeskaFlow sent, and prepares the text that was signed.\nconst item = $input.first();\nlet raw;\nif (item.binary && item.binary.data) {\n  // The Webhook node's \"Raw Body\" option keeps the exact bytes VeskaFlow signed.\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} else {\n  raw = JSON.stringify(item.json.body);\n}\nconst headers = item.json.headers || {};\nconst timestamp = headers['x-veskaflow-timestamp'] || '';\nconst ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));\nreturn [{\n  json: {\n    signedString: timestamp + '.' + raw,\n    signature: headers['x-veskaflow-signature'] || '',\n    fresh: ageSeconds < 300,\n    event: headers['x-veskaflow-event'] || '',\n    delivery: headers['x-veskaflow-delivery'] || '',\n    payload: JSON.parse(raw),\n  },\n}];"
+      },
+      "id": "846bc78c-70b4-5e64-a292-0d9b2ce26fe5",
+      "name": "Check input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.signedString }}",
+        "dataPropertyName": "computed",
+        "secret": "PASTE_THE_SECRET_FROM_VESKAFLOW",
+        "encoding": "hex"
+      },
+      "id": "a3bb6386-f283-5c43-86e4-f2ab9aa18625",
+      "name": "Compute signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ 'sha256=' + $json.computed }}",
+              "value2": "={{ $('Check input').first().json.signature }}"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ $('Check input').first().json.fresh }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "07974901-cab1-5275-b077-4243982c2736",
+      "name": "Signature is valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns a VeskaFlow shop event into a short message. Change the wording here.\nconst p = $('Check input').first().json.payload;\nconst e = p.event;\nconst b = p.data.booking || {};\nconst c = p.data.customer || {};\nconst shop = p.shop ? p.shop.name : '';\nconst who = c.name + (c.phone ? ' (' + c.phone + ')' : '');\nconst when = b.startsAtLocal || '';\nconst lines = {\n  'booking.created': 'New booking at ' + shop + '\\n' + who + '\\n' + b.service + ' with ' + b.staff + '\\n' + when + '\\nPrice: PHP ' + b.price,\n  'booking.confirmed': 'Booking confirmed at ' + shop + '\\n' + who + '\\n' + b.service + ', ' + when,\n  'booking.cancelled': 'Booking cancelled at ' + shop + '\\n' + who + '\\n' + b.service + ', ' + when + (b.reason ? '\\nReason: ' + b.reason : ''),\n  'booking.completed': 'Visit done at ' + shop + '\\n' + who + '\\n' + b.service + (b.paidAmount != null ? '\\nPaid: PHP ' + b.paidAmount : ''),\n  'booking.no_show': 'No-show at ' + shop + '\\n' + who + '\\n' + b.service + ', ' + when,\n  'booking.rescheduled': 'Booking moved at ' + shop + '\\n' + who + '\\n' + b.service + ', now ' + when,\n  'sale.recorded': 'Sale recorded at ' + shop + '\\n' + who + '\\n' + b.service + '\\nPaid: PHP ' + b.paidAmount,\n  'test.ping': 'VeskaFlow test: the connection works.',\n};\nreturn [{ json: { text: lines[e] || ('VeskaFlow event: ' + e) } }];"
+      },
+      "id": "8d65b5fc-8a75-5649-b631-d4a541a2e228",
+      "name": "Make the message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "PASTE_YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f1c225e7-e501-55e3-9b76-c92ad5f25d7f",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        220
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "SELECT_YOUR_TELEGRAM_CREDENTIAL",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "VeskaFlow Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check input": {
+      "main": [
+        [
+          {
+            "node": "Compute signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute signature": {
+      "main": [
+        [
+          {
+            "node": "Signature is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature is valid?": {
+      "main": [
+        [
+          {
+            "node": "Make the message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Make the message": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

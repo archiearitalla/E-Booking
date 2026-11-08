@@ -16,7 +16,7 @@ public sealed record PaymentTotals(DateOnly Month, decimal Total, int Count, IRe
 /// by the client. The platform owner can also record a payment by hand (cash, Messenger, a discount). A payment is decided once. Every client query is scoped
 /// by the caller's business id.
 /// </summary>
-public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, PricingInfo pricing)
+public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, PricingInfo pricing, WebhookService? webhooks = null)
 {
     public const int MaxPending = 5;
 
@@ -65,6 +65,7 @@ public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFac
         };
         db.Payments.Add(payment);
         await db.SaveChangesAsync(ct);
+        await NotifyAsync("payment.submitted", payment, null, ct);
         return ServiceResult<Guid>.Ok(payment.Id);
     }
 
@@ -114,7 +115,24 @@ public sealed partial class PaymentService(IDbContextFactory<AppDbContext> dbFac
         var receipt = await ApplyAsync(db, payment, decidedBy);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        await NotifyAsync("payment.confirmed", payment, receipt, ct);
         return ServiceResult<string>.Ok(receipt);
+    }
+
+    /// <summary>Tells the platform owner's webhook (if set up) about a payment. Never fails the payment.</summary>
+    private async Task NotifyAsync(string eventName, Payment p, string? receipt, CancellationToken ct)
+    {
+        if (webhooks is null) return;
+        try
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(ct);
+            var shop = await db.Businesses.AsNoTracking().Where(b => b.Id == p.BusinessId).Select(b => new { b.Id, b.Name, b.Slug }).FirstOrDefaultAsync(ct);
+            await webhooks.EnqueuePlatformAsync(eventName, new
+            {
+                shop, payment = new { id = p.Id, kind = p.Kind, period = p.Period, amount = p.Amount, reference = p.Reference, byHand = p.ByHand, receiptNo = receipt ?? p.ReceiptNo },
+            }, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { /* a webhook problem never blocks billing */ }
     }
 
     public async Task<ServiceResult<bool>> RejectAsync(Guid paymentId, string? reason, string decidedBy, CancellationToken ct = default)

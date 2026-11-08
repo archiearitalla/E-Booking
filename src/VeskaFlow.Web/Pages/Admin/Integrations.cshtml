@@ -1,0 +1,94 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.IntegrationsModel
+@{
+    ViewData["Title"] = Text.IntegrationsTitle;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<h1>@Text.IntegrationsTitle</h1>
+<partial name="_HelpLink" model="@("integrations")" />
+<p class="muted">@Text.IntegrationsIntro</p>
+
+<div class="card">
+    <h2>@Text.IntegrationsAddress</h2>
+    <form method="post" asp-page-handler="Save">
+        <div class="field">
+            <label for="url">@Text.IntegrationsUrlLabel</label>
+            <input type="text" id="url" name="Input.Url" value="@Model.Input.Url" maxlength="300" inputmode="url" autocomplete="off" placeholder="https://n8n.example.com/webhook/veskaflow" />
+            @if (Model.ErrorFor("url") is { } e) { <p class="error">@e</p> }
+        </div>
+        <label class="choice">
+            <input type="checkbox" name="Input.Enabled" value="true" checked="@Model.Input.Enabled" />
+            <span><strong>@Text.IntegrationsEnable</strong> <span class="muted">@Text.IntegrationsEnableHint</span></span>
+        </label>
+        <input type="hidden" name="Input.Enabled" value="false" />
+        <button type="submit" class="primary">@Text.IntegrationsSave</button>
+    </form>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Settings.Secret))
+{
+    <div class="card">
+        <h2>@Text.IntegrationsSecret</h2>
+        <p class="hint">@Text.IntegrationsSecretHint</p>
+        <div class="field">
+            <label for="secret" class="sr-only">@Text.IntegrationsSecret</label>
+            <input type="text" id="secret" readonly value="@Model.Settings.Secret" />
+        </div>
+        <div class="actions">
+            <button type="button" class="secondary" data-copy="secret" data-copied="@Text.FollowUpCopied">@Text.IntegrationsCopySecret</button>
+            <form method="post" asp-page-handler="Regenerate">
+                <button type="submit" class="secondary" data-confirm="@Text.IntegrationsRegenerateAsk">@Text.IntegrationsRegenerate</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>@Text.IntegrationsTest</h2>
+        <p class="hint">@Text.IntegrationsTestHint</p>
+        <form method="post" asp-page-handler="Test">
+            <button type="submit" class="secondary">@Text.IntegrationsTestButton</button>
+        </form>
+    </div>
+}
+
+<div class="card">
+    <h2>@Text.IntegrationsEvents</h2>
+    <ul class="help-steps">
+        <li><code>booking.created</code> @Text.IntegrationsEvCreated</li>
+        <li><code>booking.confirmed</code> @Text.IntegrationsEvConfirmed</li>
+        <li><code>booking.cancelled</code> @Text.IntegrationsEvCancelled</li>
+        <li><code>booking.completed</code> @Text.IntegrationsEvCompleted</li>
+        <li><code>booking.no_show</code> @Text.IntegrationsEvNoShow</li>
+        <li><code>booking.rescheduled</code> @Text.IntegrationsEvRescheduled</li>
+        <li><code>sale.recorded</code> @Text.IntegrationsEvSale</li>
+    </ul>
+    <p class="hint">@Text.IntegrationsPrivacy</p>
+</div>
+
+<div class="card">
+    <h2>@Text.IntegrationsRecent</h2>
+    @if (Model.Recent.Count == 0)
+    {
+        <p class="muted">@Text.IntegrationsNoneYet</p>
+    }
+    else
+    {
+        <ul class="kpi-list">
+            @foreach (var r in Model.Recent)
+            {
+                <li>
+                    <details>
+                        <summary>
+                            <span class="kpi-time"><span class="badge @(r.Status == "DELIVERED" ? "" : "off")">@r.Status.ToLowerInvariant()</span></span>
+                            <span class="kpi-who">@r.Event</span>
+                            <span class="kpi-what muted">@r.CreatedAtUtc.ToString("MMM d, h:mm tt", inv) UTC</span>
+                        </summary>
+                        <div class="kpi-more">
+                            <p class="muted">@Text.IntegrationsAttempts(r.Attempts)@(r.LastStatusCode is { } code ? " · HTTP " + code : "")@(string.IsNullOrEmpty(r.LastError) ? "" : " · " + r.LastError)</p>
+                        </div>
+                    </details>
+                </li>
+            }
+        </ul>
+    }
+</div>

@@ -24,6 +24,10 @@ public class Business
     public bool AllowManualTotal { get; set; } = true;
     /// <summary>Is the "Record a sale" page switched on? Off by default (migration 027).</summary>
     public bool AllowManualSales { get; set; }
+    /// <summary>Where the shop's events are posted, and the secret that signs them (migration 040). Off until the owner switches it on.</summary>
+    public string? WebhookUrl { get; set; }
+    public string? WebhookSecret { get; set; }
+    public bool WebhookEnabled { get; set; }
     /// <summary>Set while the shop's promo email is being sent in the background (migration 030).</summary>
     public DateTime? PromoEmailStartedAtUtc { get; set; }
     /// <summary>This shop's own AI limits (migration 028); null uses the default from settings.</summary>
@@ -356,6 +360,23 @@ public class Payment
     public string? ReceiptNo { get; set; }
     /// <summary>For kind STAFF: how many extra staff, in total, this payment is for (migration 036). 1 for the other kinds.</summary>
     public int Quantity { get; set; } = 1;
+}
+
+/// <summary>An event waiting to be posted to a webhook, or already delivered (migration 040). <c>BusinessId</c> null means a platform event.</summary>
+public class WebhookEvent
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid? BusinessId { get; set; }
+    public string Event { get; set; } = "";
+    public string Payload { get; set; } = "";
+    public string Status { get; set; } = "PENDING";
+    public int Attempts { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime NextAttemptAtUtc { get; set; }
+    public DateTime? DeliveredAtUtc { get; set; }
+    public int? LastStatusCode { get; set; }
+    public string? LastError { get; set; }
+    public long? SourceAuditId { get; set; }
 }
 
 /// <summary>One customer conversation with the AI receptionist (migration 021). The transcript is JSON text of what was said, nothing else.</summary>
