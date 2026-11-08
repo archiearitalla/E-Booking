@@ -130,6 +130,33 @@ public class CustomerEmailTests
         // The reserve is still there for the owners.
         for (var i = 0; i < 4; i++) Assert.True(await counted.SendAsync("owner@example.com", "Hello", "Body"));
         Assert.Equal(10, await c.Quota.TodayTotalAsync());
+
+        // The day's limit is a hard stop for the system's own emails too: nothing more goes out and nothing more is counted.
+        Assert.False(await counted.SendAsync("owner@example.com", "Hello", "Body"));
+        Assert.Equal(10, await c.Quota.TodayTotalAsync());
+    }
+
+    [Fact]
+    public async Task All_emails_together_never_pass_the_days_limit_and_trial_shops_stay_inside_the_free_pool()
+    {
+        // Brevo's free plan: 300 a day. The numbers here are the real defaults.
+        var c = await SetupAsync(Config()); // limit 300, owner reserve 40, paid reserve 100, free shop 30
+        Assert.Equal(300, c.Quota.DailyLimit);
+        Assert.Equal(260, c.Quota.CustomerCap);   // the most all customer emails get
+        Assert.Equal(160, c.Quota.FreePoolCap);   // the most free and trial shops get, all together
+
+        // Many sign-ups at once: the system's own emails stop at the limit, whatever the shops did.
+        var counted = new CountedEmailSender(c.Sender, c.Quota);
+        var sent = 0;
+        for (var i = 0; i < 320; i++) if (await counted.SendAsync("owner@example.com", "Confirm", "Body")) sent++;
+        Assert.Equal(300, sent);
+        Assert.Equal(300, await c.Quota.TodayTotalAsync());
+        Assert.Equal(300, c.Sender.Sent.Count);
+
+        // And no shop (trial or not) can send a customer email once the day is full.
+        var (shop, booking) = await BookingAsync(c, "late@example.com");
+        Assert.Equal(MailResult.PoolLimit, await c.Mailer.SendConfirmationAsync(shop.BusinessId, booking.Id, "https://x.example.com"));
+        Assert.Equal(300, await c.Quota.TodayTotalAsync());
     }
 
     [Fact]

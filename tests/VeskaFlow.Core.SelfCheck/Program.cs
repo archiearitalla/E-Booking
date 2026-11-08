@@ -185,6 +185,16 @@ Console.WriteLine("Policy");
         BookingPolicy.CanCancel(BookingStatus.Confirmed, start, start.AddHours(-1), ActorKind.Staff, 2).Allowed);
     Check("nobody cancels a COMPLETED booking",
         !BookingPolicy.CanCancel(BookingStatus.Completed, start, start.AddHours(-9), ActorKind.Staff, 2).Allowed);
+    Check("customer moves 5h before, cutoff 2h -> allowed",
+        BookingPolicy.CanReschedule(BookingStatus.Confirmed, start, start.AddHours(-5), ActorKind.Customer, 2).Allowed);
+    Check("customer moves 1h before, cutoff 2h -> rejected",
+        !BookingPolicy.CanReschedule(BookingStatus.Confirmed, start, start.AddHours(-1), ActorKind.Customer, 2).Allowed);
+    Check("staff moves 1h before -> allowed, after start -> rejected",
+        BookingPolicy.CanReschedule(BookingStatus.Confirmed, start, start.AddHours(-1), ActorKind.Staff, 2).Allowed
+        && !BookingPolicy.CanReschedule(BookingStatus.Confirmed, start, start.AddMinutes(1), ActorKind.Staff, 2).Allowed);
+    Check("only a confirmed booking can be moved",
+        !BookingPolicy.CanReschedule(BookingStatus.Cancelled, start, start.AddHours(-9), ActorKind.Staff, 2).Allowed
+        && !BookingPolicy.CanReschedule(BookingStatus.Completed, start, start.AddHours(-9), ActorKind.Customer, 2).Allowed);
     Check("cannot complete before start",
         !BookingPolicy.CanMarkCompleted(BookingStatus.Confirmed, start, start.AddMinutes(-1)).Allowed);
     Check("can complete after start",

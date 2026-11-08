@@ -87,6 +87,9 @@ public sealed class CountedEmailSender(IEmailSender inner, EmailQuota quota) : I
 
     public async Task<bool> SendAsync(string to, string subject, string textBody, string? htmlBody = null, CancellationToken ct = default)
     {
+        // The day's limit is a hard stop for everything, the system's own emails included (many sign-ups must not push the day over
+        // what the email service allows). Nothing is sent; the caller treats it like any email the service did not accept.
+        if (await quota.TodayTotalAsync(ct) >= quota.DailyLimit) return false;
         var ok = await inner.SendAsync(to, subject, textBody, htmlBody, ct);
         if (ok) await quota.CountAsync(EmailQuota.SystemId, ct);
         return ok;

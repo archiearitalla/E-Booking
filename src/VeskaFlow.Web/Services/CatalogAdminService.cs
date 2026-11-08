@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record ServiceRow(Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null, bool IsOther = false, bool PromoEligible = true);
+public sealed record ServiceRow(Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null, bool IsOther = false, bool PromoEligible = true, decimal DepositAmount = 0);
 
-public sealed record ServiceInput(Guid? Id, string? Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null, bool PromoEligible = true);
+public sealed record ServiceInput(Guid? Id, string? Name, int DurationMinutes, int BufferMinutes, decimal Price, bool IsActive, int SortOrder, int? FollowUpDays = null, bool PromoEligible = true, decimal DepositAmount = 0);
 
 public sealed record StaffRow(Guid Id, string Name, bool IsActive, int SortOrder, IReadOnlyList<string> ServiceNames);
 
@@ -40,7 +40,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Services.AsNoTracking().Where(s => s.BusinessId == businessId && s.Id == id)
-            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays, s.IsOther, s.PromoEligible))
+            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays, s.IsOther, s.PromoEligible, s.DepositAmount))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -54,6 +54,8 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         if (input.Price < 0 || input.Price > 1_000_000m) errors["price"] = Text.PriceInvalid;
         if (input.SortOrder is < 0 or > 1000) errors["sortOrder"] = Text.SortOrderInvalid;
         if (input.FollowUpDays is < 1 or > 730) errors["followUpDays"] = Text.FollowUpDaysInvalid;
+        // A deposit is part of the price, so it can never be more than the price (a free service has none).
+        if (input.DepositAmount < 0 || input.DepositAmount > input.Price) errors["deposit"] = Text.DepositInvalid;
         if (errors.Count > 0) return ServiceResult<Guid>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -78,6 +80,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         service.SortOrder = input.SortOrder;
         service.FollowUpDays = input.FollowUpDays;
         service.PromoEligible = input.PromoEligible;
+        service.DepositAmount = Math.Round(input.DepositAmount, 2);
         await db.SaveChangesAsync(ct);
         return ServiceResult<Guid>.Ok(service.Id);
     }
@@ -119,7 +122,7 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
     private static Task<List<ServiceRow>> ServiceRows(AppDbContext db, Guid businessId, CancellationToken ct) =>
         db.Services.AsNoTracking().Where(s => s.BusinessId == businessId)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays, s.IsOther, s.PromoEligible))
+            .Select(s => new ServiceRow(s.Id, s.Name, s.DurationMinutes, s.BufferMinutes, s.Price, s.IsActive, s.SortOrder, s.FollowUpDays, s.IsOther, s.PromoEligible, s.DepositAmount))
             .ToListAsync(ct);
 
     // ------------------------------------------------------------------ staff
@@ -170,9 +173,10 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         // Serialize staff changes per business so two simultaneous adds cannot both slip under the plan limit.
         await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"staff:" + businessId}, 0))", ct);
 
-        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc }).FirstOrDefaultAsync(ct);
+        var biz = await db.Businesses.Where(b => b.Id == businessId).Select(b => new { b.Plan, b.TrialEndsAtUtc, b.ExtraStaff, b.ExtraStaffUntilUtc }).FirstOrDefaultAsync(ct);
         var plan = biz?.Plan;
         var inTrial = biz?.TrialEndsAtUtc is not null;
+        var extraStaff = biz is null ? 0 : PlanLimits.EffectiveExtra(biz.ExtraStaff, biz.ExtraStaffUntilUtc, time.GetUtcNow().UtcDateTime);
         if (plan is null) return ServiceResult<SaveOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
         var isNew = input.Id is null;
@@ -191,12 +195,16 @@ public sealed class CatalogAdminService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         var wasActive = !isNew && staff.IsActive;
-        if (input.IsActive && !wasActive && PlanLimits.MaxStaff(plan!, inTrial) is { } limit)
+        if (input.IsActive && !wasActive)
         {
+            var limit = PlanLimits.MaxStaff(plan!, inTrial, extraStaff);
             var activeOthers = await db.StaffMembers.CountAsync(s => s.BusinessId == businessId && s.IsActive && s.Id != staff.Id, ct);
             if (activeOthers >= limit)
                 return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["isActive"] = string.Format(Text.StaffLimit, limit) });
         }
+        // Deactivated staff are kept, so the total is capped too (a shop cannot add and deactivate staff without end).
+        if (isNew && await db.StaffMembers.CountAsync(s => s.BusinessId == businessId, ct) >= PlanLimits.MaxStaffRecords(extraStaff))
+            return ServiceResult<SaveOutcome>.Invalid(new Dictionary<string, string> { ["name"] = string.Format(Text.StaffRecordsLimit, PlanLimits.MaxStaffRecords(extraStaff)) });
 
         // Every service id must belong to this business; one foreign id rejects the whole request.
         var wanted = input.ServiceIds.Distinct().ToList();

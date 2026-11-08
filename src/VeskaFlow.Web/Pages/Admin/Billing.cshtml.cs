@@ -18,6 +18,9 @@ public class BillingModel(ShopSettingsService settings, PaymentService payments,
     public string TimeZone { get; private set; } = "";
     public DateTime? AccessEndsUtc { get; private set; }
     public string Plan { get; private set; } = "FREE";
+    /// <summary>The extra staff that count today (paid and not past their end date, or set by hand), and when the paid ones end.</summary>
+    public int ExtraStaffNow { get; private set; }
+    public DateTime? ExtraStaffUntilUtc { get; private set; }
     public DateTime Now { get; } = DateTime.UtcNow;
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
@@ -30,7 +33,7 @@ public class BillingModel(ShopSettingsService settings, PaymentService payments,
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!await LoadAsync(ct)) return NotFound();
-        var result = await payments.SubmitAsync(BusinessId, Input.Option, Input.Reference, Input.Note, StaffActor.Label, ct);
+        var result = await payments.SubmitAsync(BusinessId, Input.Option, Input.Reference, Input.Note, StaffActor.Label, Input.Quantity, ct);
         if (result.IsSuccess)
         {
             Success = Text.BillingSubmitted;
@@ -47,6 +50,8 @@ public class BillingModel(ShopSettingsService settings, PaymentService payments,
         if (shop is null) return false;
         TimeZone = shop.TimeZone;
         Plan = shop.Plan;
+        ExtraStaffNow = PlanLimits.EffectiveExtra(shop.ExtraStaff, shop.ExtraStaffUntilUtc, DateTime.UtcNow);
+        ExtraStaffUntilUtc = shop.ExtraStaff > 0 && shop.ExtraStaffUntilUtc is { } xu ? DateTime.SpecifyKind(xu, DateTimeKind.Utc) : null;
         AccessEndsUtc = shop.TrialEndsAtUtc is { } e ? DateTime.SpecifyKind(e, DateTimeKind.Utc) : null;
         History = await payments.ListForShopAsync(BusinessId, ct);
         PayQrVersion = await images.VersionAsync(PlatformImageService.GcashQr, ct);
@@ -68,6 +73,7 @@ public class BillingModel(ShopSettingsService settings, PaymentService payments,
     public class PayForm
     {
         public string? Option { get; set; }
+        public int? Quantity { get; set; }
         public string? Reference { get; set; }
         public string? Note { get; set; }
     }

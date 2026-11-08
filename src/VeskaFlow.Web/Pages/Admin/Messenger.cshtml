@@ -1,0 +1,75 @@
+@page
+@model VeskaFlow.Web.Pages.Admin.MessengerModel
+@{
+    ViewData["Title"] = Text.MessengerTitle;
+}
+<h1>@Text.MessengerTitle</h1>
+<p class="hint">@Text.MessengerIntro</p>
+@if (Model.Available && Model.ShowReviewNote)
+{
+    <div class="notice" role="note">@Text.MessengerReviewNote</div>
+}
+
+@if (!Model.Available)
+{
+    <div class="card empty"><p>@Text.MessengerNotSetUp</p></div>
+}
+else if (!Model.AiActive && Model.Pages.Count == 0)
+{
+    <div class="card empty"><p>@Text.MessengerNeedsAi</p><p><a class="button" href="/Admin/Settings">@Text.AdminNavSettings</a></p></div>
+}
+else
+{
+    @if (Model.Choices.Count > 0)
+    {
+        <div class="card">
+            <h2>@Text.MessengerChoose</h2>
+            <p class="hint">@Text.MessengerChooseHint</p>
+            <ul class="plain">
+                @foreach (var (id, name) in Model.Choices)
+                {
+                    <li>
+                        <form method="post" asp-page-handler="Choose" class="inline">
+                            <strong>@name</strong>
+                            <input type="hidden" name="id" value="@id" />
+                            <button type="submit" class="primary" data-confirm="@Text.MessengerConnectAsk">@Text.MessengerConnectThis</button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="card">
+        <h2>@Text.MessengerConnected</h2>
+        @if (Model.Pages.Count == 0)
+        {
+            <p class="hint">@Text.MessengerNone</p>
+        }
+        else
+        {
+            <ul class="plain">
+                @foreach (var p in Model.Pages)
+                {
+                    <li>
+                        <strong>@p.PageName</strong>
+                        <span class="muted">&middot; @Text.MessengerSince(DisplayFormat.Date(p.ConnectedAtUtc, Model.TimeZoneName))</span>
+                        <form method="post" asp-page-handler="Disconnect" class="inline">
+                            <input type="hidden" name="id" value="@p.PageId" />
+                            <button type="submit" class="link danger" data-confirm="@Text.MessengerDisconnectConfirm">@Text.MessengerDisconnect<span class="sr-only"> @p.PageName</span></button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+        @if (Model.AiActive && Model.CanAddMore)
+        {
+            <p class="hint">@Text.MessengerAdminNote</p>
+            <p><a class="button primary" href="/Admin/Messenger?handler=Start">@(Model.Pages.Count == 0 ? Text.MessengerConnect : Text.MessengerConnectAnother)</a></p>
+        }
+        else if (!Model.AiActive)
+        {
+            <p class="hint">@Text.MessengerNeedsAi</p>
+        }
+    </div>
+}

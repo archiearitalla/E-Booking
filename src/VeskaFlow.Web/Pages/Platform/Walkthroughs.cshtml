@@ -1,0 +1,22 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.WalkthroughsModel
+@{
+    ViewData["Title"] = Text.WalkthroughsTitle;
+}
+<h1>@Text.WalkthroughsTitle</h1>
+<p class="hint">@Text.WalkthroughsIntro</p>
+<p class="actions"><a class="button secondary" href="/Platform">@Text.PilotBack</a> <a class="button secondary" href="/Platform/Pilot">@Text.PilotLink</a></p>
+
+<nav class="card" aria-label="@Text.WalkthroughsTitle">
+    <ul class="plain-list">
+        @foreach (var block in WalkthroughGuide.Sections)
+        {
+            <li><a href="#@block.Id">@block.Title</a></li>
+        }
+    </ul>
+</nav>
+
+@foreach (var block in WalkthroughGuide.Sections)
+{
+    <partial name="_ChecklistSection" model="@(new VeskaFlow.Web.Pages.Platform.ChecklistSectionView(block, Model.Done))" />
+}

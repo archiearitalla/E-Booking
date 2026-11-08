@@ -41,6 +41,14 @@ public class LegalAndPrivacyTests
         Assert.Contains("GitHub", privacy); // the encrypted backups
         Assert.Contains("password reset", privacy); // the emails we send are not only the sign-up confirmation
         Assert.Contains($"Version {LegalInfo.Version}", privacy);
+        // Messenger: what is kept, that Meta is a provider, and where to ask for deletion (Meta requires a public page for it).
+        Assert.Contains("Facebook Messenger", privacy);
+        Assert.Contains("Meta (Facebook and Messenger)", privacy);
+        Assert.Contains("href=\"/data-deletion\"", privacy);
+        var deletion = WebUtility.HtmlDecode(await client.GetStringAsync("/data-deletion"));
+        Assert.Contains("Delete your data", deletion);
+        Assert.Contains("30 days", deletion);
+        Assert.Contains("href=\"/Privacy\"", deletion);
 
         var terms = WebUtility.HtmlDecode(await client.GetStringAsync("/Terms"));
         Assert.Contains("data processing", terms);

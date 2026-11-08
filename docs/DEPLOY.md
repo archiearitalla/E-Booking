@@ -121,24 +121,24 @@ The first deploy of a change that sets the trial needs a restart-free redeploy o
 
 Render's free web service sleeps after 15 minutes without traffic, and the first visit then waits about a minute. Two free ways to avoid that, both calling `/ping` (no database, so Neon can still sleep):
 
-1. **GitHub Actions** (already in the repo): `.github/workflows/keepalive.yml` calls `https://flow.veskacode.com/ping` every 14 minutes. GitHub may delay a run by a few minutes and pauses scheduled runs after 60 days without repository activity. If the repository is private, the free monthly minutes (2,000) may run out; then use option 2.
+1. **GitHub Actions** (already in the repo): `.github/workflows/keepalive.yml` calls `https://flow.veskacode.com/ping` every 14 minutes. **In practice GitHub runs these far less often than every 14 minutes** (the run history on 29 to 31 October 2026 shows one run every 3 to 7 hours), so this option alone does NOT keep the service awake; rely on option 2. GitHub also pauses scheduled runs after 60 days without repository activity. If the repository is private, the free monthly minutes (2,000) may run out; then use option 2.
 2. **An outside monitor** (UptimeRobot or cron-job.org, free account): add an HTTP monitor for `https://flow.veskacode.com/ping` every 5 minutes. It also emails you when the site is down.
 
-## Sign-up bot check (Cloudflare Turnstile, free)
+## Bot check (Cloudflare Turnstile, free)
 
-Sign-up and forgot password can ask visitors to pass a quick "are you a person" check. It is off until both keys are set:
+Sign-up, forgot password and the customer booking form (the last step, where the customer types their name and number) can ask visitors to pass a quick "are you a person" check. It is off until both keys are set. It also applies to the first message of each AI chat conversation (not the rest of that conversation), and not to staff booking or recording a sale:
 
 1. In Cloudflare, **Turnstile**, **Add widget**. Hostname: `flow.veskacode.com`. Mode: Managed. Copy the **Site key** and the **Secret key**.
 2. In Render, Environment, add `Turnstile__SiteKey` (the site key) and `Turnstile__SecretKey` (the secret key), then deploy. Keep the secret key out of chats, commits and screenshots.
-3. Open the sign-up page: the check box appears above the button. Try a sign-up on a test email.
+3. Open the sign-up page and a shop's booking page (pick a time): the check box appears above the button. Try a sign-up on a test email and a test booking.
 
-To switch it off, remove the two variables. With the keys set, a failed or unreachable check always refuses the request (it never lets a bot through); if Cloudflare is down, sign-ups wait. The page's content policy then also allows `challenges.cloudflare.com`, and only when the keys are set.
+To switch it off, remove the two variables. With the keys set, a failed or unreachable check always refuses the request (it never lets a bot through); if Cloudflare is down, sign-ups and online bookings wait (customers can still call the shop; staff can book by hand). The page's content policy then also allows `challenges.cloudflare.com`, and only when the keys are set.
 
 ## Renewing and getting paid (manual, GCash)
 
 When access ends, the owner sees a "trial ended" page; before that, the owner gets an email 7, 3 and 1 days ahead (needs the email service from above). Both tell the client how to pay. Put the details in Render, Environment (they are shown to clients, so they are not secrets, but they are not in the code either):
 
-- `Billing__Price`: for example `PHP 499 per month`.
+- `Billing__Price`: for example `PHP 999 per month`.
 - `Billing__PayTo`: for example `GCash 09XX XXX XXXX (Your Name)`.
 - `Billing__Note` (optional): replaces the default line "send a screenshot of the payment with your shop name and email".
 - `Trial__ContactUrl`: where the client contacts you (for example a Messenger link).
@@ -150,7 +150,7 @@ When a client pays, open `/Platform` and use **Extend access** on their shop (30
 When a customer gives an email while booking, the shop can email them a confirmation and a reminder (the shop's switch is in Settings and is on by default; it also needs the email service above and `App__PublicBaseUrl`). To stay inside the email service's daily limit, every email is counted per day (UTC) and customer emails stop first. Settings (all optional):
 
 - `Email__DailyLimit`: what your email plan allows per day (Brevo free: 300). Raise it when you upgrade the plan.
-- `Email__OwnerReserve` (default 40): kept for the system's own emails to shop owners (sign-up, password reset, access reminders).
+- `Email__OwnerReserve` (default 40): kept for the system's own emails to shop owners (sign-up, password reset, access reminders). The day's limit is a hard stop for these too: at the limit nothing more is sent. With no email service set up (no `Email__BrevoApiKey`), shops can not turn on the email features at all.
 - `Email__PaidReserve` (default 100): kept for shops with the paid add-on, so free shops can never use up the day.
 - `Email__FreeShopDailyMax` (default 30): the most customer emails one shop without the add-on gets per day.
 - `Billing__EmailAddonPrice`: for example `PHP 199 per month`; shown in Settings so a shop knows what the add-on costs.
@@ -160,3 +160,33 @@ When a shop pays for the add-on, open `/Platform` and use **Email add-on** on it
 ## GCash QR code
 
 Open `/Platform`, card **GCash QR code**, and upload a screenshot of **My QR** from the GCash app (PNG, JPEG or WebP, up to 512 KB). Signed-in shop owners then see it on **About** (How to renew), in Settings (More emails) and on the page they see when access ends, next to the written details. The picture is kept in the database and is only served to signed-in people.
+
+## Extra staff (beyond the 5 included)
+
+Every shop's price includes 5 active staff. A client buys more in **Plan and billing** (option Extra staff, type how many in total; the price is `Pricing__ExtraStaffMonthly`, default 199 per staff per month) and says "I paid"; you confirm it in Platform, Payments, and the extra staff run 30 days (paying again adds 30). Put the price text in Render as `Billing__ExtraStaffPrice` (for example `PHP 199 per staff per month`) for the Staff page. You can also type the number by hand under **Extra staff** on the shop's card in `/Platform`; that one has no end date. After the end date nobody is cut down; they just cannot activate more staff. Shops also cannot have more than `20 + extra` staff records in all, counting deactivated staff.
+
+## Messenger (optional, one Page for one shop)
+
+The AI receptionist can also answer messages sent to a shop's Facebook Page. It is off until you fill in four settings in Render, Environment (nothing else changes). It needs the AI add-on for that shop (see the AI section above).
+
+1. In Facebook, the shop needs a **Page** and you need to be its admin.
+2. At developers.facebook.com create an **app** (Business type) and add the **Messenger** product.
+3. In Messenger settings, **Webhooks**: callback URL `https://flow.veskacode.com/webhooks/messenger`, and a **verify token** you make up (any long word). Subscribe the Page to `messages` (and `messaging_postbacks`).
+4. In Messenger settings, **Token Generation**: choose the Page and copy the **page access token**. The **app secret** is in the app's Settings, Basic. Keep both out of chats, commits and screenshots.
+5. In Render set `Messenger__VerifyToken` (the word from step 3), `Messenger__AppSecret`, `Messenger__PageAccessToken` and `Messenger__ShopSlug` (the shop's address name, the part after `/b/`). Save; the service restarts. Then press **Verify and save** in Meta's webhook setup.
+6. Message the Page from a Facebook account that has a role on the app (admin, developer or tester). Until Meta approves the app (App Review for `pages_messaging`) only those accounts can chat with it.
+
+To switch it off, remove any one of the four settings. The one-Page setup above was tried once with the platform owner's own account and Page (the assistant answered and booked). Check Meta's current requirements for the permission and the Graph API version (`Messenger__GraphVersion`, default `v21.0`) before you rely on it.
+
+### Each shop connects its own Pages (for many clients)
+
+Instead of one Page in Render, every shop owner connects their own Page(s) from **Admin, Messenger** (linked from the AI block in Settings). You set up Meta once:
+
+1. In the Meta app, add the product **Facebook Login for Business** (or Facebook Login) and under its settings add this to **Valid OAuth Redirect URIs**, exactly: `https://flow.veskacode.com/Admin/MessengerReturn`.
+2. Keep the webhook from the steps above (callback URL and verify token). Page subscriptions are made for each Page by the app itself when an owner connects.
+3. In Render set `Messenger__VerifyToken`, `Messenger__AppSecret`, `Messenger__AppId` (App settings, Basic, App ID), `Messenger__ConfigId` (only with Facebook Login for Business: Facebook Login for Business, Configurations, create one with the Page permissions `pages_show_list`, `pages_messaging`, `pages_manage_metadata`, `pages_read_engagement`, and copy its Configuration ID) and `Messenger__TokenKey`: a long random phrase (at least 16 characters, 32 or more is better) that the saved Page tokens are encrypted with. **Write it down somewhere safe**: if it is lost or changed, the saved tokens can no longer be read and every shop must connect its Pages again.
+4. Until Meta approves **App Review** (`pages_messaging`, plus `pages_show_list`, `pages_manage_metadata` and `pages_read_engagement`) and Business Verification, only accounts with a role on the app (admin, developer, tester) can connect a Page or chat with it. Real clients need that approval.
+5. Shop owners see a note on their Messenger page that only testers can chat for now. Once Meta has approved the app and you switched it to Live, set `Messenger__Approved` to `true` in Render and the note disappears.
+6. A shop needs the AI add-on, and its owner must be an admin of the Facebook Page. One shop may connect up to 5 Pages; a Page can belong to one shop only.
+
+The `Messenger__ShopSlug` and `Messenger__PageAccessToken` pair can stay for your own test Page; a Page a shop connected is always answered as that shop. Not tried against Meta's real servers yet (the tests use a fake).

@@ -35,7 +35,7 @@ else
                         <span class="kpi-time"><span class="badge off">@p.Kind</span></span>
                         <span class="kpi-who">@p.Shop</span>
                         <span class="kpi-price">@Peso(p.Amount)</span>
-                        <span class="kpi-what muted">@PaymentKinds.Label(p.Kind) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month") · ref @p.Reference</span>
+                        <span class="kpi-what muted">@PaymentKinds.Describe(p.Kind, p.Quantity) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month") · ref @p.Reference</span>
                     </summary>
                     <div class="kpi-more">
                         <dl class="facts">
@@ -107,13 +107,13 @@ else
                         <span class="kpi-time"><span class="badge">@(p.ByHand ? "by hand" : "GCash")</span></span>
                         <span class="kpi-who">@p.Shop</span>
                         <span class="kpi-price">@Peso(p.Amount)</span>
-                        <span class="kpi-what muted">@PaymentKinds.Label(p.Kind) · @p.ReceiptNo</span>
+                        <span class="kpi-what muted">@PaymentKinds.Describe(p.Kind, p.Quantity) · @p.ReceiptNo</span>
                     </summary>
                     <div class="kpi-more">
                         <dl class="facts">
                             <dt>@Text.ReceiptRef</dt><dd>@p.Reference</dd>
                             <dt>@Text.ReceiptDate</dt><dd>@p.DecidedAtUtc?.ToString("MMM d, yyyy", inv)</dd>
-                            <dt>@Text.ReceiptFor</dt><dd>@PaymentKinds.Label(p.Kind) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month")</dd>
+                            <dt>@Text.ReceiptFor</dt><dd>@PaymentKinds.Describe(p.Kind, p.Quantity) · @(p.Period == PaymentKinds.Year ? "1 year" : "1 month")</dd>
                         </dl>
                     </div>
                 </details>

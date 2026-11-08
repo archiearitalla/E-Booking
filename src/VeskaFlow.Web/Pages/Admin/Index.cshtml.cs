@@ -68,6 +68,18 @@ public class IndexModel(AdminDayService days, BookingService bookings, ShopSetti
         return View is null ? NotFound() : Page();
     }
 
+    /// <summary>Staff mark the deposit as received (received=true) or undo it. Stays on the same day and filter.</summary>
+    public async Task<IActionResult> OnPostDepositAsync(Guid id, bool received, DateOnly? date, string? status, CancellationToken ct)
+    {
+        var back = new { date = date?.ToString("yyyy-MM-dd"), status = status is Cancelled or Done ? status : null };
+        if (!await CanUseBookingAsync(id, ct)) return NotFound();
+        var result = await bookings.SetDepositReceivedAsync(BusinessId, id, received, StaffActor, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = received ? Text.DepositMarkedReceived : Text.DepositMarkedUndone;
+        else Failure = result.Message;
+        return RedirectToPage(back);
+    }
+
     public async Task<IActionResult> OnPostTransitionAsync(
         Guid id, string? action, uint? version, string? reason, DateOnly? date, string? status, CancellationToken ct)
     {

@@ -16,7 +16,7 @@ namespace VeskaFlow.Web.Services;
 /// <see cref="AvailabilityCalculator"/> and is re-derived here at confirmation; the database exclusion constraint
 /// <c>no_double_booking</c> is the final guarantee, and its violation (SQLSTATE 23P01) is a normal "slot taken" result.
 /// </summary>
-public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, BookingLimits? limits = null)
+public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, BookingLimits? limits = null, IEmailPlatform? emailPlatform = null)
 {
     private readonly BookingLimits caps = limits ?? new BookingLimits();
 
@@ -97,6 +97,17 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         if (request.StaffId is not null && candidates.Count == 0)
             return ServiceResult<CreateOutcome>.Fail(FailureKind.NotFound, Text.NotFound);
 
+        // "Require email confirmation": a customer must give an email to book. Staff bookings (walk-ins, phone-ins) never need one.
+        // Without an email service on the platform the switch cannot be served, so it is ignored (never lock customers out).
+        var needsConfirm = request.Actor.Kind == ActorKind.Customer && business.RequireEmailConfirm && (emailPlatform?.IsEnabled ?? true);
+        if (needsConfirm)
+        {
+            if (email is null)
+                return ServiceResult<CreateOutcome>.Invalid(new Dictionary<string, string> { ["email"] = Text.EmailRequiredToBook });
+            // Holds whose time ran out free their slots first, so a stale hold never blocks a real customer.
+            await ExpireStaleHoldsAsync(db, business.Id, ct);
+        }
+
         // Re-derive availability on the server; the posted start time may come from a stale page.
         var walkIn = request.Actor.Kind == ActorKind.Staff;
         var localDate = LocalTime.LocalDateOf(start, business.TimeZone);
@@ -111,14 +122,23 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         // "Any available": fewest bookings that day, then sort order.
         var ordered = free.OrderBy(f => f.Load).ThenBy(f => f.Staff.SortOrder).Select(f => f.Staff).ToList();
 
+        // A shop with "Require email confirmation": the customer's booking is held until they press the link emailed to them.
+        HoldInfo? hold = null;
+        string? confirmToken = null;
+        if (needsConfirm)
+        {
+            confirmToken = NewManageToken();
+            hold = new HoldInfo(time.GetUtcNow().UtcDateTime.AddMinutes(Math.Max(1, caps.EmailHoldMinutes)), HashToken(confirmToken));
+        }
+
         foreach (var staff in ordered)
         {
-            var attempt = await TryInsertAsync(request, business, service, staff, start, name, phone, email, key, ct);
+            var attempt = await TryInsertAsync(request, business, service, staff, start, name, phone, email, key, ct, hold);
             switch (attempt.Outcome)
             {
                 case InsertOutcome.Inserted:
                     return ServiceResult<CreateOutcome>.Ok(new CreateOutcome(
-                        (await LoadSummaryAsync(business.Id, attempt.BookingId!.Value, ct))!, false));
+                        (await LoadSummaryAsync(business.Id, attempt.BookingId!.Value, ct))!, false, confirmToken));
                 case InsertOutcome.CustomerLimit:
                     // A parallel request with this very key may have just created the booking that now "overlaps":
                     // that is a double click or a retry, so return it instead of refusing.
@@ -163,7 +183,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
 
     private async Task<InsertAttempt> TryInsertAsync(
         CreateBookingRequest request, Business business, Service service, Staff staff, DateTime start,
-        string name, string phone, string? email, string key, CancellationToken ct)
+        string name, string phone, string? email, string key, CancellationToken ct, HoldInfo? hold = null)
     {
         // A fresh context per attempt so a failed save never leaves tracked state behind.
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -205,6 +225,19 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
 
                 if (caps.MaxActivePerCustomer > 0 && await active.CountAsync(b => b.EndsAtUtc > now, ct) >= caps.MaxActivePerCustomer)
                     return new InsertAttempt(InsertOutcome.CustomerLimit, null, string.Format(Text.TooManyActiveBookings, caps.MaxActivePerCustomer));
+
+                // A flood from many numbers or addresses: a shop only takes so many online bookings in any 24 hours. Counted under a
+                // per-shop lock so parallel requests cannot all slip under it. The shop's own staff are not counted and not stopped.
+                if (caps.MaxOnlinePerDay > 0)
+                {
+                    await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"online:" + business.Id}, 0))", ct);
+                    var since = now.AddHours(-24);
+                    var customerCode = request.Actor.TypeCode; // this branch is only for customers
+                    var madeOnline = await db.AuditLogs.CountAsync(a => a.BusinessId == business.Id && a.Action == "CREATED"
+                        && a.ActorType == customerCode && a.AtUtc > since, ct);
+                    if (madeOnline >= caps.MaxOnlinePerDay)
+                        return new InsertAttempt(InsertOutcome.CustomerLimit, null, Text.OnlineBookingsFull);
+                }
             }
 
             // A running promo takes its percentage off a service that is part of it, at the moment the booking is made: what the
@@ -224,10 +257,15 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 EndsAtUtc = end,
                 OccupiedUntilUtc = end.AddMinutes(service.BufferMinutes),
                 LocationTimeZone = business.TimeZone,
-                Status = BookingStatus.Confirmed, // MVP: pay on site, instant confirmation
+                // Pay on site, confirmed at once; or held until the emailed link is pressed (a shop with "Require email confirmation").
+                Status = hold is null ? BookingStatus.Confirmed : BookingStatus.Held,
+                HoldExpiresAtUtc = hold?.ExpiresAtUtc,
+                EmailConfirmHash = hold?.Hash,
                 PriceSnapshot = percent is { } off ? PromoPricing.Net(service.Price, off) : service.Price,
                 RegularPriceSnapshot = percent is null ? null : service.Price,
                 DiscountPercentSnapshot = percent,
+                // The deposit is part of the price, so after a promo discount it can never be more than what is owed.
+                DepositSnapshot = service.IsOther ? 0m : Math.Min(service.DepositAmount, percent is { } off2 ? PromoPricing.Net(service.Price, off2) : service.Price),
                 ServiceNameSnapshot = service.IsOther ? $"{service.Name}: {(request.ServiceNote ?? "").Trim()}" : service.Name,
                 ManageToken = NewManageToken(),
                 IdempotencyKey = key,
@@ -243,7 +281,7 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 ActorId = request.Actor.Id,
                 ActorLabel = request.Actor.Label,
                 Action = "CREATED",
-                ToStatus = BookingStatus.Confirmed.ToDb(),
+                ToStatus = booking.Status.ToDb(),
                 AtUtc = now,
             });
             await db.SaveChangesAsync(ct);
@@ -328,6 +366,58 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         Guid businessId, Guid bookingId, DateTime newStartUtc, BookingActor actor, CancellationToken ct = default)
     {
         if (actor.Kind != ActorKind.Staff) return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.NotAllowed);
+        return await RescheduleCoreAsync(businessId, bookingId, newStartUtc, actor, ct);
+    }
+
+    /// <summary>The booking the manage token points at, as (shop, booking, customer name), or null.</summary>
+    private async Task<(Guid BusinessId, Guid BookingId, string Who)?> ResolveTokenAsync(string? manageToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(manageToken)) return null;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await db.Bookings.AsNoTracking().Where(b => b.ManageToken == manageToken)
+            .Select(b => new { b.BusinessId, b.Id, Who = b.Customer.Name }).FirstOrDefaultAsync(ct);
+        return row is null ? null : (row.BusinessId, row.Id, row.Who);
+    }
+
+    /// <summary>
+    /// Free start times for the customer moving their own booking to a local date (same staff member and service).
+    /// The customer rules apply: lead time and booking horizon. The booking's own slot counts as free.
+    /// </summary>
+    public async Task<ServiceResult<IReadOnlyList<DateTime>>> GetRescheduleStartsByTokenAsync(
+        string manageToken, DateOnly localDate, CancellationToken ct = default)
+    {
+        if (await ResolveTokenAsync(manageToken, ct) is not { } target)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var booking = await db.Bookings.AsNoTracking().FirstAsync(b => b.Id == target.BookingId, ct);
+        var business = await LoadBusinessAsync(db, target.BusinessId, ct);
+        var service = await db.Services.AsNoTracking().FirstOrDefaultAsync(s => s.Id == booking.ServiceId && s.BusinessId == target.BusinessId, ct);
+        if (business is null || service is null)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.NotFound, Text.NotFound);
+        var allowed = BookingPolicy.CanReschedule(booking.Status, booking.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, business.CancelCutoffHours);
+        if (!allowed.Allowed)
+            return ServiceResult<IReadOnlyList<DateTime>>.Fail(FailureKind.PolicyViolation, allowed.Reason ?? Text.NotAllowed);
+        return ServiceResult<IReadOnlyList<DateTime>>.Ok(
+            await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, false, ct, booking.Id));
+    }
+
+    /// <summary>
+    /// Customer self-service move. The manage token authorizes exactly one booking; the cutoff is the same as for
+    /// cancelling. The time is checked again here and the database constraint stays the final guard.
+    /// </summary>
+    public async Task<ServiceResult<BookingSummary>> RescheduleByTokenAsync(
+        string manageToken, DateTime newStartUtc, CancellationToken ct = default)
+    {
+        if (await ResolveTokenAsync(manageToken, ct) is not { } target)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+        return await RescheduleCoreAsync(target.BusinessId, target.BookingId, newStartUtc, BookingActor.Customer(target.Who), ct);
+    }
+
+    private async Task<ServiceResult<BookingSummary>> RescheduleCoreAsync(
+        Guid businessId, Guid bookingId, DateTime newStartUtc, BookingActor actor, CancellationToken ct)
+    {
+        var byCustomer = actor.Kind == ActorKind.Customer;
         var start = LocalTime.AsUtc(newStartUtc);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -339,11 +429,12 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         if (business is null || service is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
 
         var now = time.GetUtcNow().UtcDateTime;
-        if (booking.Status != BookingStatus.Confirmed || booking.StartsAtUtc <= now)
-            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.RescheduleNotAllowed);
+        var policy = BookingPolicy.CanReschedule(booking.Status, booking.StartsAtUtc, now, actor.Kind, business.CancelCutoffHours);
+        if (!policy.Allowed)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, byCustomer ? policy.Reason! : Text.RescheduleNotAllowed);
 
         var localDate = LocalTime.LocalDateOf(start, business.TimeZone);
-        var free = await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, true, ct, booking.Id);
+        var free = await FreeStartsForStaffAsync(db, business, service, booking.StaffId, localDate, !byCustomer, ct, booking.Id);
         if (!free.Contains(start) || start <= now) return ServiceResult<BookingSummary>.Fail(FailureKind.SlotTaken, Text.SlotTaken);
 
         var oldStart = booking.StartsAtUtc;
@@ -375,6 +466,43 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         {
             return ServiceResult<BookingSummary>.Fail(FailureKind.SlotTaken, Text.SlotTaken);
         }
+        return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!);
+    }
+
+    /// <summary>
+    /// Staff mark that the deposit arrived (or undo it). The slot is held either way: the deposit is a note on a confirmed
+    /// booking, not a state. Only a confirmed booking that asks for a deposit; the audit row keeps who and when.
+    /// </summary>
+    public async Task<ServiceResult<BookingSummary>> SetDepositReceivedAsync(
+        Guid businessId, Guid bookingId, bool received, BookingActor actor, CancellationToken ct = default)
+    {
+        if (actor.Kind != ActorKind.Staff) return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.NotAllowed);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId && b.BusinessId == businessId, ct);
+        if (booking is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+        if (booking.Status != BookingStatus.Confirmed || booking.DepositSnapshot <= 0)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.DepositNotApplicable);
+        if ((booking.DepositReceivedAtUtc is not null) == received)
+            return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!); // nothing to change
+
+        var now = time.GetUtcNow().UtcDateTime;
+        booking.DepositReceivedAtUtc = received ? now : null;
+        booking.UpdatedAtUtc = now;
+        db.AuditLogs.Add(new AuditLog
+        {
+            BusinessId = businessId,
+            BookingId = booking.Id,
+            ActorType = actor.TypeCode,
+            ActorId = actor.Id,
+            ActorLabel = actor.Label,
+            Action = received ? "DEPOSIT_RECEIVED" : "DEPOSIT_UNDONE",
+            FromStatus = booking.Status.ToDb(),
+            ToStatus = booking.Status.ToDb(),
+            Reason = DisplayFormat.Price(booking.DepositSnapshot),
+            AtUtc = now,
+        });
+        await db.SaveChangesAsync(ct);
         return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(businessId, bookingId, ct))!);
     }
 
@@ -460,6 +588,10 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
                 CustomerName = b.Customer.Name,
                 TimeZone = b.LocationTimeZone,
                 BrandColor = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.BrandColor).First(),
+                HoldExpires = b.HoldExpiresAtUtc,
+                Deposit = b.DepositSnapshot,
+                DepositReceived = b.DepositReceivedAtUtc != null,
+                PayInstructions = db.Businesses.Where(x => x.Id == b.BusinessId).Select(x => x.PayInstructions).First(),
             })
             .FirstOrDefaultAsync(ct);
         if (row is null) return null;
@@ -470,7 +602,9 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var extras = await db.BookingExtras.AsNoTracking().Where(x => x.BookingId == row.Summary.Id && x.BusinessId == row.Summary.BusinessId)
             .OrderBy(x => x.CreatedAtUtc).ThenBy(x => x.ServiceNameSnapshot)
             .Select(x => new ExtraLine(x.Id, x.ServiceNameSnapshot, x.PriceSnapshot, x.RegularPriceSnapshot, x.DiscountPercentSnapshot)).ToListAsync(ct);
-        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras);
+        var canMove = BookingPolicy.CanReschedule(
+            row.Summary.Status, row.Summary.StartsAtUtc, time.GetUtcNow().UtcDateTime, ActorKind.Customer, row.CutoffHours).Allowed;
+        return new BookingDetails(row.Summary, row.BusinessName, row.TimeZone, row.CutoffHours, row.CustomerName, policy.Allowed, refusal, row.BrandColor, extras, canMove, row.Deposit, row.DepositReceived, row.PayInstructions, row.Summary.Status == BookingStatus.Held ? row.HoldExpires : null);
     }
 
     public async Task<BookingSummary?> LoadSummaryAsync(Guid businessId, Guid bookingId, CancellationToken ct = default)
@@ -528,10 +662,14 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         var rangeStart = dayStart.AddDays(-1);
         var rangeEnd = dayEnd.AddDays(1);
 
+        // A sale recorded by hand is a completed visit; while its time is still running it holds that time like a booking.
+        var nowUtc = time.GetUtcNow().UtcDateTime;
         var occupied = await db.Bookings.AsNoTracking()
             .Where(b => b.BusinessId == business.Id && b.StaffId == staffId && b.Id != ignoreBookingId
                         && b.StartsAtUtc < rangeEnd && b.OccupiedUntilUtc > rangeStart
-                        && (b.Status == BookingStatus.Held || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
+                        && ((b.Status == BookingStatus.Held && (b.HoldExpiresAtUtc == null || b.HoldExpiresAtUtc > nowUtc))
+                            || b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed
+                            || (b.IsManualSale && b.Status == BookingStatus.Completed && b.OccupiedUntilUtc > nowUtc)))
             .Select(b => new TimeRange(b.StartsAtUtc, b.OccupiedUntilUtc))
             .ToListAsync(ct);
 
@@ -615,24 +753,37 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         return result.ToList();
     }
 
-    private static Dictionary<string, string> ValidateInput(
-        CreateBookingRequest r, out string name, out string phone, out string? email)
+    /// <summary>
+    /// The name, number and optional email a customer typed, checked the same way for a booking and for the waitlist. Returns the field errors (empty when
+    /// all is well) and the cleaned values: the number in its one canonical form, the email null when left empty.
+    /// </summary>
+    public static Dictionary<string, string> ValidateContact(string? rawName, string? rawPhone, string? rawEmail, out string name, out string phone, out string? email)
     {
         var errors = new Dictionary<string, string>();
 
-        name = (r.CustomerName ?? "").Trim();
+        name = (rawName ?? "").Trim();
         if (name.Length is < 1 or > 80) errors["name"] = Text.NameInvalid;
 
         // One canonical form, so the same person is recognised however the number was typed (+63 917…, 0917…).
-        phone = PhoneNumber.Normalize(Regex.Replace(r.Phone ?? "", @"[\s\-().]", ""));
-        if (r.Actor.Kind == ActorKind.Staff && phone.Length == 0)
-            phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N"); // a walk-in with no number: its own customer, never matched later
-        else if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;
+        phone = PhoneNumber.Normalize(Regex.Replace(rawPhone ?? "", @"[\s\-().]", ""));
+        if (!PhonePattern().IsMatch(phone)) errors["phone"] = Text.PhoneInvalid;
 
-        var rawEmail = (r.Email ?? "").Trim();
-        email = rawEmail.Length == 0 ? null : rawEmail;
+        var trimmedEmail = (rawEmail ?? "").Trim();
+        email = trimmedEmail.Length == 0 ? null : trimmedEmail;
         if (email is not null && (email.Length > 120 || !MailAddress.TryCreate(email, out var parsed) || parsed.Address != email))
             errors["email"] = Text.EmailInvalid;
+        return errors;
+    }
+
+    private static Dictionary<string, string> ValidateInput(
+        CreateBookingRequest r, out string name, out string phone, out string? email)
+    {
+        var errors = ValidateContact(r.CustomerName, r.Phone, r.Email, out name, out phone, out email);
+        if (r.Actor.Kind == ActorKind.Staff && phone.Length == 0)
+        {
+            errors.Remove("phone");
+            phone = DisplayFormat.WalkInPhonePrefix + Guid.NewGuid().ToString("N"); // a walk-in with no number: its own customer, never matched later
+        }
 
         var key = (r.IdempotencyKey ?? "").Trim();
         if (key.Length is < 1 or > 100) errors["idempotencyKey"] = Text.IdempotencyKeyInvalid;
@@ -646,6 +797,110 @@ public sealed partial class BookingService(IDbContextFactory<AppDbContext> dbFac
         for (; ex is not null; ex = ex.InnerException)
             if (ex is PostgresException pg) return pg;
         return null;
+    }
+
+    private sealed record HoldInfo(DateTime ExpiresAtUtc, string Hash);
+
+    /// <summary>The secret of an emailed link is stored only as this hash; the secret itself is only ever in the email.</summary>
+    private static string HashToken(string token) => Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
+
+    // ---------------------------------------------------------------- email confirmation (BUSINESS_RULES 8.8)
+
+    /// <summary>
+    /// The booking an emailed confirmation link points at, as the customer's manage page shows it, or null. The secret in the link
+    /// authorizes exactly this one booking.
+    /// </summary>
+    public async Task<BookingDetails?> GetByEmailTokenAsync(string? token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 200) return null;
+        var hash = HashToken(token);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var manage = await db.Bookings.AsNoTracking().Where(b => b.EmailConfirmHash == hash).Select(b => b.ManageToken).FirstOrDefaultAsync(ct);
+        return manage is null ? null : await GetByTokenAsync(manage, ct);
+    }
+
+    /// <summary>
+    /// The customer pressed the emailed link: a held booking whose time has not run out becomes confirmed. Pressing it again on a
+    /// confirmed booking is fine (same answer). A hold that ran out is released and the link says so.
+    /// </summary>
+    public async Task<ServiceResult<BookingSummary>> ConfirmByEmailAsync(string? token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 200)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+        var hash = HashToken(token);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var row = await db.Bookings.AsNoTracking().Where(b => b.EmailConfirmHash == hash)
+            .Select(b => new { b.Id, b.BusinessId, b.Status, Who = b.Customer.Name }).FirstOrDefaultAsync(ct);
+        if (row is null) return ServiceResult<BookingSummary>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        if (row.Status == BookingStatus.Held)
+        {
+            var now = time.GetUtcNow().UtcDateTime;
+            // One conditional statement: it wins only while the booking is still held and the time has not run out, so it cannot
+            // race with the release of an expired hold.
+            var changed = await db.Bookings.Where(b => b.Id == row.Id && b.Status == BookingStatus.Held && b.HoldExpiresAtUtc > now)
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, BookingStatus.Confirmed)
+                    .SetProperty(b => b.HoldExpiresAtUtc, (DateTime?)null).SetProperty(b => b.UpdatedAtUtc, now), ct);
+            if (changed == 0)
+            {
+                await ExpireStaleHoldsAsync(db, row.BusinessId, ct);
+                return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.ConfirmLinkExpired);
+            }
+            db.AuditLogs.Add(new AuditLog
+            {
+                BusinessId = row.BusinessId, BookingId = row.Id, ActorType = "CUSTOMER", ActorLabel = row.Who,
+                Action = "EMAIL_CONFIRMED", FromStatus = "HELD", ToStatus = "CONFIRMED", AtUtc = now,
+            });
+            await db.SaveChangesAsync(ct);
+        }
+        else if (row.Status == BookingStatus.Cancelled)
+            return ServiceResult<BookingSummary>.Fail(FailureKind.PolicyViolation, Text.ConfirmLinkExpired);
+
+        return ServiceResult<BookingSummary>.Ok((await LoadSummaryAsync(row.BusinessId, row.Id, ct))!);
+    }
+
+    /// <summary>Releases every held booking whose time ran out (all shops). Run by a background worker; returns how many.</summary>
+    public async Task<int> ExpireHoldsAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await ExpireStaleHoldsAsync(db, null, ct);
+    }
+
+    private async Task<int> ExpireStaleHoldsAsync(AppDbContext db, Guid? businessId, CancellationToken ct)
+    {
+        var now = time.GetUtcNow().UtcDateTime;
+        var stale = await db.Bookings.AsNoTracking()
+            .Where(b => b.Status == BookingStatus.Held && b.HoldExpiresAtUtc != null && b.HoldExpiresAtUtc <= now
+                        && (businessId == null || b.BusinessId == businessId))
+            .OrderBy(b => b.HoldExpiresAtUtc).Take(200).Select(b => new { b.Id, b.BusinessId }).ToListAsync(ct);
+        var released = 0;
+        foreach (var held in stale)
+            if (await ReleaseHeldCoreAsync(db, held.BusinessId, held.Id, Text.HoldExpiredReason, "HOLD_EXPIRED", now, ct)) released++;
+        return released;
+    }
+
+    /// <summary>Gives the slot of a held booking back because the confirmation email could not be sent. A booking that is no longer held is left alone.</summary>
+    public async Task<bool> ReleaseHeldAsync(Guid businessId, Guid bookingId, string reason, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await ReleaseHeldCoreAsync(db, businessId, bookingId, reason, "HOLD_RELEASED", time.GetUtcNow().UtcDateTime, ct);
+    }
+
+    private static async Task<bool> ReleaseHeldCoreAsync(AppDbContext db, Guid businessId, Guid bookingId, string reason, string action, DateTime now, CancellationToken ct)
+    {
+        // Conditional, so it never undoes a booking that was confirmed a moment ago.
+        var changed = await db.Bookings.Where(b => b.Id == bookingId && b.BusinessId == businessId && b.Status == BookingStatus.Held
+                && (action == "HOLD_RELEASED" || b.HoldExpiresAtUtc <= now))
+            .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, BookingStatus.Cancelled).SetProperty(b => b.CancelledBy, "SYSTEM")
+                .SetProperty(b => b.CancelReason, reason).SetProperty(b => b.CancelledAtUtc, now).SetProperty(b => b.UpdatedAtUtc, now), ct);
+        if (changed == 0) return false;
+        db.AuditLogs.Add(new AuditLog
+        {
+            BusinessId = businessId, BookingId = bookingId, ActorType = "SYSTEM", ActorLabel = "System",
+            Action = action, FromStatus = "HELD", ToStatus = "CANCELLED", Reason = reason, AtUtc = now,
+        });
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     private static string NewManageToken() =>

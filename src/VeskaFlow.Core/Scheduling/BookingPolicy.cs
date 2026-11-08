@@ -35,6 +35,23 @@ public static class BookingPolicy
         return PolicyResult.Ok();
     }
 
+    /// <summary>
+    /// Moving to another time: only a confirmed booking that has not started. A customer follows the same cutoff as
+    /// cancelling; staff may move it any time before it starts.
+    /// </summary>
+    public static PolicyResult CanReschedule(
+        BookingStatus status, DateTime startsAtUtc, DateTime nowUtc, ActorKind actor, int cutoffHours)
+    {
+        if (status != BookingStatus.Confirmed)
+            return PolicyResult.No("Only a confirmed booking can be moved.");
+        if (nowUtc >= startsAtUtc)
+            return PolicyResult.No("This appointment has already started.");
+        if (actor == ActorKind.Customer && nowUtc > startsAtUtc.AddHours(-cutoffHours))
+            return PolicyResult.No(
+                $"Online changes close {cutoffHours} hour(s) before the appointment. Please contact the shop.");
+        return PolicyResult.Ok();
+    }
+
     public const string NotToday = "Only today's bookings can be marked. This booking is on another day.";
 
     /// <summary>

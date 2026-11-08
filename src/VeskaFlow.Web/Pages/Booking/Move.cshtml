@@ -1,0 +1,62 @@
+@page "/booking/{token}/move"
+@model VeskaFlow.Web.Pages.Booking.MoveModel
+@{
+    ViewData["Title"] = Text.MoveTitle;
+    var d = Model.Details!;
+    var b = d.Booking;
+    ViewData["Theme"] = d.BrandColor;
+    ViewData["Public"] = true;
+}
+@section Head {
+    <meta name="robots" content="noindex" />
+}
+<div class="card">
+    <h1>@Text.MoveTitle</h1>
+    <p class="hint">@Text.MoveHint</p>
+    @if (Model.Message is not null)
+    {
+        <div class="alert" role="alert">@Model.Message</div>
+    }
+    <dl class="facts">
+        <dt>@Text.ManageShop</dt><dd>@d.BusinessName</dd>
+        <dt>@Text.ManageService</dt><dd>@b.ServiceName &middot; @b.StaffName</dd>
+        <dt>@Text.MoveCurrent</dt><dd>@DisplayFormat.Date(b.StartsAtUtc, d.TimeZone), @DisplayFormat.Time(b.StartsAtUtc, d.TimeZone)</dd>
+    </dl>
+    <form method="get">
+        <div class="field">
+            <label for="date">@Text.MoveDate</label>
+            <input type="date" id="date" name="date" value="@Model.Date" min="@Model.Today" required />
+        </div>
+        <button type="submit" class="secondary">@Text.MoveShowTimes</button>
+    </form>
+</div>
+
+@if (Model.Searched)
+{
+    <div class="card">
+        @if (Model.Times.Count == 0)
+        {
+            <p>@Text.MoveNoTimes</p>
+        }
+        else
+        {
+            <form method="post">
+                <fieldset class="field">
+                    <legend class="sr-only">@Text.WalkInTimes</legend>
+                    <div class="timechips">
+                        @for (var i = 0; i < Model.Times.Count; i++)
+                        {
+                            <label class="timechip">
+                                <input type="radio" name="start" value="@DisplayFormat.StartParam(Model.Times[i])" checked="@(i == 0)" />
+                                <span>@DisplayFormat.Time(Model.Times[i], d.TimeZone)</span>
+                            </label>
+                        }
+                    </div>
+                </fieldset>
+                <button type="submit" class="primary once" data-confirm="@Text.MoveConfirm">@Text.MoveSave</button>
+            </form>
+        }
+    </div>
+}
+
+<p><a href="/booking/@b.ManageToken">@Text.MoveBack</a></p>

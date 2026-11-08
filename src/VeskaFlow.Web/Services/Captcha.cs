@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace VeskaFlow.Web.Services;
 
-/// <summary>A "are you a person" check on sign-up and forgot password. Off until both Turnstile keys are configured.</summary>
+/// <summary>A "are you a person" check on sign-up, forgot password and the customer booking form. Off until both Turnstile keys are configured.</summary>
 public interface ICaptcha
 {
     bool IsEnabled { get; }

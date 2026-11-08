@@ -81,10 +81,11 @@
                     </label>
                     @foreach (var staff in shop.Staff)
                     {
-                        <label class="choice person">
+                        var noTime = Model.StaffWithoutTime.Contains(staff.Id);
+                        <label class="choice person@(noTime ? " person-off" : "")">
                             <input type="radio" name="staffId" value="@staff.Id" checked="@(Model.StaffId == staff.Id)" />
                             <span class="avatar" aria-hidden="true">@staff.Name.Trim()[..1].ToUpperInvariant()</span>
-                            <span><strong>@staff.Name</strong></span>
+                            <span><strong>@staff.Name</strong>@if (noTime) { <span class="person-tag">@Text.BookStaffNoTimeTag</span> }</span>
                         </label>
                     }
                 </div>
@@ -121,7 +122,7 @@
 {
     @* Hidden until chat.js runs: without JavaScript the form above is the way to book. *@
     <section class="card" id="chat" hidden aria-labelledby="chat-title"
-             data-working="@Text.AiChatWorking" data-network="@Text.AiChatNetwork" data-unavailable="@Text.AiChatUnavailable">
+             data-working="@Text.AiChatWorking" data-network="@Text.AiChatNetwork" data-unavailable="@Text.AiChatUnavailable" data-captcha-wait="@Text.AiChatCaptchaWait">
         <h2 id="chat-title">@Text.AiChatTitle</h2>
         <p class="hint">@Text.AiChatIntro</p>
         <p class="hint">@Text.AiChatNotice <a href="/Privacy">@Text.AiChatNoticeLink</a></p>
@@ -133,6 +134,8 @@
             <label for="chat-input" class="sr-only">@Text.AiChatPlaceholder</label>
             <input type="text" id="chat-input" name="message" maxlength="500" placeholder="@Text.AiChatPlaceholder" required />
             <button type="submit" class="primary">@Text.AiChatSend</button>
+            @* The check is asked once, for the first message of a conversation (the widget adds its answer to this form). *@
+            <div class="chat-captcha" id="chat-captcha"><partial name="_Captcha" /></div>
         </form>
     </section>
     <script src="~/js/chat.js" defer asp-append-version="true"></script>
@@ -148,7 +151,23 @@
         }
         else if (Model.Times.Count == 0)
         {
-            <p>@Text.BookNoTimes</p>
+            @if (Model.OthersFree)
+            {
+                @* The chosen person is off or fully booked that day but the shop is not: say so and offer everyone else, instead of "no times". *@
+                <p>@Text.BookStaffNoTimes(Model.PickedStaffName!)</p>
+                <p><a class="button" asp-page="/Book/Index" asp-route-slug="@shop.Slug" asp-route-serviceId="@Model.ServiceId"
+                      asp-route-serviceNote="@Model.ServiceNote" asp-route-date="@DisplayFormat.DateParam(Model.SelectedDate)">@Text.BookShowAnyone</a></p>
+            }
+            else
+            {
+                <p>@Text.BookNoTimes</p>
+            }
+            @if (shop.FindService(Model.ServiceId) is { IsOther: false })
+            {
+                <p class="hint">@(Model.OthersFree ? Text.WaitlistLinkHintStaff(Model.PickedStaffName!) : Text.WaitlistLinkHint)</p>
+                <p><a class="button secondary" asp-page="/Book/Waitlist" asp-route-slug="@shop.Slug" asp-route-serviceId="@Model.ServiceId"
+                      asp-route-staffId="@Model.StaffId" asp-route-date="@DisplayFormat.DateParam(Model.SelectedDate)">@Text.WaitlistLink</a></p>
+            }
         }
         else
         {

@@ -5,9 +5,15 @@ namespace VeskaFlow.Web.Pages.Admin;
 
 [AdminAccess(AdminLevel.Owner)]
 [RequestSizeLimit(1_048_576)] // a logo is at most 256 KB; nothing bigger is read
-public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing, PlatformImageService images, AiAccess ai) : AdminPageModel
+public class SettingsModel(ShopSettingsService settings, CatalogAdminService catalog, IConfiguration config, LogoService logos, BillingInfo billing, PlatformImageService images, AiAccess ai, IEmailPlatform emailPlatform, MessengerOptions messenger) : AdminPageModel
 {
+    /// <summary>True when shops may connect their own Facebook Pages (the platform has the Messenger settings).</summary>
+    public bool MessengerAvailable => messenger.ConnectEnabled;
+
     [BindProperty] public SettingsForm Input { get; set; } = new();
+
+    /// <summary>False when the platform has no email service: the email switches then can not be turned on (and a saved one is ignored).</summary>
+    public bool EmailAvailable => emailPlatform.IsEnabled;
 
     /// <summary>The shop's opening hours as the form shows them.</summary>
     public DayFields ShopRange { get; private set; } = new("", "", "", "");
@@ -132,7 +138,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var result = await settings.SaveSettingsAsync(BusinessId,
-            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays, Input.ReminderHours, Input.CustomerEmails, Input.AllowManualTotal, Input.AllowManualSales), ct);
+            new SettingsInput(Input.Name, Input.TimeZone, Input.SlotMinutes, Input.LeadTimeMinutes, Input.HorizonDays, Input.CancelCutoffHours, Input.BrandColor, Input.FollowUpNoticeDays, Input.ReminderHours, Input.CustomerEmails, Input.AllowManualTotal, Input.AllowManualSales, Input.PayInstructions ?? "", Input.RequireEmailConfirm), ct);
 
         if (result.Failure == FailureKind.NotFound) return NotFound();
         if (!result.IsSuccess)
@@ -161,6 +167,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
             Name = s.Name, TimeZone = s.TimeZone, SlotMinutes = s.SlotMinutes,
             LeadTimeMinutes = s.LeadTimeMinutes, HorizonDays = s.HorizonDays, CancelCutoffHours = s.CancelCutoffHours,
             BrandColor = s.BrandColor, FollowUpNoticeDays = s.FollowUpNoticeDays, ReminderHours = s.ReminderHours, CustomerEmails = s.CustomerEmails, AllowManualTotal = s.AllowManualTotal, AllowManualSales = s.AllowManualSales,
+            PayInstructions = s.PayInstructions, RequireEmailConfirm = s.RequireEmailConfirm,
         };
     }
 
@@ -178,5 +185,7 @@ public class SettingsModel(ShopSettingsService settings, CatalogAdminService cat
         public bool CustomerEmails { get; set; } = true;
         public bool AllowManualTotal { get; set; } = true;
         public bool AllowManualSales { get; set; }
+        public string? PayInstructions { get; set; }
+        public bool RequireEmailConfirm { get; set; }
     }
 }

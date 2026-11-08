@@ -15,6 +15,11 @@
         <dt>@Text.ManageWith</dt><dd>@(Model.Staff?.Name ?? Text.BookStaffAny)</dd>
         <dt>@Text.ManageWhen</dt><dd>@DisplayFormat.Date(Model.StartUtc, shop.TimeZone), @DisplayFormat.Time(Model.StartUtc, shop.TimeZone)</dd>
         <dt>@Text.ManagePrice</dt><dd>@if (Model.Service.IsOther) { @Text.OtherServicePrice } else { var price = shop.PriceOf(Model.Service); <partial name="_PriceLine" model="new PriceLineModel(price.Net, price.HasPromo ? price.Regular : null, price.Percent)" /> } &middot; @Text.BookPayOnSite</dd>
+        @if (!Model.Service.IsOther && Model.Service.DepositAmount > 0)
+        {
+            var asked = Math.Min(Model.Service.DepositAmount, shop.PriceOf(Model.Service).Net);
+            <dt>@Text.DepositLabel</dt><dd>@DisplayFormat.Price(asked) &middot; @Text.BookDepositNote</dd>
+        }
     </dl>
     <p><a href="@Model.ChangeTimeUrl">@Text.BookChangeTime</a></p>
 </div>
@@ -49,8 +54,8 @@
         </div>
 
         <div class="field">
-            <label for="Email">@Text.BookLabelEmail</label>
-            <input type="email" id="Email" name="Input.Email" value="@Model.Input.Email" maxlength="120" autocomplete="email"
+            <label for="Email">@(Model.Shop!.RequireEmailConfirm ? Text.BookLabelEmailRequired : Text.BookLabelEmail)</label>
+            <input type="email" id="Email" name="Input.Email" value="@Model.Input.Email" maxlength="120" autocomplete="email" required="@Model.Shop.RequireEmailConfirm"
                    aria-invalid="@(Model.ErrorFor("email") is null ? "false" : "true")" aria-describedby="Email-error" />
             @if (Model.ErrorFor("email") is { } e3) { <p class="error" id="Email-error">@e3</p> }
         </div>
@@ -63,6 +68,8 @@
         @if (Model.ErrorFor("idempotencyKey") is { } e4) { <p class="error">@e4</p> }
 
         <p class="hint">@Text.BookPrivacy <a href="/Privacy" target="_blank" rel="noopener">@Text.PrivacyLink</a></p>
+        <partial name="_Captcha" />
+        @if (Model.ErrorFor("captcha") is { } captchaError) { <p class="error">@captchaError</p> }
         <div class="hp" aria-hidden="true"><label for="Website">Website</label><input type="text" id="Website" name="Input.Website" tabindex="-1" autocomplete="off" /></div>
         <button type="submit" class="primary once" data-confirm="@Text.ConfirmBooking">@Text.BookConfirm</button>
     </form>

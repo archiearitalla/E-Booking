@@ -1,0 +1,13 @@
+@page
+@model VeskaFlow.Web.Pages.Platform.PilotModel
+@{
+    ViewData["Title"] = Text.PilotTitle;
+}
+<h1>@Text.PilotTitle</h1>
+<p class="hint">@Text.PilotIntro</p>
+<p class="actions"><a class="button secondary" href="/Platform">@Text.PilotBack</a> <a class="button secondary" href="/Platform/MetaReview">@Text.PilotReviewLink</a></p>
+
+@foreach (var block in PilotChecklist.Sections)
+{
+    <partial name="_ChecklistSection" model="@(new VeskaFlow.Web.Pages.Platform.ChecklistSectionView(block, Model.Done))" />
+}

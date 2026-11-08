@@ -47,6 +47,14 @@ public class Business
     public string? TermsVersion { get; set; }
     /// <summary>Customers are due a reminder when their appointment is within this many hours (default 24).</summary>
     public int ReminderHours { get; set; } = 24;
+    /// <summary>Where a customer sends a deposit (for example a GCash number and name); shown on the booking page of a service that asks for one (migration 032).</summary>
+    public string? PayInstructions { get; set; }
+    /// <summary>An online booking is held until the customer presses the link emailed to them (migration 034). Off by default.</summary>
+    public bool RequireEmailConfirm { get; set; }
+    /// <summary>Staff the shop paid for on top of the 5 included (migration 035); set by the platform owner after the payment.</summary>
+    public int ExtraStaff { get; set; }
+    /// <summary>Until when the extra staff are paid for (migration 036); null means set by hand by the platform owner and no expiry.</summary>
+    public DateTime? ExtraStaffUntilUtc { get; set; }
 }
 
 public class AdminUser
@@ -98,6 +106,8 @@ public class Service
     public bool IsOther { get; set; }
     /// <summary>Part of the promo discount while one runs (migration 024). On by default; the owner can leave a service out.</summary>
     public bool PromoEligible { get; set; } = true;
+    /// <summary>What the shop asks to keep a slot (migration 032); 0 means no deposit. Paid by hand outside the app.</summary>
+    public decimal DepositAmount { get; set; }
 }
 
 public class StaffService
@@ -212,6 +222,14 @@ public class Booking
     public string? VisitNotes { get; set; }
     /// <summary>When staff marked that this customer was reminded of the appointment. Null means not yet.</summary>
     public DateTime? RemindedAtUtc { get; set; }
+    /// <summary>The deposit asked when the booking was made (migration 032), never above the price; 0 means none.</summary>
+    public decimal DepositSnapshot { get; set; }
+    /// <summary>When staff marked the deposit as received; null means not yet.</summary>
+    public DateTime? DepositReceivedAtUtc { get; set; }
+    /// <summary>Made by "Record a sale" (migration 033): a completed visit that blocks its time for new bookings while that time is still running.</summary>
+    public bool IsManualSale { get; set; }
+    /// <summary>SHA-256 (hex) of the secret in the emailed confirmation link (migration 034); null when the booking never needed one.</summary>
+    public string? EmailConfirmHash { get; set; }
 
     public Staff Staff { get; set; } = null!;
     public Service Service { get; set; } = null!;
@@ -336,6 +354,8 @@ public class Payment
     public string? DecidedBy { get; set; }
     public string? RejectReason { get; set; }
     public string? ReceiptNo { get; set; }
+    /// <summary>For kind STAFF: how many extra staff, in total, this payment is for (migration 036). 1 for the other kinds.</summary>
+    public int Quantity { get; set; } = 1;
 }
 
 /// <summary>One customer conversation with the AI receptionist (migration 021). The transcript is JSON text of what was said, nothing else.</summary>
@@ -355,5 +375,42 @@ public class PlatformImage
     public string Key { get; set; } = "";
     public string ContentType { get; set; } = "";
     public byte[] Data { get; set; } = [];
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>A customer waiting for a slot on a full day (migration 039). <c>Day</c> is the shop's local date; <c>StaffId</c> null means any staff.</summary>
+public class WaitlistEntry
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; }
+    public Guid ServiceId { get; set; }
+    public Guid? StaffId { get; set; }
+    public DateOnly Day { get; set; }
+    public string CustomerName { get; set; } = "";
+    public string CustomerPhone { get; set; } = "";
+    public string? CustomerEmail { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    /// <summary>When the one automatic email was sent after a time opened up; null if none was.</summary>
+    public DateTime? NotifiedAtUtc { get; set; }
+}
+
+/// <summary>A Facebook Page a shop owner connected to the AI receptionist (migration 038). The token is encrypted.</summary>
+public class MessengerConnection
+{
+    public string PageId { get; set; } = "";
+    public Guid BusinessId { get; set; }
+    public string PageName { get; set; } = "";
+    public string PageTokenEnc { get; set; } = "";
+    public DateTime ConnectedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>A person who messaged a shop's Facebook Page and the AI conversation that goes with them (migration 037).</summary>
+public class MessengerThread
+{
+    public Guid BusinessId { get; set; }
+    /// <summary>The person's id on that Page (a page-scoped id, not a Facebook profile id).</summary>
+    public string Psid { get; set; } = "";
+    public Guid? ChatId { get; set; }
+    public string? LastMid { get; set; }
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }

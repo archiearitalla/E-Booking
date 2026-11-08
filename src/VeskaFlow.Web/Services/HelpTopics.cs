@@ -60,6 +60,8 @@ public static class HelpTopics
             [
                 "Ask the owner to switch on Allow recording a sale by hand in Settings. Managers and owners then see Record a sale in Bookings.",
                 "Choose the service, type the amount paid and choose the date (today or up to a year back).",
+                "The time starts as now. You can change it, but it must be inside the working hours. While that service is running, the time cannot be booked by anyone else.",
+                "In the day list these show the label Manual input of sales.",
                 "Type the customer's name and mobile number if you have them. With no number, the customer is saved as a walk-in.",
                 "Press Save the sale. It is saved as a completed visit.",
             ],
@@ -73,6 +75,16 @@ public static class HelpTopics
                 "Press Mark reminded so the customer leaves the list.",
             ],
             "Nothing is sent by itself. You choose how to reach each customer.", "/Admin/Reminders", "Open Reminders"),
+
+        new("waitlist", "Waitlist: customers waiting for a full day",
+            "When a day is full, customers can ask to be told if a time opens. They show up here.",
+            [
+                "Open Waitlist. Each line is a customer who wants a time on a day that was full.",
+                "When a time is free, the line shows it and a ready message. Send it by text, email or Messenger, or copy it.",
+                "If the customer gave an email and your email switch is on, they also get one automatic email when a time opens.",
+                "Press Remove when the customer has booked or no longer needs a time. It asks first.",
+            ],
+            "The first customer to book the time gets it. Nothing is held for the person at the top of the list.", "/Admin/Waitlist", "Open Waitlist"),
 
         new("followups", "Follow-ups: bring customers back",
             "Customers you asked to come back, with a ready message when it is time.",
@@ -109,6 +121,7 @@ public static class HelpTopics
                 "Press Add suggested services to get the usual list for your kind of shop. Ones you already have are skipped.",
                 "Open a service to change it. Untick Active to hide it from customers without deleting it.",
                 "Tick Part of the promo if the promo discount should apply to this service.",
+                "To ask for a deposit, type an amount in Deposit (not more than the price). In Settings, write where customers send it (for example your GCash number). The customer sees it on their booking page; the time stays booked. When the money arrives, press Deposit received on the booking.",
                 "The Other service lets staff record something that is not on the list. You set its time; the price is typed each time.",
             ],
             "Changing a price never changes bookings that were already made.", "/Admin/Services", "Open Services", AdminLevel.Manager),
@@ -162,7 +175,8 @@ public static class HelpTopics
                 "Open Settings. At the top you can change the shop name, time zone and booking rules.",
                 "Opening hours: set one range and apply it to everyone, or set each person in Staff.",
                 "Time between slots, notice needed and how many days ahead customers can book are all here.",
-                "Cancel cutoff is how many hours before the appointment a customer can still cancel on their own.",
+                "Cancel cutoff is how many hours before the appointment a customer can still cancel or move the booking on their own.",
+                "Tick Require email confirmation to book if you get fake bookings. Customers must then give an email, we email them a link, and the booking is only confirmed when they press it (the time is held for 20 minutes). Customers with no email cannot book online, and each booking uses one email from the daily limit.",
                 "Tick Staff can type the payment total to let staff change the total on the page after a visit. Tick Allow recording a sale by hand to turn on Record a sale.",
                 "Upload your logo, or make one with the Logo Creator.",
             ],

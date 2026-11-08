@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.EntityFrameworkCore;
 using VeskaFlow.Web.Services;
 
 namespace VeskaFlow.Web.Tests;
@@ -114,6 +115,67 @@ public class CaptchaTests
             Assert.Contains("could not check that you are a person", System.Net.WebUtility.HtmlDecode(await forgotRefused.Content.ReadAsStringAsync()));
             var forgotOk = await HttpApp.PostFormAsync(client, "/ForgotPassword", new() { ["Email"] = "a@example.com", ["cf-turnstile-response"] = "good" });
             Assert.Contains("we sent a link", await forgotOk.Content.ReadAsStringAsync().ContinueWith(t => System.Net.WebUtility.HtmlDecode(t.Result)));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Turnstile__SiteKey", null);
+            Environment.SetEnvironmentVariable("Turnstile__SecretKey", null);
+        }
+    }
+
+    [Fact]
+    public async Task The_booking_form_needs_the_check_when_keys_are_set_and_a_failed_check_creates_nothing()
+    {
+        Environment.SetEnvironmentVariable("Turnstile__SiteKey", "site-key-123");
+        Environment.SetEnvironmentVariable("Turnstile__SecretKey", "secret-key");
+        try
+        {
+            var (factory, _) = await HttpApp.StartAsync();
+            using var _f = factory;
+            var client = factory.WithWebHostBuilder(b => b.ConfigureServices(s => s.AddSingleton<ICaptcha>(new FakeCaptcha())))
+                .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+
+            var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+            var slug = Id("cb");
+            var owner = (await new OnboardingService(db).RegisterAsync(
+                new RegisterRequest("Captcha Booking", slug, "Owner", $"{Id("o")}@example.com", "correct-horse-1", TrialDays: 30))).Value!;
+            await using var ctx = db.CreateDbContext();
+            var serviceId = await ctx.Services.Where(x => x.BusinessId == owner.BusinessId && !x.IsOther).Select(x => x.Id).SingleAsync();
+            var staffId = await ctx.StaffMembers.Where(x => x.BusinessId == owner.BusinessId).Select(x => x.Id).SingleAsync();
+            var free = (await new BookingService(db, TimeProvider.System).GetFreeStartsAsync(owner.BusinessId, serviceId, staffId, Seed.NextOpenDay())).Value!;
+            var url = $"/b/{slug}/confirm?serviceId={serviceId}&start={Uri.EscapeDataString(DisplayFormat.StartParam(free[0]))}";
+
+            var page = await client.GetStringAsync(url);
+            Assert.Contains("cf-turnstile", page);
+            Assert.Contains("data-sitekey=\"site-key-123\"", page);
+            Assert.DoesNotContain("secret-key", page);
+
+            async Task<HttpResponseMessage> PostAsync(string? token)
+            {
+                var html = await client.GetStringAsync(url);
+                var form = System.Text.RegularExpressions.Regex.Match(html, "<form method=\"post\".*?</form>", System.Text.RegularExpressions.RegexOptions.Singleline).Value;
+                var fields = new Dictionary<string, string>();
+                foreach (System.Text.RegularExpressions.Match tag in System.Text.RegularExpressions.Regex.Matches(form, "<input[^>]*type=\"hidden\"[^>]*>"))
+                    fields[System.Text.RegularExpressions.Regex.Match(tag.Value, "name=\"([^\"]*)\"").Groups[1].Value] =
+                        WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Match(tag.Value, "value=\"([^\"]*)\"").Groups[1].Value);
+                fields["Input.Name"] = "Maria Santos";
+                fields["Input.Phone"] = "09175550777";
+                if (token is not null) fields["cf-turnstile-response"] = token;
+                return await client.PostAsync(url, new FormUrlEncodedContent(fields));
+            }
+
+            var none = await PostAsync(null);
+            Assert.Equal(HttpStatusCode.OK, none.StatusCode); // the form again, with the message and a fresh check
+            var noneHtml = WebUtility.HtmlDecode(await none.Content.ReadAsStringAsync());
+            Assert.Contains("could not check that you are a person", noneHtml);
+            Assert.Contains("cf-turnstile", noneHtml);
+            Assert.Equal(HttpStatusCode.OK, (await PostAsync("bad")).StatusCode);
+            Assert.Equal(0, await ctx.Bookings.CountAsync(b => b.BusinessId == owner.BusinessId));
+
+            var accepted = await PostAsync("good");
+            Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+            Assert.StartsWith("/booking/", accepted.Headers.Location!.OriginalString);
+            Assert.Equal(1, await ctx.Bookings.CountAsync(b => b.BusinessId == owner.BusinessId));
         }
         finally
         {

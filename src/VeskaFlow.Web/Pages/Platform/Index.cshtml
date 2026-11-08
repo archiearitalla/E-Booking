@@ -10,7 +10,7 @@
 <h1>@Text.PlatformTitle</h1>
 <p class="muted">@Text.PlatformEmailsToday(Model.EmailsToday, Model.EmailLimit)</p>
 <p class="hint">@Text.PlatformHint</p>
-<p class="actions"><a class="button secondary" href="/Platform/Payments">@Text.PaymentsLink</a> <a class="button secondary" href="/Platform/Ai">@Text.PlatformAiLink</a></p>
+<p class="actions"><a class="button secondary" href="/Platform/Payments">@Text.PaymentsLink</a> <a class="button secondary" href="/Platform/Ai">@Text.PlatformAiLink</a> <a class="button secondary" href="/Platform/Pilot">@Text.PilotLink</a> <a class="button secondary" href="/Platform/MetaReview">@Text.PilotReviewLink</a> <a class="button secondary" href="/Platform/Walkthroughs">@Text.WalkthroughsLink</a></p>
 @if (!Model.EmailConfigured) { <div class="notice" role="status">@Text.PlatformNoEmail</div> }
 @if (!string.IsNullOrEmpty(Model.Success)) { <div class="notice" role="status">@Model.Success</div> }
 @if (!string.IsNullOrEmpty(Model.Failure)) { <div class="alert" role="alert">@Model.Failure</div> }
@@ -128,6 +128,15 @@ else
                             <button type="submit" class="secondary" data-confirm="@Text.PlatformEmailAddonAsk">@Text.PlatformAddDays<span class="sr-only"> @s.Name</span></button>
                         </form>
                         }
+                    </div>
+                    <div class="sub-row">
+                        <div class="sub-info"><strong>@Text.PlatformExtraStaff</strong><span class="sub-status @(s.ExtraStaffUntilUtc is { } xe && xe < DateTime.UtcNow ? "due" : "muted")">@PlanLimits.IncludedStaff + @s.ExtraStaff@(s.ExtraStaffUntilUtc is { } xu ? " · " + Text.PlatformExtraStaffUntil(xu.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)) : "")</span></div>
+                        <form method="post" asp-page-handler="ExtraStaff" class="sub-form">
+                            <input type="hidden" name="id" value="@s.BusinessId" />
+                            <label for="extrastaff-@s.BusinessId" class="sr-only">@Text.PlatformExtraStaff @s.Name</label>
+                            <input type="number" id="extrastaff-@s.BusinessId" name="extra" value="@s.ExtraStaff" min="0" max="@PlanLimits.MaxExtraStaff" inputmode="numeric" />
+                            <button type="submit" class="secondary" data-confirm="@Text.PlatformExtraStaffAsk">@Text.PlatformExtraStaffSave<span class="sr-only"> @s.Name</span></button>
+                        </form>
                     </div>
                 </div>
 

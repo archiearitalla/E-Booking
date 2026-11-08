@@ -40,6 +40,7 @@ public sealed class AiReceptionistService(
             {
                 ["service_id"] = new { type = "string", description = "The id of one of the listed services." },
                 ["date"] = new { type = "string", description = "The date, YYYY-MM-DD, in the shop's time zone." },
+                ["staff_id"] = new { type = "string", description = "Optional. The id of one listed person, to see only that person's free times. Use it whenever the customer asks about a person by name, or wants a particular person. Leave it out to see the times of anyone." },
             }, ["service_id", "date"]),
         new AiTool("create_booking", "Book one appointment. Only call it when the customer chose a specific free time and you have their name and phone number.",
             new Dictionary<string, object>
@@ -50,6 +51,7 @@ public sealed class AiReceptionistService(
                 ["customer_name"] = new { type = "string", description = "The customer's name." },
                 ["phone"] = new { type = "string", description = "The customer's mobile number." },
                 ["service_note"] = new { type = "string", description = "Only for the service marked 'other': what the customer needs, in a few words." },
+                ["staff_id"] = new { type = "string", description = "Optional. The id of one listed person, when the customer asked for that person and the time came from check_slots with the same staff_id. Leave it out for anyone." },
             }, ["service_id", "date", "time", "customer_name", "phone"]),
     ];
 
@@ -92,7 +94,7 @@ public sealed class AiReceptionistService(
         var conversation = lines.Select(l => l.R == "a" ? AiMessage.Assistant(l.T) : AiMessage.User(l.T)).ToList();
         conversation.Add(AiMessage.User(text));
 
-        var system = SystemPrompt(shop);
+        var system = SystemPrompt(shop, await ShopFactsAsync(shop, ct));
         long inputTokens = 0, outputTokens = 0;
         string? reply = null;
         var manageLinks = new List<string>();   // added to the reply by this class; the model never sees the secret in them
@@ -156,18 +158,55 @@ public sealed class AiReceptionistService(
         catch (JsonException) { return []; }
     }
 
-    private static string SystemPrompt(PublicShop shop)
+    /// <summary>
+    /// What the shop has set that customers ask about: opening hours, how soon and how far ahead one can book, the cancel and move cut-off, and where
+    /// to send a deposit. It is the shop's own public information (the same as the booking page shows), put in front of the model so it answers
+    /// from facts instead of guessing.
+    /// </summary>
+    private async Task<string> ShopFactsAsync(PublicShop shop, CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var settings = await db.Businesses.AsNoTracking().Where(b => b.Id == shop.Id)
+            .Select(b => new { b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.PayInstructions }).FirstOrDefaultAsync(ct);
+        var hours = await db.BusinessHours.AsNoTracking().Where(h => h.BusinessId == shop.Id).OrderBy(h => h.DayOfWeek).ThenBy(h => h.OpenTime).ToListAsync(ct);
+        var sb = new StringBuilder();
+        if (hours.Count == 0) sb.AppendLine("Opening hours: the shop has not set shop-wide opening hours; each person has their own hours, so use check_slots for what is free.");
+        else
+        {
+            sb.AppendLine("Opening hours (shop local time):");
+            foreach (var day in hours.GroupBy(h => h.DayOfWeek))
+                sb.AppendLine($"- {(DayOfWeek)day.Key}: " + string.Join(", ", day.Select(h => $"{DateTime.Today.Add(h.OpenTime.ToTimeSpan()):h:mm tt} to {DateTime.Today.Add(h.CloseTime.ToTimeSpan()):h:mm tt}")));
+            sb.AppendLine("Days not listed are closed.");
+        }
+        if (settings is not null)
+        {
+            sb.AppendLine(settings.LeadTimeMinutes > 0 ? $"A booking must be made at least {settings.LeadTimeMinutes} minutes before it starts." : "A booking can be made up to the last minute.");
+            sb.AppendLine($"Bookings open up to {settings.HorizonDays} days ahead.");
+            sb.AppendLine($"The customer can move or cancel their own booking from their booking link until {settings.CancelCutoffHours} hour(s) before it starts; after that they must contact the shop.");
+            if (!string.IsNullOrWhiteSpace(settings.PayInstructions)) sb.AppendLine("How to send a deposit or pay in advance, as the shop wrote it: " + settings.PayInstructions.Trim());
+        }
+        return sb.ToString();
+    }
+
+    private static string SystemPrompt(PublicShop shop, string facts)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"You are the booking assistant of {shop.Name}, chatting with a customer on the shop's online booking page.");
         sb.AppendLine("Reply in the customer's language (English, Tagalog or a mix). Be warm, brief and polite: a few short sentences, plain text, no markdown.");
+        sb.AppendLine("When you write Tagalog, write the way a friendly receptionist in the Philippines speaks: simple everyday words with \"po\", never a word-for-word translation. For example, to say who will attend the customer: \"Si Archie po ang tutulong sa inyo\". Other examples: \"Sa shop po kayo magbabayad\", \"Available po ang 1:00 PM bukas\". Keep service names, prices and times as they are listed.");
         sb.AppendLine();
         sb.AppendLine("Rules:");
-        sb.AppendLine("- Only help with this shop's services, prices, free times and booking. Politely decline anything else.");
+        sb.AppendLine("- Only help with this shop: its services, prices, deposits, the people who work here, free times, opening hours, how to book, move or cancel, and how to pay. Politely decline anything else. If asked what VeskaFlow is, say it is the online booking system this shop uses: customers need no account, they pick a service and a time, and they get a link to see or cancel the booking.");
         sb.AppendLine("- Never guess free times, prices or durations. Use check_slots for times and the service list below for prices.");
+        sb.AppendLine("- When the customer asks if a person is free (for example \"available ba si Archie sa Nov 3?\"), find that person in the People list and call check_slots with their staff_id. If they do more than one service and the customer did not say which, ask which service, or check the first one and say which service you checked. Answer plainly: which times that person has, or that they have none that day, and then offer the times of other people if they have some. Never say you cannot check a person.");
+        sb.AppendLine("- Answer questions about opening hours, how soon or how far ahead one can book, moving or cancelling, and sending a deposit only from the Shop information below. If the answer is not there, say you are not sure and suggest asking the shop; never invent a policy, a price or an address.");
+        sb.AppendLine("- Dates: understand \"bukas\", \"ngayon\", \"sa Biyernes\", \"next week\" and day names from today's date below; if a date is unclear, ask. Times are always the shop's local time.");
+        sb.AppendLine("- If the customer wants one person, use that staff_id in both check_slots and create_booking, with the time from that same check.");
         sb.AppendLine("- Offer at most a handful of times, spread across the day, unless the customer asks for all of them.");
         sb.AppendLine("- Before booking you need: the service, a specific free time, the customer's name and their mobile number. Ask for what is missing, one thing at a time.");
-        sb.AppendLine("- When you have all of it, call create_booking, then tell the customer the service, the day and time and who will serve them. The customer's link to see or cancel the booking is added to your reply automatically: never write a link yourself.");
+        sb.AppendLine("- When you have all of it, call create_booking, then tell the customer the service, the day and time and who will serve them. The customer's link to see or cancel the booking is added below your reply automatically: never write a link yourself and do not say where or how it will appear.");
+        sb.AppendLine("- Never say how long a service takes (minutes or hours) unless the customer asks. Never write Mr., Mrs. or Ms.: call the customer by their first name, and with \"po\" in Tagalog.");
+        sb.AppendLine("- Follow this wording for the confirmation, whatever the earlier messages in this chat said. In Tagalog: \"Na-book na po kayo, <first name>! <Service> po sa <day, date> ng <time>. Si <staff name> po ang tutulong sa inyo. Salamat po!\" In English: \"You're booked, <first name>! <Service> on <day, date> at <time> with <staff name>. Thank you!\" Add the price only if it is not free.");
         sb.AppendLine("- If a tool says a time was just taken, apologise and offer other times from check_slots.");
         sb.AppendLine("- You cannot cancel or move a booking. Point the customer to the manage link they were given, or tell them to contact the shop.");
         sb.AppendLine("- If you cannot help, tell the customer they can use the booking form on this page.");
@@ -182,7 +221,16 @@ public sealed class AiReceptionistService(
                 ? $"- id={s.Id} | {s.Name} | for anything not listed: ask what the customer needs and pass it as service_note | {s.DurationMinutes} min"
                 : shop.PriceOf(s) is { HasPromo: true } deal
                     ? $"- id={s.Id} | {s.Name} | {DisplayFormat.Price(deal.Net)} now (regular {DisplayFormat.Price(deal.Regular)}, {deal.Percent}% off) | {s.DurationMinutes} min"
-                    : $"- id={s.Id} | {s.Name} | {DisplayFormat.Price(s.Price)} | {s.DurationMinutes} min");
+                    : $"- id={s.Id} | {s.Name} | {DisplayFormat.Price(s.Price)}{(s.DepositAmount > 0 ? $" | deposit {DisplayFormat.Price(s.DepositAmount)} to hold the booking" : "")} | {s.DurationMinutes} min");
+        if (shop.Staff.Count > 0)
+        {
+            sb.AppendLine("People (id | name | does these services):");
+            foreach (var p in shop.Staff.Take(30))
+                sb.AppendLine($"- id={p.Id} | {p.Name} | " + string.Join(", ", shop.Services.Where(s => p.ServiceIds.Contains(s.Id)).Select(s => s.Name)));
+        }
+        sb.AppendLine();
+        sb.AppendLine("Shop information:");
+        sb.Append(facts);
         return sb.ToString();
     }
 
@@ -206,6 +254,20 @@ public sealed class AiReceptionistService(
     private static string Str(JsonElement args, string name) =>
         args.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? (value.GetString() ?? "").Trim() : "";
 
+    /// <summary>The optional person a tool call names, or the error to give back to the model. An id of nobody in this shop, or of someone who does not do the service, is refused.</summary>
+    private static string? ReadStaff(PublicShop shop, JsonElement args, PublicService service, out PublicStaff? person)
+    {
+        person = null;
+        var text = Str(args, "staff_id");
+        if (text.Length == 0) return null;
+        if (!Guid.TryParse(text, out var id) || shop.FindStaff(id) is not { } found)
+            return "staff_id is not one of the listed people. Leave it out to see anyone.";
+        if (!found.ServiceIds.Contains(service.Id))
+            return $"{found.Name} does not do that service. Tell the customer, and offer the people who do (see the People list).";
+        person = found;
+        return null;
+    }
+
     /// <summary>The service and local date a tool call names, or the error to give back to the model.</summary>
     private static string? ReadTarget(PublicShop shop, JsonElement args, out PublicService service, out DateOnly date)
     {
@@ -225,13 +287,15 @@ public sealed class AiReceptionistService(
     private async Task<(string, bool)> CheckSlotsAsync(PublicShop shop, JsonElement args, CancellationToken ct)
     {
         if (ReadTarget(shop, args, out var service, out var date) is { } problem) return (problem, true);
-        var result = await booking.GetFreeStartsAsync(shop.Id, service.Id, null, date, walkIn: false, ct);
+        if (ReadStaff(shop, args, service, out var person) is { } staffProblem) return (staffProblem, true);
+        var result = await booking.GetFreeStartsAsync(shop.Id, service.Id, person?.Id, date, walkIn: false, ct);
         if (!result.IsSuccess) return (result.Message ?? Text.NotFound, true);
 
         var times = result.Value!.Select(s => LocalTime.ToLocal(s, shop.TimeZone).ToString("HH:mm", Invariant)).ToList();
         return (JsonSerializer.Serialize(new
         {
             date = date.ToString("yyyy-MM-dd", Invariant),
+            person = person?.Name,
             times = times.Take(MaxTimesListed),
             more_times_not_listed = times.Count > MaxTimesListed,
             note = times.Count == 0 ? "No free times on that date. Offer another date." : null,
@@ -241,6 +305,10 @@ public sealed class AiReceptionistService(
     private async Task<(string, bool)> CreateBookingAsync(PublicShop shop, AiChat chat, JsonElement args, string baseUrl, List<string> manageLinks, CancellationToken ct)
     {
         if (ReadTarget(shop, args, out var service, out var date) is { } problem) return (problem, true);
+        // A shop that confirms bookings by email needs the customer's email and a press on the emailed link: only the form can do that.
+        if (ReadStaff(shop, args, service, out var person) is { } staffProblem) return (staffProblem, true);
+        if (shop.RequireEmailConfirm)
+            return ("This shop confirms every booking by email, which the chat cannot do. Do not book. Tell the customer to use the booking form on this page: pick the service and a time, then type the name, number and email.", true);
         if (!TimeOnly.TryParseExact(Str(args, "time"), "HH:mm", Invariant, DateTimeStyles.None, out var clock))
             return ("time must be written HH:mm (24-hour), as returned by check_slots.", true);
 
@@ -251,7 +319,7 @@ public sealed class AiReceptionistService(
         // The same conversation asking for the same slot in the same customer message (a repeated tool call) is one booking.
         var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{chat.Id}|{chat.Turns}|{service.Id}|{start:O}")))[..32].ToLowerInvariant();
         var result = await booking.CreateAsync(new CreateBookingRequest(
-            shop.Id, service.Id, null, start, name, Str(args, "phone"), null, key,
+            shop.Id, service.Id, person?.Id, start, name, Str(args, "phone"), null, key,
             BookingActor.Customer(name.Length == 0 ? "Chat assistant" : $"{name} (chat assistant)"),
             note.Length == 0 ? null : note), ct);
 
@@ -269,7 +337,7 @@ public sealed class AiReceptionistService(
         {
             status = "booked",
             service = made.ServiceName,
-            served_by = made.StaffName,
+            staff_member_who_will_attend_the_customer = made.StaffName,
             when = LocalTime.ToLocal(made.StartsAtUtc, shop.TimeZone).ToString("dddd, MMMM d 'at' h:mm tt", Invariant),
             price = DisplayFormat.Price(made.Price),
             regular_price = made.RegularPrice is { } regular ? DisplayFormat.Price(regular) : null,

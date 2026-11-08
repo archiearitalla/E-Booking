@@ -134,6 +134,16 @@ public class IndexModel(AccountControlService accounts, IConfiguration config, I
         return RedirectToPage();
     }
 
+    /// <summary>Sets the extra staff a shop paid for (beyond the 5 included), after the payment arrived.</summary>
+    public async Task<IActionResult> OnPostExtraStaffAsync(Guid id, int extra, CancellationToken ct)
+    {
+        var result = await accounts.SetExtraStaffAsync(id, extra, ct);
+        if (result.Failure == FailureKind.NotFound) return NotFound();
+        if (result.IsSuccess) Success = Text.PlatformExtraStaffSaved;
+        else Failure = result.Message;
+        return RedirectToPage();
+    }
+
     /// <summary>Adds days to a shop's paid AI receptionist add-on after the client paid for it.</summary>
     public async Task<IActionResult> OnPostAiAddonAsync(Guid id, int days, CancellationToken ct)
     {

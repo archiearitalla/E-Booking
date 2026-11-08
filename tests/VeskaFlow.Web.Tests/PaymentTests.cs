@@ -38,9 +38,10 @@ public class PaymentTests
     public void The_prices_come_from_settings_with_a_yearly_saving_and_a_price_of_zero_is_not_for_sale()
     {
         var p = Pricing();
-        Assert.Equal(new[] { "PRO-MONTH", "PRO-YEAR", "AI-MONTH", "EMAIL-MONTH" }, p.Options.Select(o => o.Key));
-        Assert.Equal((499m, 4990m), (p.ProMonthly, p.ProYearly));
-        Assert.Equal(998m, p.YearlySaving);
+        Assert.Equal(new[] { "PRO-MONTH", "PRO-YEAR", "AI-MONTH", "EMAIL-MONTH", "STAFF-MONTH" }, p.Options.Select(o => o.Key));
+        Assert.Equal(199m, p.ExtraStaffMonthly); // one extra staff member, per month
+        Assert.Equal((999m, 9990m), (p.ProMonthly, p.ProYearly));
+        Assert.Equal(1998m, p.YearlySaving);
         Assert.Equal(365, p.Find("PRO", "YEAR")!.Days);
         Assert.Equal(30, p.Find("PRO", "MONTH")!.Days);
         Assert.Null(p.Find("AI", "YEAR"));
@@ -65,7 +66,7 @@ public class PaymentTests
         var made = await c.Payments.SubmitAsync(id, "PRO-YEAR", reference, " paid by Ana ", "Owner");
         Assert.True(made.IsSuccess);
         var row = (await c.Payments.ListForShopAsync(id)).Single();
-        Assert.Equal(("PENDING", 4990m, 365, "paid by Ana"), (row.Status, row.Amount, row.Days, row.Note));                 // the price is the shop's, nothing the client typed
+        Assert.Equal(("PENDING", 9990m, 365, "paid by Ana"), (row.Status, row.Amount, row.Days, row.Note));                 // the price is the shop's, nothing the client typed
 
         Assert.Contains("reference", (await c.Payments.SubmitAsync(id, "PRO-MONTH", reference.ToLowerInvariant(), null, "Owner")).FieldErrors.Keys);   // the same reference again, any capitals
         var other = await Seed.CreateShopAsync();
@@ -157,8 +158,8 @@ public class PaymentTests
         await c.Payments.ConfirmAsync(a, "Boss");
         var totals = await c.Payments.TotalsAsync(new DateOnly(2030, 3, 1));                                                          // the test database is shared: look at what this shop added
         var mine = (await c.Payments.ListAsync("CONFIRMED", 500)).Where(p => p.BusinessId == c.Shop.BusinessId).ToList();
-        Assert.Equal((499m, 1), (mine.Sum(p => p.Amount), mine.Count));
-        Assert.True(totals.Total >= 499m && totals.Count >= 1 && totals.ByKind["PRO"] >= 499m);
+        Assert.Equal((999m, 1), (mine.Sum(p => p.Amount), mine.Count));
+        Assert.True(totals.Total >= 999m && totals.Count >= 1 && totals.ByKind["PRO"] >= 999m);
         Assert.Equal(0m, (await c.Payments.TotalsAsync(new DateOnly(2030, 2, 1))).Total);
 
         Assert.NotNull(await c.Payments.GetReceiptAsync(c.Shop.BusinessId, a));
@@ -196,9 +197,14 @@ public class PaymentTests
 
         var page = WebUtility.HtmlDecode(await tenant.GetStringAsync("/Admin/Billing"));
         Assert.Contains(Text.BillingPageTitle, page);
-        Assert.Contains("₱499", page);
-        Assert.Contains("₱4,990", page);
-        Assert.Contains(Text.BillingYearSaving("₱998"), page);
+        Assert.Contains("₱999", page);
+        Assert.Contains("₱9,990", page);
+        Assert.Contains("/js/billing.js", page);                                                                                      // the live total
+        Assert.Contains("id=\"pay-total\"", page);
+        Assert.Contains("data-kind=\"STAFF\"", page);
+        Assert.Contains("data-price=\"199\"", page);
+        Assert.Contains(Text.BillingStaffNow(5, 0, 5), page);                                                                         // 5 included + 0 extra = 5 staff
+        Assert.Contains(Text.BillingYearSaving("₱1,998"), page);
 
         var reference = Ref();
         var bad = await HttpApp.PostFormAsync(tenant, "/Admin/Billing", new() { ["Input.Option"] = "PRO-MONTH", ["Input.Reference"] = "x" }, tokenPage: "/Admin/Billing");
@@ -240,5 +246,74 @@ public class PaymentTests
         var locked = await tenant.GetAsync("/Admin/Customers");
         Assert.Equal(HttpStatusCode.Redirect, locked.StatusCode);                                                                     // everything else is still locked
         Assert.Contains("TrialEnded", locked.Headers.Location!.ToString());
+    }
+
+    [Fact]
+    public async Task Paying_for_extra_staff_sets_the_number_for_a_month_renews_and_runs_out_without_cutting_anyone_down()
+    {
+        var c = await SetupAsync();
+        var id = c.Shop.BusinessId;
+        var catalog = new CatalogAdminService(c.Db, c.Clock);
+        Task<ServiceResult<SaveOutcome>> Add(string name) => catalog.SaveStaffAsync(id, new StaffInput(null, name, true, 1, [c.Shop.ServiceId]));
+
+        // How many is needed and checked; the amount is the price of one times that, never typed. The other kinds ignore a quantity.
+        foreach (int? bad in new int?[] { null, 0, -1, 101 })
+            Assert.Contains("quantity", (await c.Payments.SubmitAsync(id, "STAFF-MONTH", Ref(), null, "Owner", bad)).FieldErrors.Keys);
+        var pro = await c.Payments.SubmitAsync(id, "PRO-MONTH", Ref(), null, "Owner", 50);
+        Assert.Equal((999m, 1), await AmountAsync(c, pro.Value));
+
+        var staff = await c.Payments.SubmitAsync(id, "STAFF-MONTH", Ref(), null, "Owner", 3);
+        Assert.True(staff.IsSuccess);
+        Assert.Equal((597m, 3), await AmountAsync(c, staff.Value)); // 3 x 199
+        Assert.Equal(0, (await ShopAsync(c)).ExtraStaff);           // nothing changes until the platform owner confirms
+
+        var confirmed = await c.Payments.ConfirmAsync(staff.Value, "Admin");
+        Assert.True(confirmed.IsSuccess, confirmed.Message);
+        var shop = await ShopAsync(c);
+        Assert.Equal(3, shop.ExtraStaff);
+        Assert.Equal(Seed.BaseNow.UtcDateTime.AddDays(30), shop.ExtraStaffUntilUtc);
+        Assert.Equal(Seed.BaseNow.UtcDateTime.AddDays(10), shop.TrialEndsAtUtc); // extra staff does not extend the access
+
+        // Room for eight active staff now: one existing and seven more; the ninth is refused.
+        for (var i = 2; i <= 8; i++) Assert.True((await Add($"Staff {i}")).IsSuccess, $"staff {i}");
+        Assert.Contains("isActive", (await Add("Staff 9")).FieldErrors.Keys);
+
+        // Paying again before the end adds a month to the end.
+        var renew = await c.Payments.SubmitAsync(id, "STAFF-MONTH", Ref(), null, "Owner", 3);
+        Assert.True((await c.Payments.ConfirmAsync(renew.Value, "Admin")).IsSuccess);
+        Assert.Equal(Seed.BaseNow.UtcDateTime.AddDays(60), (await ShopAsync(c)).ExtraStaffUntilUtc);
+
+        // When the end has passed the extra staff stop counting: nobody is cut down, but no more can be activated.
+        c.Clock.Now = c.Clock.Now.AddDays(61);
+        Assert.Equal(8, (await catalog.ListStaffAsync(id)).Count(s => s.IsActive));
+        Assert.Equal(string.Format(Text.StaffLimit, 5), (await Add("Staff 9")).FieldErrors["isActive"]);
+        Assert.Equal(0, PlanLimits.EffectiveExtra(3, Seed.BaseNow.UtcDateTime.AddDays(60), c.Clock.GetUtcNow().UtcDateTime));
+        Assert.Equal(3, PlanLimits.EffectiveExtra(3, null, c.Clock.GetUtcNow().UtcDateTime)); // set by hand: no end
+    }
+
+    private static async Task<(decimal Amount, int Quantity)> AmountAsync(Ctx c, Guid paymentId)
+    {
+        await using var ctx = c.Db.CreateDbContext();
+        var p = await ctx.Payments.AsNoTracking().SingleAsync(x => x.Id == paymentId);
+        return (p.Amount, p.Quantity);
+    }
+
+    [Fact]
+    public async Task The_platform_owner_sets_extra_staff_by_hand_with_no_end_and_cannot_record_extra_staff_as_a_payment_by_hand()
+    {
+        var c = await SetupAsync();
+        var id = c.Shop.BusinessId;
+        var accounts = new AccountControlService(c.Db, c.Clock, new ConfigurationBuilder().Build(), new CapturingEmailSender());
+
+        var staff = await c.Payments.SubmitAsync(id, "STAFF-MONTH", Ref(), null, "Owner", 2);
+        Assert.True((await c.Payments.ConfirmAsync(staff.Value, "Admin")).IsSuccess);
+        Assert.NotNull((await ShopAsync(c)).ExtraStaffUntilUtc);
+
+        Assert.True((await accounts.SetExtraStaffAsync(id, 4)).IsSuccess);          // by hand
+        var shop = await ShopAsync(c);
+        Assert.Equal(4, shop.ExtraStaff);
+        Assert.Null(shop.ExtraStaffUntilUtc);                                        // and it no longer ends
+
+        Assert.Contains("option", (await c.Payments.RecordByHandAsync(id, "STAFF-MONTH", null, "hand", "Admin")).FieldErrors.Keys);
     }
 }

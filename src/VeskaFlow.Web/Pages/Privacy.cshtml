@@ -18,6 +18,7 @@
         <li><strong>Shop owners and staff:</strong> name, email address, a password (kept only as a salted hash, never as text), the shop's name, address, hours and settings, a logo if the owner uploads one, and when they agreed to the Terms.</li>
         <li><strong>A shop's customers:</strong> name, mobile number, an email address if given, and their bookings (service, staff member, date and time, status).</li>
         <li><strong>Chat messages (only for shops that switch on the AI assistant):</strong> what a customer types in the chat on the shop's booking page, which can include their name, mobile number and what they want, and the assistant's replies. They are kept as plain text for 30 days and then deleted. Nothing else is kept from a chat; a booking made in the chat is an ordinary booking.</li>
+        <li><strong>Facebook Messenger (only for shops that connect their Facebook Page):</strong> when a person writes to the shop's Page, we receive the message text, an identifier Facebook gives that person for that Page (not their name or profile), and the assistant's replies. They are kept as plain text for 30 days, the same as a chat on the booking page, and then deleted. We do not receive or keep the person's Facebook name, photo or profile. When the shop's owner connects the Page we also keep the Page's name and its access token, which is stored encrypted and removed when the owner disconnects the Page.</li>
         <li><strong>Notes written by the shop:</strong> a clinic can record a visit note (a medical record) and a follow-up. This can include health information, which the law treats as sensitive. It is visible only to staff who are signed in to that shop. It is never shown to the customer on the booking page and never put into a message by the system.</li>
         <li><strong>Technical records:</strong> a change log of bookings (who did what and when), and the standard technical logs our hosting keeps (such as the time of a request and the network address it came from) for a limited time, used to run and protect the service.</li>
     </ul>
@@ -35,6 +36,7 @@
         <li><strong>Brevo</strong>: sends the emails listed above (it receives the recipient's email address, the name used in the greeting and the message, which for a customer includes the booking details).</li>
         <li><strong>Cloudflare</strong>: the domain name and, when it is switched on, a "are you a person" check on sign-up and on the forgotten-password page (it receives what your browser sends with the check, such as the network address).</li>
         <li><strong>Anthropic</strong>: the AI service behind the optional chat assistant. It receives only what is described under "Why we use it", and only for shops that switch the assistant on. Its own terms and privacy policy apply to what it receives.</li>
+        <li><strong>Meta (Facebook and Messenger)</strong>: only for shops that connect their Facebook Page. Meta delivers the messages people send to the Page and carries the assistant's replies back. Meta's own terms and privacy policy apply to what people send through Messenger.</li>
         <li><strong>GitHub</strong>: holds our nightly backup of the database. The backup is encrypted before it is stored, and only we hold the key.</li>
     </ul>
     <p>Some of these providers keep data outside the Philippines. We choose providers that protect data, and we remain responsible for it as the shop's processor.</p>
@@ -52,7 +54,7 @@
     <p>The service is for businesses. A shop's customers may include children (for example a child's haircut). The shop is responsible for having a parent's or guardian's permission to keep a child's details. Do not sign up for a shop account if you are under 18.</p>
 
     <h2>Your rights</h2>
-    <p>If you are a customer of a shop you can ask to see, correct or delete your data, to object to how it is used, or to receive a copy of it. Ask the shop first: it can export or delete your data in the app. If you cannot reach the shop, or you are a shop owner, contact us at @contact. You also have the right to complain to the National Privacy Commission (privacy.gov.ph).</p>
+    <p>If you are a customer of a shop you can ask to see, correct or delete your data, to object to how it is used, or to receive a copy of it. Ask the shop first: it can export or delete your data in the app. If you cannot reach the shop, or you are a shop owner, contact us at @contact. You also have the right to complain to the National Privacy Commission (privacy.gov.ph). How to have the data from a Messenger chat deleted is explained at <a href="/data-deletion">/data-deletion</a>.</p>
 
     <h2>Changes</h2>
     <p>When this notice changes we change the version above. This notice is a plain description of how the system works. It is not legal advice.</p>

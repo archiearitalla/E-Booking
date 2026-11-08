@@ -12,6 +12,7 @@ public class ManageModel(BookingService booking, IConfiguration config) : PageMo
     public BookingDetails? Details { get; private set; }
     public bool JustBooked { get; private set; }
     public string? Message { get; private set; }
+    public string? Notice { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string token, int? confirmed, CancellationToken ct)
     {
@@ -19,6 +20,7 @@ public class ManageModel(BookingService booking, IConfiguration config) : PageMo
         if (Details is null) return NotFound(); // same page as an unknown shop
         JustBooked = confirmed == 1;
         Message = TempData[MessageKey] as string;
+        Notice = TempData[NoticeKey] as string;
         return Page();
     }
 
@@ -55,4 +57,5 @@ public class ManageModel(BookingService booking, IConfiguration config) : PageMo
     }
 
     private const string MessageKey = "ManageMessage";
+    public const string NoticeKey = "ManageNotice";
 }

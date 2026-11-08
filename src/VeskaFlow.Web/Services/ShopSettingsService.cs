@@ -8,12 +8,13 @@ namespace VeskaFlow.Web.Services;
 public sealed record ShopSettings(
     string Slug, string Plan, string Name, string TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
     string BrandColor = BrandColors.Default, DateTime? TrialEndsAtUtc = null, int FollowUpNoticeDays = 3, int ReminderHours = 24,
-    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default, bool AllowManualSales = false);
+    bool CustomerEmails = true, DateTime? EmailAddonUntilUtc = null, bool AllowManualTotal = true, string Industry = Industries.Default, bool AllowManualSales = false, string? PayInstructions = null, bool RequireEmailConfirm = false, int ExtraStaff = 0, DateTime? ExtraStaffUntilUtc = null);
 
-/// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged.</summary>
+/// <summary><c>BrandColor</c> and <c>FollowUpNoticeDays</c> null leave the saved value unchanged. <c>PayInstructions</c> null leaves it unchanged; empty clears it.</summary>
 public sealed record SettingsInput(
     string? Name, string? TimeZone, int SlotMinutes, int LeadTimeMinutes, int HorizonDays, int CancelCutoffHours,
-    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null, bool? CustomerEmails = null, bool? AllowManualTotal = null, bool? AllowManualSales = null);
+    string? BrandColor = null, int? FollowUpNoticeDays = null, int? ReminderHours = null, bool? CustomerEmails = null, bool? AllowManualTotal = null, bool? AllowManualSales = null,
+    string? PayInstructions = null, bool? RequireEmailConfirm = null);
 
 /// <summary>The accent colors a shop can pick. The keys match the CHECK constraint and the <c>data-theme</c> rules in site.css.</summary>
 public static class BrandColors
@@ -48,9 +49,10 @@ public sealed record WeeklyClosureRow(Guid Id, Guid? StaffId, string? StaffName,
 public sealed record WeeklyClosureInput(Guid? StaffId, int? DayOfWeek, string? Reason, TimeOnly? StartTime = null, TimeOnly? EndTime = null);
 
 /// <summary>Business settings and closures (blackouts). Business id always comes from the signed-in user.</summary>
-public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, IEmailPlatform? emailPlatform = null)
 {
     public static readonly int[] AllowedSlotMinutes = [5, 10, 15, 20, 30, 60];
+    public const int MaxPayInstructions = 300;
 
     // ------------------------------------------------------------------ settings
 
@@ -58,7 +60,7 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Businesses.AsNoTracking().Where(b => b.Id == businessId)
-            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry, b.AllowManualSales))
+            .Select(b => new ShopSettings(b.Slug, b.Plan, b.Name, b.TimeZone, b.SlotMinutes, b.LeadTimeMinutes, b.HorizonDays, b.CancelCutoffHours, b.BrandColor, b.TrialEndsAtUtc, b.FollowUpNoticeDays, b.ReminderHours, b.CustomerEmails, b.EmailAddonUntilUtc, b.AllowManualTotal, b.Industry, b.AllowManualSales, b.PayInstructions, b.RequireEmailConfirm, b.ExtraStaff, b.ExtraStaffUntilUtc))
             .FirstOrDefaultAsync(ct);
     }
 
@@ -92,11 +94,21 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.BrandColor is not null && !BrandColors.IsValid(input.BrandColor)) errors["brandColor"] = Text.BrandColorInvalid;
         if (input.FollowUpNoticeDays is < 0 or > 60) errors["followUpNoticeDays"] = Text.FollowUpNoticeDaysInvalid;
         if (input.ReminderHours is < 1 or > 168) errors["reminderHours"] = Text.ReminderHoursInvalid;
+        if (input.PayInstructions is { } instructions && instructions.Trim().Length > MaxPayInstructions) errors["payInstructions"] = Text.PayInstructionsInvalid;
         if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var business = await db.Businesses.FirstOrDefaultAsync(b => b.Id == businessId, ct);
         if (business is null) return ServiceResult<bool>.Fail(FailureKind.NotFound, Text.NotFound);
+
+        // The email features need the platform to have an email service. Switching one ON without it is refused; leaving one as it was,
+        // or switching it OFF, is always allowed.
+        if (emailPlatform is { IsEnabled: false })
+        {
+            if (input.CustomerEmails == true && !business.CustomerEmails) errors["customerEmails"] = Text.EmailPlatformOff;
+            if (input.RequireEmailConfirm == true && !business.RequireEmailConfirm) errors["requireEmailConfirm"] = Text.EmailPlatformOff;
+            if (errors.Count > 0) return ServiceResult<bool>.Invalid(errors);
+        }
 
         if (input.BrandColor is not null) business.BrandColor = input.BrandColor;
         if (input.FollowUpNoticeDays is { } noticeDays) business.FollowUpNoticeDays = noticeDays;
@@ -104,6 +116,8 @@ public sealed class ShopSettingsService(IDbContextFactory<AppDbContext> dbFactor
         if (input.CustomerEmails is { } customerEmails) business.CustomerEmails = customerEmails;
         if (input.AllowManualTotal is { } manualTotal) business.AllowManualTotal = manualTotal;
         if (input.AllowManualSales is { } manualSales) business.AllowManualSales = manualSales;
+        if (input.RequireEmailConfirm is { } requireConfirm) business.RequireEmailConfirm = requireConfirm;
+        if (input.PayInstructions is { } payInstructions) business.PayInstructions = payInstructions.Trim().Length == 0 ? null : payInstructions.Trim();
         var zoneChanged = !string.Equals(business.TimeZone, zone, StringComparison.Ordinal);
         business.Name = name;
         business.TimeZone = zone;

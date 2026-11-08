@@ -19,7 +19,10 @@ public class RecordSaleModel(ManualSaleService sales, CatalogAdminService catalo
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (!await LoadAsync(ct)) return NotFound();
-        Input = new SaleForm { Date = Today, IdempotencyKey = Guid.NewGuid().ToString("N") };
+        // The time starts as now (when the sale is entered); the person can change it. The service keeps it inside the working hours.
+        var zone = (await settings.GetSettingsAsync(BusinessId, ct))?.TimeZone ?? "Asia/Manila";
+        var nowLocal = LocalTime.ToLocal(time.GetUtcNow().UtcDateTime, zone);
+        Input = new SaleForm { Date = Today, Time = nowLocal.ToString("HH:mm", CultureInfo.InvariantCulture), IdempotencyKey = Guid.NewGuid().ToString("N") };
         return Page();
     }
 

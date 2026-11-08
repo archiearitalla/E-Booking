@@ -5,7 +5,7 @@ namespace VeskaFlow.Web.Services;
 
 public sealed record ShopRow(
     Guid BusinessId, string Slug, string Name, string Industry, Guid OwnerUserId, string OwnerName, string OwnerEmail,
-    DateTime CreatedAtUtc, bool EmailConfirmed, bool Enabled, DateTime? TrialEndsAtUtc, DateTime? EmailAddonUntilUtc = null, DateTime? AiAddonUntilUtc = null);
+    DateTime CreatedAtUtc, bool EmailConfirmed, bool Enabled, DateTime? TrialEndsAtUtc, DateTime? EmailAddonUntilUtc = null, DateTime? AiAddonUntilUtc = null, int ExtraStaff = 0, DateTime? ExtraStaffUntilUtc = null);
 
 /// <summary>A confirmation link that has been issued: the raw token (only ever in the email) and who it is for.</summary>
 public sealed record IssuedConfirmation(string Token, string Email, string Name);
@@ -177,6 +177,32 @@ public sealed class AccountControlService(
         await db.SaveChangesAsync(ct);
     }
 
+    // ------------------------------------------------------------------ pilot checklist (the platform owner's own notes)
+
+    /// <summary>The checklist items the platform owner ticked, as item id and when.</summary>
+    public async Task<IReadOnlyDictionary<string, DateTime>> GetPilotChecksAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var prefix = PilotChecklist.Key("");
+        var rows = await db.PlatformSettings.AsNoTracking().Where(s => s.Key.StartsWith(prefix) && s.Value == "1").ToListAsync(ct);
+        return rows.Where(r => PilotChecklist.IsKnown(r.Key[prefix.Length..]))
+            .ToDictionary(r => r.Key[prefix.Length..], r => DateTime.SpecifyKind(r.UpdatedAtUtc, DateTimeKind.Utc));
+    }
+
+    /// <summary>Ticks or unticks one item. An id that is not on the checklist is refused (nothing is stored for it).</summary>
+    public async Task<bool> SetPilotCheckAsync(string? itemId, bool done, CancellationToken ct = default)
+    {
+        if (!PilotChecklist.IsKnown(itemId)) return false;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = time.GetUtcNow().UtcDateTime;
+        var key = PilotChecklist.Key(itemId!);
+        var row = await db.PlatformSettings.FirstOrDefaultAsync(s => s.Key == key, ct);
+        if (row is null) db.PlatformSettings.Add(new PlatformSetting { Key = key, Value = done ? "1" : "0", UpdatedAtUtc = now });
+        else { row.Value = done ? "1" : "0"; row.UpdatedAtUtc = now; }
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     /// <summary>Whole days since the last saved copy at <paramref name="now"/>, or null when none was ever recorded.</summary>
     public static int? DaysSince(DateTime? savedAtUtc, DateTime now) =>
         savedAtUtc is { } saved ? Math.Max(0, (int)(now - saved).TotalDays) : null;
@@ -214,7 +240,7 @@ public sealed class AccountControlService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var shops = await db.Businesses.AsNoTracking().OrderByDescending(b => b.CreatedAtUtc)
-            .Select(b => new { b.Id, b.Slug, b.Name, b.Industry, b.CreatedAtUtc, b.IsEnabled, b.TrialEndsAtUtc, b.EmailAddonUntilUtc, b.AiAddonUntilUtc }).ToListAsync(ct);
+            .Select(b => new { b.Id, b.Slug, b.Name, b.Industry, b.CreatedAtUtc, b.IsEnabled, b.TrialEndsAtUtc, b.EmailAddonUntilUtc, b.AiAddonUntilUtc, b.ExtraStaff, b.ExtraStaffUntilUtc }).ToListAsync(ct);
         var owners = (await db.AdminUsers.AsNoTracking().Where(u => u.Role == "OWNER").OrderBy(u => u.CreatedAtUtc)
                 .Select(u => new { u.Id, u.BusinessId, u.DisplayName, u.Email, Confirmed = u.EmailConfirmedAtUtc != null }).ToListAsync(ct))
             .GroupBy(u => u.BusinessId).ToDictionary(g => g.Key, g => g.First());
@@ -223,8 +249,21 @@ public sealed class AccountControlService(
         {
             var owner = owners.GetValueOrDefault(s.Id);
             return new ShopRow(s.Id, s.Slug, s.Name, s.Industry, owner?.Id ?? Guid.Empty, owner?.DisplayName ?? "", owner?.Email ?? "",
-                s.CreatedAtUtc, owner?.Confirmed ?? false, s.IsEnabled, s.TrialEndsAtUtc, s.EmailAddonUntilUtc, s.AiAddonUntilUtc);
+                s.CreatedAtUtc, owner?.Confirmed ?? false, s.IsEnabled, s.TrialEndsAtUtc, s.EmailAddonUntilUtc, s.AiAddonUntilUtc, s.ExtraStaff, s.ExtraStaffUntilUtc);
         }).ToList();
+    }
+
+    /// <summary>
+    /// Sets how many extra staff (beyond the 5 included) a shop paid for. The platform owner does this by hand after the payment. A shop that
+    /// already has more active staff than the new limit is not cut down; it just cannot activate more.
+    /// </summary>
+    public async Task<ServiceResult<int>> SetExtraStaffAsync(Guid businessId, int extraStaff, CancellationToken ct = default)
+    {
+        if (extraStaff is < 0 or > PlanLimits.MaxExtraStaff)
+            return ServiceResult<int>.Fail(FailureKind.Validation, Text.PlatformExtraStaffInvalid);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var changed = await db.Businesses.Where(b => b.Id == businessId).ExecuteUpdateAsync(s => s.SetProperty(b => b.ExtraStaff, extraStaff).SetProperty(b => b.ExtraStaffUntilUtc, (DateTime?)null), ct); // set by hand: no end date
+        return changed == 0 ? ServiceResult<int>.Fail(FailureKind.NotFound, Text.NotFound) : ServiceResult<int>.Ok(extraStaff);
     }
 
     public async Task<ServiceResult<bool>> SetEnabledAsync(Guid businessId, bool enabled, CancellationToken ct = default)
@@ -330,6 +369,7 @@ public sealed class AccountControlService(
         // Children first, one transaction: either the whole shop goes or nothing does.
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.AuditLogs.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
+        await db.WaitlistEntries.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.Bookings.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.Customers.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);
         await db.WeeklyClosures.Where(x => x.BusinessId == businessId).ExecuteDeleteAsync(ct);

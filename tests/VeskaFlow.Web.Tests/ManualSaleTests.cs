@@ -40,6 +40,108 @@ public class ManualSaleTests
         new(serviceId ?? c.Shop.ServiceId, note, date ?? Today, null, amount, name, phone, null, key ?? Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public async Task A_sale_recorded_for_a_time_that_is_still_running_blocks_that_time_for_new_bookings()
+    {
+        var c = await SetupAsync();
+        c.Clock.Now = new DateTimeOffset(Seed.Manila(4, 10, 10), TimeSpan.Zero); // 10:10, Monday
+        var bookings = new BookingService(c.Db, c.Clock);
+        var shop = c.Shop;
+        async Task<IReadOnlyList<DateTime>> FreeNow() => (await bookings.GetFreeStartsAsync(shop.BusinessId, shop.ServiceId, null, Today, walkIn: true)).Value!;
+
+        Assert.Contains(Seed.Manila(4, 10), await FreeNow()); // the 10:00 slot is free before the sale
+
+        // A 30-minute service done from 10:00 (it is still running at 10:10).
+        var made = await c.Sales.RecordAsync(shop.BusinessId, Sale(c, 250m) with { Time = new TimeOnly(10, 0) }, Manager);
+        Assert.True(made.IsSuccess);
+
+        var free = await FreeNow();
+        Assert.DoesNotContain(Seed.Manila(4, 10), free);   // that time is no longer available
+        Assert.Contains(Seed.Manila(4, 10, 30), free);     // the next one is
+        var taken = await bookings.CreateAsync(Seed.Request(shop, Seed.Manila(4, 10), actor: Manager));
+        Assert.Equal(FailureKind.SlotTaken, taken.Failure);
+        Assert.True((await bookings.CreateAsync(Seed.Request(shop, Seed.Manila(4, 10, 30), actor: Manager))).IsSuccess);
+
+        await using var ctx = c.Db.CreateDbContext();
+        Assert.True((await ctx.Bookings.SingleAsync(b => b.Id == made.Value)).IsManualSale);
+    }
+
+    [Fact]
+    public async Task A_sale_whose_time_is_over_blocks_nothing_and_an_ordinary_booking_is_not_a_manual_sale()
+    {
+        var c = await SetupAsync();
+        c.Clock.Now = new DateTimeOffset(Seed.Manila(4, 14), TimeSpan.Zero); // 14:00
+        var bookings = new BookingService(c.Db, c.Clock);
+        var shop = c.Shop;
+
+        var made = await c.Sales.RecordAsync(shop.BusinessId, Sale(c, 250m) with { Time = new TimeOnly(10, 0) }, Manager); // done 10:00 to 10:30
+        Assert.True(made.IsSuccess);
+        // Looking back at 10:00 the slot is not offered because it is in the past; the point is the sale added no block now.
+        var free = (await bookings.GetFreeStartsAsync(shop.BusinessId, shop.ServiceId, null, Today, walkIn: true)).Value!;
+        Assert.Contains(Seed.Manila(4, 14), free);
+        Assert.Contains(Seed.Manila(4, 14, 30), free);
+
+        var ordinary = await bookings.CreateAsync(Seed.Request(shop, Seed.Manila(4, 15), actor: Manager));
+        await using var ctx = c.Db.CreateDbContext();
+        Assert.False((await ctx.Bookings.SingleAsync(b => b.Id == ordinary.Value!.Booking.Id)).IsManualSale);
+    }
+
+    [Fact]
+    public async Task The_time_defaults_to_when_it_was_entered_stays_inside_the_working_hours_and_the_day_view_labels_it()
+    {
+        var c = await SetupAsync(); // hours are 9:00 to 18:00 every day, the service takes 30 minutes
+        async Task<DateTime> StartOf(Guid id) { await using var ctx = c.Db.CreateDbContext(); return (await ctx.Bookings.SingleAsync(b => b.Id == id)).StartsAtUtc; }
+
+        c.Clock.Now = new DateTimeOffset(Seed.Manila(4, 11, 20), TimeSpan.Zero); // entered at 11:20, no time typed
+        var now = await c.Sales.RecordAsync(c.Shop.BusinessId, Sale(c), Manager);
+        Assert.Equal(Seed.Manila(4, 11, 20), await StartOf(now.Value));
+
+        c.Clock.Now = new DateTimeOffset(Seed.Manila(4, 20), TimeSpan.Zero); // entered at 20:00, after closing, no time typed
+        var late = await c.Sales.RecordAsync(c.Shop.BusinessId, Sale(c), Manager);
+        Assert.Equal(Seed.Manila(4, 17, 30), await StartOf(late.Value)); // the last 30 minutes of the working hours
+
+        c.Clock.Now = new DateTimeOffset(Seed.Manila(4, 8), TimeSpan.Zero); // entered at 8:00, before opening: kept as entered
+        var early = await c.Sales.RecordAsync(c.Shop.BusinessId, Sale(c), Manager);
+        Assert.Equal(Seed.Manila(4, 8), await StartOf(early.Value));
+
+        // A time typed outside the hours is refused (nothing saved); inside the hours it is kept.
+        c.Clock.Now = new DateTimeOffset(Seed.Manila(4, 20), TimeSpan.Zero);
+        var outside = await c.Sales.RecordAsync(c.Shop.BusinessId, Sale(c) with { Time = new TimeOnly(7, 0) }, Manager);
+        Assert.Contains("time", outside.FieldErrors.Keys);
+        Assert.Contains("time", (await c.Sales.RecordAsync(c.Shop.BusinessId, Sale(c) with { Time = new TimeOnly(18, 0) }, Manager)).FieldErrors.Keys); // closing time itself is outside
+        var typed = await c.Sales.RecordAsync(c.Shop.BusinessId, Sale(c) with { Time = new TimeOnly(13, 15) }, Manager);
+        Assert.Equal(Seed.Manila(4, 13, 15), await StartOf(typed.Value));
+
+        var day = (await new AdminDayService(c.Db, c.Clock).GetDayAsync(c.Shop.BusinessId, Today))!;
+        Assert.All(day.Bookings, b => Assert.True(b.IsManualSale)); // every one of these was typed in by hand
+    }
+
+    [Fact]
+    public async Task The_label_shows_in_the_day_list_and_in_the_list_under_the_Done_and_Earned_cards()
+    {
+        var (factory, client) = await HttpApp.StartAsync();
+        using var _f = factory;
+        var db = new TestDbFactory(await TestDb.ConnectionStringAsync());
+        var email = $"o{Guid.NewGuid():N}"[..12] + "@example.com";
+        var owner = (await new OnboardingService(db, TimeProvider.System).RegisterAsync(
+            new RegisterRequest("Label Shop", "lb" + Guid.NewGuid().ToString("N")[..10], "Owner", email, "correct-horse-1", TrialDays: 30))).Value!;
+        await using (var ctx = db.CreateDbContext())
+            await ctx.Businesses.Where(b => b.Id == owner.BusinessId).ExecuteUpdateAsync(u => u.SetProperty(b => b.AllowManualSales, true));
+        var serviceId = await db.CreateDbContext().Services.Where(s => s.BusinessId == owner.BusinessId && !s.IsOther).Select(s => s.Id).SingleAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
+        var made = await new ManualSaleService(db, TimeProvider.System).RecordAsync(owner.BusinessId,
+            new ManualSaleInput(serviceId, null, today, null, 200m, "Mark Santos", null, null, Guid.NewGuid().ToString("N")),
+            BookingActor.Staff(owner.AdminUserId, "Owner"));
+        Assert.True(made.IsSuccess, made.Message);
+
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, (await HttpApp.PostFormAsync(client, "/Login", new() { ["Input.Email"] = email, ["Input.Password"] = "correct-horse-1" })).StatusCode);
+        var date = DisplayFormat.DateParam(today);
+        string Page(string html) => System.Net.WebUtility.HtmlDecode(html);
+        Assert.Contains(Text.ManualSaleBadge, Page(await client.GetStringAsync($"/Admin?date={date}&status=done")));   // the Done list
+        Assert.Contains(Text.ManualSaleBadge, Page(await client.GetStringAsync($"/Admin?date={date}&kpi=done")));     // under the Done card
+        Assert.Contains(Text.ManualSaleBadge, Page(await client.GetStringAsync($"/Admin?date={date}&kpi=earned")));   // under the Earned card
+    }
+
+    [Fact]
     public async Task It_is_off_until_the_shop_switches_it_on_in_Settings()
     {
         var c = await SetupAsync(switchedOn: false);

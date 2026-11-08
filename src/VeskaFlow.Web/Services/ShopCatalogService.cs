@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace VeskaFlow.Web.Services;
 
-public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false, bool PromoEligible = true);
+public sealed record PublicService(Guid Id, string Name, int DurationMinutes, decimal Price, bool IsOther = false, bool PromoEligible = true, decimal DepositAmount = 0m);
 
 /// <summary>A service's price on the booking page: the regular price, and, while a promo discount applies to it, the price after the discount.</summary>
 public sealed record ServicePrice(decimal Regular, decimal Net, int? Percent)
@@ -19,7 +19,7 @@ public sealed record PublicStaff(Guid Id, string Name, IReadOnlyList<Guid> Servi
 public sealed record PublicShop(
     Guid Id, string Slug, string Name, string TimeZone, int HorizonDays,
     DateOnly Today, IReadOnlyList<PublicService> Services, IReadOnlyList<PublicStaff> Staff, string BrandColor = BrandColors.Default,
-    bool AcceptingBookings = true, string Industry = Industries.Default, int? PromoPercent = null)
+    bool AcceptingBookings = true, string Industry = Industries.Default, int? PromoPercent = null, bool RequireEmailConfirm = false)
 {
     /// <summary>What a customer pays for this service if booked now: the regular price, or the promo price while a discount runs and the service is part of it.</summary>
     public ServicePrice PriceOf(PublicService service) =>
@@ -31,7 +31,7 @@ public sealed record PublicShop(
     public PublicStaff? FindStaff(Guid? id) => Staff.FirstOrDefault(s => s.Id == id);
 }
 
-public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
+public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time, IEmailPlatform? emailPlatform = null)
 {
     /// <summary>
     /// Days (from today, for <paramref name="days"/> days) on which the whole shop is closed, so the booking page does not
@@ -85,7 +85,7 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
         var services = await db.Services.AsNoTracking()
             .Where(s => s.BusinessId == business.Id && s.IsActive)
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Name)
-            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther, s.PromoEligible))
+            .Select(s => new PublicService(s.Id, s.Name, s.DurationMinutes, s.Price, s.IsOther, s.PromoEligible, s.DepositAmount))
             .ToListAsync(ct);
 
         var staffRows = await db.StaffMembers.AsNoTracking()
@@ -103,6 +103,6 @@ public sealed class ShopCatalogService(IDbContextFactory<AppDbContext> dbFactory
             services, staffRows.Select(s => new PublicStaff(s.Id, s.Name, s.ServiceIds)).ToList(), business.BrandColor,
             business.IsEnabled && (business.TrialEndsAtUtc is not { } ends
                 || time.GetUtcNow().UtcDateTime <= DateTime.SpecifyKind(ends, DateTimeKind.Utc)),
-            business.Industry, promoPercent);
+            business.Industry, promoPercent, business.RequireEmailConfirm && (emailPlatform?.IsEnabled ?? true));
     }
 }

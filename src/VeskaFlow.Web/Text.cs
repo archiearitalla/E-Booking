@@ -18,6 +18,8 @@ public static class Text
     public const string NotAllowed = "That action is not allowed.";
 
     public const string AppName = "VeskaFlow";
+    public const string ThemeToLight = "Switch to bright theme";
+    public const string ThemeToDark = "Switch to dark theme";
     public const string BusinessNameInvalid = "Enter your shop name (1 to 80 characters).";
     public const string SlugInvalid = "The booking address needs at least 3 letters or numbers.";
     public static string SignedUpAddress(string slug) => $"Welcome! Your online booking page is at /b/{slug}. Share that address, or the QR code in Settings, with your customers.";
@@ -117,6 +119,9 @@ public static class Text
     public const string BookAnotherDate = "Pick another date";
     public const string BookAvailableTimes = "Available times on";
     public const string BookNoTimes = "No times are available on this day. Try another date.";
+    public static string BookStaffNoTimes(string name) => $"{name} has no free time on this day, but other people do.";
+    public const string BookShowAnyone = "Show times with anyone available";
+    public const string BookStaffNoTimeTag = "No free time";
     public const string BookPickService = "Choose a service to see available times.";
     public const string BookTaken = "That time was just taken. Please choose another time below.";
     public const string BookStaffMismatch = "That person does not offer this service. Choose someone else or any available.";
@@ -145,6 +150,39 @@ public static class Text
     public const string ManageShop = "Shop";
     public const string ManageService = "Service";
     public const string ManageClosed = "This booking can no longer be changed online.";
+    public const string LabelDeposit = "Deposit (PHP)";
+    public const string HintDeposit = "Optional. An amount the customer pays to keep the slot, up to the price. 0 means none. You mark it received by hand; the slot is held either way.";
+    public const string DepositInvalid = "The deposit must be 0 or more, and not more than the price.";
+    public const string LabelPayInstructions = "Where customers send a deposit";
+    public const string HintPayInstructions = "For example: GCash 0917 000 0000, name Juan Dela Cruz. Shown on the booking page of a service that asks for a deposit.";
+    public const string PayInstructionsInvalid = "Keep this to 300 characters or fewer.";
+    public const string DepositLabel = "Deposit";
+    public const string DepositReceived = "Received";
+    public const string DepositNotYet = "Not yet";
+    public const string DepositMarkReceived = "Deposit received";
+    public const string DepositUndo = "Undo deposit received";
+    public const string ConfirmDepositReceived = "Mark this deposit as received?";
+    public const string ConfirmDepositUndo = "Undo? The deposit will show as not received.";
+    public const string DepositMarkedReceived = "Deposit marked as received.";
+    public const string DepositMarkedUndone = "Deposit marked as not received.";
+    public const string DepositNotApplicable = "Only a confirmed booking that asks for a deposit can be marked.";
+    public const string DepositCancelHint = "A deposit was received. Write in the reason whether you refund it or keep it.";
+    public const string BookDepositNote = "Paid by you after booking; the next page shows how. Your time is booked either way.";
+    public const string ManageDepositDue = "Deposit: {0}";
+    public const string ManageDepositHow = "Pay the deposit as shown, then send your proof of payment to the shop. Your time stays booked.";
+    public const string ManageDepositReceived = "Your deposit of {0} was received. Thank you.";
+    public const string ManageMoveButton = "Move booking";
+    public const string ManageMoveHint = "You can also move it to another time, up to {0} hour(s) before your appointment.";
+    public const string MoveTitle = "Move your booking";
+    public const string MoveHint = "Pick a new date, then a free time. You keep the same staff member and service.";
+    public const string MoveCurrent = "Now";
+    public const string MoveDate = "New date";
+    public const string MoveShowTimes = "Show times";
+    public const string MoveNoTimes = "No free times on that date. Try another date.";
+    public const string MoveSave = "Move my booking";
+    public const string MoveConfirm = "Move your booking to the time you picked?";
+    public const string MoveDone = "Your booking was moved. The time below is your new time.";
+    public const string MoveBack = "Back to my booking";
 
     // Back office
     public const string SkipToContent = "Skip to content";
@@ -268,6 +306,37 @@ public static class Text
     public const string ConfirmSaveWalkIn = "Save this walk-in booking?";
     public const string PlatformSendLinkAsk = "Send a new confirmation link to this owner?";
     public const string AdminNavReminders = "Reminders";
+    public const string AdminNavWaitlist = "Waitlist";
+
+    // ---- waitlist (rules 7.3)
+    public const string WaitlistTitle = "Notify me if a time opens";
+    public const string WaitlistLink = "Notify me if a time opens";
+    public const string WaitlistLinkHint = "This day is full. Leave your details and the shop will tell you if a time opens up.";
+    public static string WaitlistLinkHintStaff(string name) => $"Want to wait for {name}? Leave your details and the shop will tell you if a time opens up.";
+    public static string WaitlistIntro(string service, string day) => $"Leave your details for {service} on {day}. If a time opens up, the shop will contact you. If you give an email, you also get one email when a time opens.";
+    public const string WaitlistEmailLabel = "Email (optional, for one message when a time opens)";
+    public const string WaitlistSubmit = "Join the waitlist";
+    public const string WaitlistConfirmAsk = "Join the waitlist for this day?";
+    public const string WaitlistBack = "Back to the times";
+    public const string WaitlistJoined = "You are on the waitlist. The shop will contact you if a time opens up.";
+    public const string WaitlistSlotsFree = "This day has free times now. Please pick one on the booking page.";
+    public const string WaitlistDayInvalid = "Choose a day from today up to the last day this shop takes bookings.";
+    public const string WaitlistTooMany = "You are already on the waitlist a few times. Please wait for the shop to contact you.";
+    public const string WaitlistShopFull = "The waitlist is full for now. Please try again later or contact the shop.";
+    public const string WaitlistAdminHint = "Customers who asked to be told when a time opens on a full day. A time opens when a booking is cancelled or moved. Message them yourself, or they get one automatic email if they gave an address and your email switch is on.";
+    public const string WaitlistEmpty = "No one is on the waitlist.";
+    public const string WaitlistNoFree = "No free time yet.";
+    public static string WaitlistFreeNow(string times) => $"Free now: {times}";
+    public static string WaitlistEmailed(string when) => $"Emailed {when}";
+    public const string WaitlistRemove = "Remove";
+    public const string WaitlistRemoveAsk = "Remove this person from the waitlist?";
+    public const string WaitlistRemoved = "Removed from the waitlist.";
+    public const string WaitlistAnyStaff = "Any staff";
+    public static string WaitlistMessage(string first, string shop, string service, string day, string times, string link) =>
+        $"Hi {first}, a time opened up at {shop} for {service} on {day}: {times}. Book here before it is taken: {link}";
+    public static string WaitlistEmailSubject(string shop) => $"A time opened up at {shop}";
+    public static string WaitlistEmailBody(string first, string shop, string service, string day, string times, string link) =>
+        $"Hi {first},\n\nA time opened up at {shop} for {service} on {day}: {times}.\n\nTo book it before someone else does, use this link:\n{link}";
     public const string PayQrTitle = "GCash QR code";
     public const string PayQrSaveImage = "Save QR to my phone";
     public const string PayQrOpenGcash = "Open GCash";
@@ -488,6 +557,18 @@ public static class Text
     public const string PaymentsMonthTotal = "This month";
     public static string PaymentsAlert(int n) => n == 1 ? "1 payment is waiting for you to confirm." : $"{n} payments are waiting for you to confirm.";
     public const string PaymentsAlertView = "Open payments";
+    public const string PilotTitle = "Pilot checklist";
+    public const string PilotIntro = "Your own list for the pilot: what to finish before you charge, how to set up a pilot shop, what to ask the owner after two weeks and what to watch each week. Only you can see it. Tick an item when it is done.";
+    public const string PilotBack = "Back to Platform";
+    public const string PilotLink = "Pilot checklist";
+    public const string PilotReviewLink = "Meta App Review guide";
+    public const string WalkthroughsTitle = "Walkthroughs";
+    public const string WalkthroughsLink = "Walkthroughs";
+    public const string WalkthroughsIntro = "Step by step scripts for showing VeskaFlow to a new client and for setting up their shop with them. Each step says where to go and what to say or show. Keep a demo shop of your own open on a phone and a laptop while you do them.";
+    public const string MetaReviewIntro = "Your steps to get Meta to approve the app, so the shops' customers can talk to the assistant on Facebook. Until it is approved only people with a role on the app can. Each step says where to click in the Meta dashboard and has the texts to paste. This comes from general knowledge of Meta's process: its screens change, so check each step against what the dashboard shows today. Nothing has been submitted and approval is not guaranteed.";
+    public const string PilotTick = "Mark done";
+    public const string PilotUntick = "Mark not done";
+    public static string PilotDoneOn(string date) => $"Done on {date}.";
     public const string PaymentsLink = "Payments";
     public const string KpiToDo = "Still to do";
     public const string KpiDetailsTitle = "Bookings behind this number";
@@ -497,7 +578,7 @@ public static class Text
     public const string KpiDetailsClose = "Close the list";
     public const string KpiDone = "Done";
     public const string KpiRevenue = "Earned";
-    public const string KpiNoShows = "No-shows";
+    public const string KpiNoShows = "No‑shows"; // a non-breaking hyphen, so the label does not split in two on a narrow phone
     public const string KpiCancelled = "Cancelled";
     public const string PlatformBackupTitle = "Database backup";
     public const string PlatformBackupHint = "A copy of everything is made every night (encrypted) and kept on GitHub for 14 days. Once a month, download one and keep it on your own drive: open the link, pick the newest green run, and download veskaflow-backup under Artifacts. The passphrase is in your password manager.";
@@ -671,9 +752,11 @@ public static class Text
     public const string ConfirmReminded = "Mark this customer as reminded? They leave the list.";
     public const string ReminderWhen = "Appointment";
     public const string ReminderSubject = "Reminder of your appointment";
-    public static string ReminderAlertText(int count) => count == 1
-        ? "1 customer is due a reminder for an upcoming appointment. Send them a message."
-        : $"{count} customers are due a reminder for an upcoming appointment. Send them a message.";
+    public static string ReminderAlertMessage(int count) => count == 1
+        ? "1 customer is due a reminder for an upcoming appointment."
+        : $"{count} customers are due a reminder for an upcoming appointment.";
+    public const string ReminderAlertAction = "Send them a message.";
+    public static string ReminderAlertText(int count) => ReminderAlertMessage(count) + " " + ReminderAlertAction;
     public static string ReminderMessage(string firstName, string shop, string service, string whenText, string manageUrl) =>
         $"Hi {firstName}, this is a reminder of your {service} appointment at {shop} on {whenText}. To see or cancel your booking: {manageUrl} See you!";
     public const string TermsLink = "Terms of Service";
@@ -860,6 +943,26 @@ public static class Text
     public const string StaffNoServices = "No services assigned.";
     public const string StaffDetails = "Details";
     public const string StaffPlanNote = "Plan {0}: up to {1} active staff member(s).";
+    public const string StaffIncludedNote = "{0} staff are included in your price. Extra staff paid for: {1}.";
+    public const string StaffExtraPriceNote = "Each extra staff member: {0}. Pay in Plan and billing and your limit goes up once we confirm it.";
+    public static string StaffExtraUntil(string date) => $"Paid until {date}.";
+    public const string StaffBuyExtra = "Buy extra staff";
+    public const string StaffMessageUs = "Message us";
+    public const string PayKindStaff = "Extra staff";
+    public const string PayStaffByHand = "Extra staff is set with the Extra staff box on the shop's card, not here.";
+    public static string PayQuantityInvalid(int max) => $"Type how many extra staff you want, from 1 to {max}.";
+    public static string BillingStaffNow(int included, int extra, int total) => $"Now: {included} included + {extra} extra = {total} staff."; 
+    public const string BillingTotalToPay = "Total to pay:";
+    public const string BillingQuantity = "How many extra staff in total?";
+    public const string BillingPerStaffMonth = "per staff per month";
+    public const string BillingQuantityHint = "The total number of extra staff you want for the month, not just the new ones. The amount is the price of one times this number. Only fill this in for Extra staff.";
+    public static string PlatformExtraStaffUntil(string date) => $"paid until {date}";
+    public const string StaffRecordsLimit = "You have reached the most staff records ({0}), counting deactivated staff. Ask us to raise it.";
+    public const string PlatformExtraStaff = "Extra staff";
+    public const string PlatformExtraStaffSave = "Save";
+    public const string PlatformExtraStaffAsk = "Set the extra staff for this shop? Do this after the payment arrived.";
+    public const string PlatformExtraStaffInvalid = "Extra staff must be a whole number from 0 to 100.";
+    public const string PlatformExtraStaffSaved = "Extra staff saved.";
     public const string StaffUnlimited = "unlimited";
     public const string LabelStaffName = "Name";
     public const string HintStaffActive = "Only active staff can be booked. Deactivating never cancels bookings.";
@@ -1020,6 +1123,30 @@ public static class Text
     public const string LabelAllowManualSales = "Allow recording a sale by hand";
     public const string HintAllowManualSales = "Adds a Record a sale page where a manager enters a service and what was paid, for your sales and customer records. A customer with no number is saved as a walk-in. Off by default.";
     public const string ManualSaleLink = "Record a sale";
+    public const string EmailPlatformOff = "Email is not set up for VeskaFlow yet, so email features can not be turned on. Ask the platform owner.";
+    public const string EmailSwitchOff = "Off";
+    public const string EmailSwitchOnIgnored = "On, but not used until email is set up";
+    public const string BookLabelEmailRequired = "Email (we send a link there to confirm your booking)";
+    public const string LabelRequireEmailConfirm = "Require email confirmation to book";
+    public const string HintRequireEmailConfirm = "For a shop that gets fake bookings. A customer must give an email, we email them a link, and the booking is only confirmed when they press it (the time is held for 20 minutes). Customers with no email can not book online, and each booking uses one email from your daily limit. Staff bookings are not affected. Off by default.";
+    public const string EmailRequiredToBook = "Please give an email address: we send a link there to confirm your booking.";
+    public const string ConfirmEmailNotSent = "We could not send the confirmation email, so nothing was booked. Check the address and try again, or contact the shop.";
+    public const string ConfirmLinkExpired = "This link has expired and the time was released. Please book again.";
+    public const string HoldExpiredReason = "The customer did not confirm by email in time.";
+    public const string StatusWaitingEmail = "Waiting for email";
+    public const string ConfirmPageTitle = "Confirm your booking";
+    public const string ConfirmPageHint = "Press the button to confirm this booking.";
+    public const string ConfirmPageButton = "Confirm my booking";
+    public const string ConfirmedByEmail = "Your booking is confirmed. Thank you.";
+    public static string ManageHeld(string until) => $"Check your email and press the link to confirm. Your time is held until {until}; after that it is released.";
+    public static string BookingConfirmLinkSubject(string shop) => $"Please confirm your booking at {shop}";
+    public static string BookingConfirmLinkBody(string firstName, string shop, string service, string staff, string whenText, string confirmUrl, int minutes, string manageUrl) =>
+        $"Hi {firstName},\n\nTo finish your booking at {shop}, please confirm it with this link within {minutes} minutes:\n{confirmUrl}\n\n{service} with {staff}\n{whenText}\n\nYour time is held until then. If you do not confirm, it is released.\n\nTo see or cancel the booking, use this link:\n{manageUrl}\n\nIf you did not ask for this, ignore this email.\n\n{CustomerEmailFooter(shop)}";
+    public const string AiChatCaptchaWait = "One moment, we are checking that you are a person. Send your message again in a few seconds.";
+    public const string OnlineBookingsFull = "Online booking is full for now. Please call or message the shop.";
+    public const string ManualSaleTimeHint = "Starts as the time you are entering this. It must be inside the working hours, and while it is running that time cannot be booked.";
+    public const string ManualSaleBadge = "Manual input of sales";
+    public const string ManualSaleTimeOutside = "Pick a time inside the working hours of that day ({0}).";
     public const string ManualSaleTitle = "Record a sale";
     public const string ManualSaleIntro = "For a service that was done and paid without a booking in the system. It is saved as a completed visit, so it shows in the reports and in the customer's history. Nothing is sent to the customer.";
     public const string ManualSaleOff = "Recording a sale by hand is switched off in Settings.";
@@ -1102,7 +1229,7 @@ public static class Text
     public const string PromoEndsFar = "Choose a last day within the next year.";
     public const string AiChatNotice = "This is an automated assistant and can make mistakes. Your messages are processed by an AI service and kept for 30 days.";
     public const string AiChatNoticeLink = "Privacy Notice";
-    public const string AiChatManageLink = "To see or cancel your booking, use this link:";
+    public const string AiChatManageLink = "To see or cancel your booking / Para makita o makansela ang booking:";
     public const string AiChatIntro = "Ask about services, prices and free times, or book right here. You can also use the form above.";
     public const string AiChatGreeting = "Hi! I can check free times and book you in. What service would you like?";
     public const string AiChatPlaceholder = "Type your message";
@@ -1121,6 +1248,33 @@ public static class Text
     public const string AiAddonNone = "An assistant on your booking page that answers customers, checks free times and books them in, any hour of the day. It is a paid add-on.";
     public const string AiAddonPriceLabel = "Add-on price";
     public const string AiAddonHow = "To add it, pay the same way as your subscription and send the proof, saying it is for the AI receptionist add-on.";
+    public const string MessengerTitle = "Facebook Messenger";
+    public const string MessengerIntro = "Connect your Facebook Page and the AI receptionist answers your Messenger inbox the same way it answers your booking page: services, prices, free times, and booking. You can connect more than one Page.";
+    public const string MessengerNotSetUp = "Messenger is not switched on for this platform yet. Ask the platform owner.";
+    public const string MessengerNeedsAi = "Messenger needs the AI receptionist add-on. Turn it on in Settings first.";
+    public const string MessengerConnect = "Connect a Facebook Page";
+    public const string MessengerConnectAnother = "Connect another Page";
+    public const string MessengerConnected = "Connected Pages";
+    public const string MessengerNone = "No Page is connected yet.";
+    public const string MessengerReviewNote = "Not open to your customers yet. Facebook has not yet approved this feature for everyone, so for now the assistant replies only to people we add for testing, such as you. Your customers can still book and chat on your booking page. Want to try it on your Page? Message us and we will add your Facebook account.";
+    public const string MessengerDisconnect = "Disconnect";
+    public const string MessengerDisconnectConfirm = "Disconnect this Page? The assistant stops answering its messages.";
+    public const string MessengerChoose = "Choose the Page to connect";
+    public const string MessengerChooseHint = "These are the Pages you manage on Facebook. Only the one you choose is connected.";
+    public const string MessengerConnectThis = "Connect this Page";
+    public const string MessengerConnectAsk = "Connect this Page? The assistant will answer its Messenger messages.";
+    public const string MessengerOpenSettings = "Connect Facebook Messenger";
+    public const string MessengerOnlyOwner = "Only the shop owner can connect a Facebook Page.";
+    public const string MessengerAdminNote = "You need to be an admin of the Facebook Page. Facebook will ask you to log in and allow VeskaFlow to read and answer messages of the Page you choose.";
+    public const string MessengerFacebookRefused = "Facebook did not allow it, or the link expired. Please try again.";
+    public const string MessengerNoPages = "Facebook did not show any Page you manage. Check that you are an admin of the Page (full control). If you connected before, open Facebook, Settings, Business Integrations, remove \"VeskaFlow Assistant\", then press Connect again and tick the Page when Facebook asks.";
+    public const string MessengerPageTaken = "That Page is already connected to another shop.";
+    public const string MessengerSubscribeFailed = "Facebook did not accept the connection. Please try again.";
+    public const string MessengerStateInvalid = "The connection expired. Please start again.";
+    public const string MessengerConnectedDone = "The Page is connected. Send it a message to try the assistant.";
+    public const string MessengerDisconnectedDone = "The Page is disconnected.";
+    public static string MessengerTooManyPages(int max) => $"You can connect up to {max} Pages. Disconnect one first.";
+    public static string MessengerSince(string date) => $"Connected {date}";
     public const string AiAdminTitle = "AI usage and cost";
     public const string AiAdminSearch = "Search by shop, address or owner email";
     public const string AiAdminTotals = "AI totals for the month";
